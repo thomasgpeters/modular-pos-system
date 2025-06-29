@@ -13,41 +13,44 @@
 #include <Wt/WTimer.h>
 #include <Wt/WEnvironment.h>
 #include <Wt/WText.h>
-#include <Wt/WLink.h>
 
 #include <memory>
 #include <vector>
+#include <string>
 
 /**
- * @file RestaurantPOSApp.h
- * @brief Main application class for the Restaurant POS System with theme support
- * 
- * This file contains the RestaurantPOSApp class which coordinates all POS components
- * and provides the web interface with customizable themes. It integrates the three-legged foundation:
- * Order Management, Payment Processing, and Kitchen Interface.
- * 
- * @author Restaurant POS Team
- * @version 1.0.0
+ * @file RestaurantPOSApp.h (Simplified Version)
+ * @brief Main application class with simplified theme system - no JSON dependencies
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Main application class that coordinates all POS components with theme support
- * 
- * The RestaurantPOSApp class provides the web interface and coordinates
- * all core POS functionality with support for multiple visual themes.
- * It manages the user interface, handles user interactions, and orchestrates 
- * communication between the three core components.
+ * @brief Main application class with hardcoded theme support (no JSON parsing)
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
     /**
-     * @brief Theme information structure
+     * @brief Simple theme information structure
      */
     struct ThemeInfo {
-        std::string id;          ///< Theme identifier
-        std::string name;        ///< Display name
-        std::string description; ///< Theme description
+        std::string id;                      ///< Theme identifier
+        std::string name;                    ///< Display name
+        std::string description;             ///< Theme description
+        std::string cssFile;                 ///< Path to CSS file
+        std::string externalCss;             ///< External CSS URL (optional)
+        std::vector<std::string> previewColors; ///< Colors for preview
+        bool isDefault;                      ///< Whether this is the default theme
+        
+        // Constructor
+        ThemeInfo() : isDefault(false) {}
+        
+        ThemeInfo(const std::string& id, const std::string& name, 
+                 const std::string& description, const std::string& cssFile,
+                 const std::string& externalCss = "",
+                 const std::vector<std::string>& previewColors = {},
+                 bool isDefault = false)
+            : id(id), name(name), description(description), cssFile(cssFile),
+              externalCss(externalCss), previewColors(previewColors), isDefault(isDefault) {}
     };
 
     /**
@@ -62,11 +65,11 @@ public:
     virtual ~RestaurantPOSApp() = default;
 
 private:
-    // Theme management methods
+    // Simplified theme management
     /**
-     * @brief Initializes the theme system and available themes
+     * @brief Initializes hardcoded theme configuration
      */
-    void initializeThemes();
+    void initializeHardcodedThemes();
     
     /**
      * @brief Applies the specified theme to the application
@@ -75,33 +78,15 @@ private:
     void applyTheme(const std::string& themeName);
     
     /**
+     * @brief Loads a CSS file by path
+     * @param filepath Path to the CSS file to load
+     */
+    void loadCSSFile(const std::string& filepath);
+    
+    /**
      * @brief Shows the theme selection dialog
      */
     void showThemeSelector();
-    
-    /**
-     * @brief Creates CSS for the classic theme
-     * @return WLink containing the CSS
-     */
-    Wt::WLink createClassicThemeCSS();
-    
-    /**
-     * @brief Creates CSS for the professional theme
-     * @return WLink containing the CSS
-     */
-    Wt::WLink createProfessionalThemeCSS();
-    
-    /**
-     * @brief Creates CSS for the colorful theme
-     * @return WLink containing the CSS
-     */
-    Wt::WLink createColorfulThemeCSS();
-    
-    /**
-     * @brief Creates common POS-specific CSS
-     * @return WLink containing the CSS
-     */
-    Wt::WLink createPOSCustomCSS();
     
     /**
      * @brief Updates the theme indicator text
@@ -247,9 +232,11 @@ private:
     std::unique_ptr<PaymentProcessor> paymentProcessor_; ///< Payment processing system
     std::unique_ptr<KitchenInterface> kitchenInterface_; ///< Kitchen communication system
     
-    // Theme system
-    std::vector<ThemeInfo> availableThemes_;    ///< Available theme options
-    std::string currentTheme_;                  ///< Currently active theme
+    // Simplified theme system (no JSON)
+    std::vector<ThemeInfo> availableThemes_;    ///< Hardcoded theme options
+    std::string currentTheme_;                  ///< Currently active theme ID
+    std::string themeDirectory_;                ///< Directory containing theme files
+    bool allowUserThemes_;                      ///< Whether to allow user-defined themes
     Wt::WText* themeIndicator_;                ///< Theme indicator widget
     
     // UI components

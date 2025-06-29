@@ -1,0 +1,61 @@
+{
+  "themes": [
+    {
+      "id": "bootstrap",
+      "name": "Bootstrap (Default)",
+      "description": "Modern responsive Bootstrap theme",
+      "cssFile": "themes/bootstrap.css",
+      "previewColors": ["#007bff", "#0056b3"],
+      "isDefault": true
+    },
+    {
+      "id": "bootstrap-dark",
+      "name": "Bootstrap Dark",
+      "description": "Dark mode Bootstrap theme",
+      "cssFile": "themes/bootstrap-dark.css",
+      "externalCss": "https://stackpath.bootstrapcdn.com/bootswatch/3.4.1/darkly/bootstrap.min.css",
+      "previewColors": ["#343a40", "#1a1e21"]
+    },
+    {
+      "id": "classic",
+      "name": "Classic",
+      "description": "Clean classic theme with traditional styling",
+      "cssFile": "themes/classic.css",
+      "previewColors": ["#f8f9fa", "#e9ecef"]
+    },
+    {
+      "id": "professional",
+      "name": "Professional",
+      "description": "Professional business theme with dark headers",
+      "cssFile": "themes/professional.css",
+      "previewColors": ["#2c3e50", "#3498db"]
+    },
+    {
+      "id": "colorful",
+      "name": "Colorful",
+      "description": "Vibrant theme with gradients and modern styling",
+      "cssFile": "themes/colorful.css",
+      "previewColors": ["#667eea", "#764ba2"]
+    },
+    {
+      "id": "elegant",
+      "name": "Elegant",
+      "description": "Sophisticated theme with subtle shadows and refined typography",
+      "cssFile": "themes/elegant.css",
+      "previewColors": ["#8e44ad", "#9b59b6"]
+    },
+    {
+      "id": "minimal",
+      "name": "Minimal",
+      "description": "Clean minimal design with maximum whitespace",
+      "cssFile": "themes/minimal.css",
+      "previewColors": ["#ffffff", "#f5f5f5"]
+    }
+  ],
+  "config": {
+    "defaultTheme": "bootstrap",
+    "allowUserThemes": true,
+    "themeDirectory": "themes/",
+    "customThemeDirectory": "themes/custom/"
+  }
+}
