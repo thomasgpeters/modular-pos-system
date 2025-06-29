@@ -94,12 +94,12 @@ uninstall:
 # Run the application
 run: $(TARGET)
 	@echo "Starting Restaurant POS System..."
-	cd $(BINDIR) && ./$(TARGET) --http-port 8080 --docroot ../..
+	cd $(BINDIR) && ./$(TARGET) --http-port 8081 --docroot ../..
 
 # Run in debug mode
 run-debug: $(TARGET)-debug
 	@echo "Starting Restaurant POS System (Debug Mode)..."
-	cd $(BINDIR) && ./$(TARGET)-debug --http-port 8080 --docroot ../..
+	cd $(BINDIR) && ./$(TARGET)-debug --http-port 8081 --docroot ../..
 
 # Check dependencies
 check-deps:
@@ -193,4 +193,3 @@ help:
 
 %.d: %.cpp
 	@$(CXX) $(CXXFLAGS) $(INCLUDES) -MM $< > $@
-	

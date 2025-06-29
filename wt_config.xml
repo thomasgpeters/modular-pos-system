@@ -1,5 +1,5 @@
 <server>
-    <application-settings>
+    <application-settings location="*">
         <max-request-size>128</max-request-size>
         <session-timeout>600</session-timeout>
     </application-settings>

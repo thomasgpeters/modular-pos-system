@@ -12,36 +12,34 @@
 #include <Wt/WSpinBox.h>
 #include <Wt/WTimer.h>
 #include <Wt/WEnvironment.h>
-#include <Wt/WComboBox.h>
-#include <Wt/WLink.h>
 
 #include <memory>
 #include <vector>
-#include <map>
 
 /**
  * @file RestaurantPOSApp.h
- * @brief Main application class for the Restaurant POS System with Theme Support
+ * @brief Main application class for the Restaurant POS System
  * 
  * This file contains the RestaurantPOSApp class which coordinates all POS components
- * and provides the web interface with theme management capabilities.
+ * and provides the web interface. It integrates the three-legged foundation:
+ * Order Management, Payment Processing, and Kitchen Interface.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 1.0.0
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Main application class with theme management and category tiles
+ * @brief Main application class that coordinates all POS components
  * 
- * The RestaurantPOSApp class provides a themed web interface that coordinates
- * all core POS functionality. Features external CSS themes that can be updated
- * without recompilation and user-selectable theme options.
+ * The RestaurantPOSApp class provides the web interface and coordinates
+ * all core POS functionality. It manages the user interface, handles user
+ * interactions, and orchestrates communication between the three core components.
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
     /**
-     * @brief Constructs the main POS application with theme support
+     * @brief Constructs the main POS application
      * @param env Wt web environment containing request information
      */
     RestaurantPOSApp(const Wt::WEnvironment& env);
@@ -52,35 +50,30 @@ public:
     virtual ~RestaurantPOSApp() = default;
 
 private:
-    // Theme management methods
-    /**
-     * @brief Initializes the theme system with available themes
-     */
-    void initializeThemes();
-    
-    /**
-     * @brief Loads a specific theme by name
-     * @param themeName Name of the theme to load (e.g., "default", "dark")
-     */
-    void loadTheme(const std::string& themeName);
-    
-    /**
-     * @brief Switches to a different theme
-     * @param themeName Name of the theme to switch to
-     */
-    void switchTheme(const std::string& themeName);
-    
-    /**
-     * @brief Creates the theme selector widget
-     * @param parent Parent container to add the theme selector to
-     */
-    void createThemeSelector(Wt::WContainerWidget* parent);
-    
     // Initialization methods
     /**
      * @brief Initializes sample menu items for demonstration
      */
     void initializeSampleMenu();
+    
+    /**
+     * @brief Adds custom CSS styling to the application
+     */
+    void addCustomStyles();
+    
+    /**
+     * @brief Gets CSS class for order status
+     * @param status Order status
+     * @return CSS class name
+     */
+    std::string getStatusClass(Order::Status status);
+    
+    /**
+     * @brief Gets CSS class for kitchen status  
+     * @param status Kitchen status
+     * @return CSS class name
+     */
+    std::string getKitchenStatusClass(KitchenInterface::KitchenStatus status);
     
     /**
      * @brief Builds the main user interface
@@ -101,17 +94,9 @@ private:
     
     // UI building methods
     /**
-     * @brief Builds the category tiles instead of full menu table
+     * @brief Builds the menu items table
      */
-    void buildCategoryTiles();
-    
-    /**
-     * @brief Shows a popover with items from a specific category
-     * @param category The menu category to display
-     * @param items Vector of menu items in this category
-     */
-    void showCategoryPopover(MenuItem::Category category, 
-                            const std::vector<std::shared_ptr<MenuItem>>& items);
+    void buildMenuTable();
     
     /**
      * @brief Updates the current order display table
@@ -199,20 +184,6 @@ private:
     std::string getKitchenStatusString(KitchenInterface::KitchenStatus status);
     
     /**
-     * @brief Gets CSS class for order status
-     * @param status Order status
-     * @return CSS class name
-     */
-    std::string getStatusClass(Order::Status status);
-    
-    /**
-     * @brief Gets CSS class for kitchen status  
-     * @param status Kitchen status
-     * @return CSS class name
-     */
-    std::string getKitchenStatusClass(KitchenInterface::KitchenStatus status);
-    
-    /**
      * @brief Formats currency amount for display
      * @param amount Amount to format
      * @return Formatted currency string
@@ -233,17 +204,11 @@ private:
     
     // UI components
     Wt::WSpinBox* tableNumberEdit_;         ///< Table number input
-    Wt::WContainerWidget* categoryTilesContainer_; ///< Category tiles container
+    Wt::WTable* menuTable_;                 ///< Menu items display
     Wt::WTable* currentOrderTable_;         ///< Current order display
     Wt::WTable* activeOrdersTable_;         ///< Active orders display
     Wt::WTable* kitchenStatusTable_;        ///< Kitchen status display
     Wt::WTimer* updateTimer_;               ///< Real-time update timer
-    
-    // Theme management components
-    Wt::WComboBox* themeSelector_;          ///< Theme selection dropdown
-    std::map<std::string, std::string> availableThemes_; ///< Available themes (key -> display name)
-    std::string currentTheme_;              ///< Currently selected theme
-    Wt::WLink* currentThemeStyleSheet_;     ///< Current theme stylesheet link
     
     // Application data
     std::vector<std::shared_ptr<MenuItem>> menuItems_;  ///< Available menu items

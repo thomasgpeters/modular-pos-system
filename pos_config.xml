@@ -13,7 +13,7 @@
   <server>
     <!-- HTTP server settings -->
     <http-address>0.0.0.0</http-address>
-    <http-port>8080</http-port>
+    <http-port>8081</http-port>
     <https-port>443</https-port>
     
     <!-- Document root for static files -->
