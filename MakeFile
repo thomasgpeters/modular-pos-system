@@ -1,0 +1,196 @@
+# Makefile for Restaurant POS System
+# Alternative to CMake for simpler builds
+
+# Compiler and flags
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+DEBUGFLAGS = -g -O0 -DDEBUG
+INCLUDES = $(shell pkg-config --cflags wt wthttp)
+LIBS = $(shell pkg-config --libs wt wthttp)
+
+# Project info
+TARGET = restaurant_pos
+VERSION = 1.0.0
+
+# Source files
+SOURCES = main.cpp \
+          MenuItem.cpp \
+          Order.cpp \
+          OrderManager.cpp \
+          PaymentProcessor.cpp \
+          KitchenInterface.cpp \
+          RestaurantPOSApp.cpp
+
+# Object files
+OBJECTS = $(SOURCES:.cpp=.o)
+DEBUG_OBJECTS = $(SOURCES:.cpp=.debug.o)
+
+# Header files (for dependency checking)
+HEADERS = MenuItem.h \
+          Order.h \
+          OrderManager.h \
+          PaymentProcessor.h \
+          KitchenInterface.h \
+          RestaurantPOSApp.h
+
+# Build directories
+BUILDDIR = build
+BINDIR = $(BUILDDIR)/bin
+OBJDIR = $(BUILDDIR)/obj
+
+# Default target
+all: $(TARGET)
+
+# Release build
+$(TARGET): $(OBJECTS) | $(BINDIR)
+	@echo "Linking release version..."
+	$(CXX) $(OBJECTS) -o $(BINDIR)/$(TARGET) $(LIBS)
+	@echo "✓ Build complete: $(BINDIR)/$(TARGET)"
+
+# Debug build
+debug: CXXFLAGS += $(DEBUGFLAGS)
+debug: $(TARGET)-debug
+
+$(TARGET)-debug: $(DEBUG_OBJECTS) | $(BINDIR)
+	@echo "Linking debug version..."
+	$(CXX) $(DEBUG_OBJECTS) -o $(BINDIR)/$(TARGET)-debug $(LIBS)
+	@echo "✓ Debug build complete: $(BINDIR)/$(TARGET)-debug"
+
+# Compile source files
+%.o: %.cpp $(HEADERS) | $(OBJDIR)
+	@echo "Compiling $<..."
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $(OBJDIR)/$@
+
+%.debug.o: %.cpp $(HEADERS) | $(OBJDIR)
+	@echo "Compiling $< (debug)..."
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(INCLUDES) -c $< -o $(OBJDIR)/$@
+
+# Create build directories
+$(BINDIR):
+	@mkdir -p $(BINDIR)
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+# Clean build files
+clean:
+	@echo "Cleaning build files..."
+	rm -rf $(BUILDDIR)
+	rm -f *.o *.debug.o
+	@echo "✓ Clean complete"
+
+# Install to system
+install: $(TARGET)
+	@echo "Installing $(TARGET)..."
+	install -D $(BINDIR)/$(TARGET) /usr/local/bin/$(TARGET)
+	@echo "✓ Installed to /usr/local/bin/$(TARGET)"
+
+# Uninstall from system
+uninstall:
+	@echo "Uninstalling $(TARGET)..."
+	rm -f /usr/local/bin/$(TARGET)
+	@echo "✓ Uninstalled"
+
+# Run the application
+run: $(TARGET)
+	@echo "Starting Restaurant POS System..."
+	cd $(BINDIR) && ./$(TARGET) --http-port 8080 --docroot ../..
+
+# Run in debug mode
+run-debug: $(TARGET)-debug
+	@echo "Starting Restaurant POS System (Debug Mode)..."
+	cd $(BINDIR) && ./$(TARGET)-debug --http-port 8080 --docroot ../..
+
+# Check dependencies
+check-deps:
+	@echo "Checking dependencies..."
+	@pkg-config --exists wt || (echo "✗ Wt framework not found" && exit 1)
+	@pkg-config --exists wthttp || (echo "✗ Wt HTTP connector not found" && exit 1)
+	@echo "✓ All dependencies found"
+	@echo "Wt version: $$(pkg-config --modversion wt)"
+
+# Show build info
+info:
+	@echo "Restaurant POS System v$(VERSION)"
+	@echo "Compiler: $(CXX)"
+	@echo "Flags: $(CXXFLAGS)"
+	@echo "Wt includes: $(INCLUDES)"
+	@echo "Wt libraries: $(LIBS)"
+	@echo "Sources: $(SOURCES)"
+	@echo "Target: $(TARGET)"
+
+# Create source package
+package: clean
+	@echo "Creating source package..."
+	tar -czf restaurant-pos-$(VERSION).tar.gz \
+		$(SOURCES) $(HEADERS) Makefile CMakeLists.txt README.md
+	@echo "✓ Package created: restaurant-pos-$(VERSION).tar.gz"
+
+# Format code (requires clang-format)
+format:
+	@echo "Formatting source code..."
+	@if command -v clang-format >/dev/null 2>&1; then \
+		clang-format -i $(SOURCES) $(HEADERS); \
+		echo "✓ Code formatted"; \
+	else \
+		echo "⚠ clang-format not found, skipping formatting"; \
+	fi
+
+# Static analysis (requires cppcheck)
+analyze:
+	@echo "Running static analysis..."
+	@if command -v cppcheck >/dev/null 2>&1; then \
+		cppcheck --enable=all --std=c++17 $(SOURCES); \
+	else \
+		echo "⚠ cppcheck not found, skipping analysis"; \
+	fi
+
+# Documentation (requires doxygen)
+docs:
+	@echo "Generating documentation..."
+	@if command -v doxygen >/dev/null 2>&1; then \
+		doxygen Doxyfile 2>/dev/null || echo "⚠ Doxyfile not found"; \
+	else \
+		echo "⚠ doxygen not found, skipping documentation"; \
+	fi
+
+# Help target
+help:
+	@echo "Restaurant POS System Build Help"
+	@echo "==============================="
+	@echo ""
+	@echo "Targets:"
+	@echo "  all         Build release version (default)"
+	@echo "  debug       Build debug version with symbols"
+	@echo "  clean       Remove all build files"
+	@echo "  install     Install to /usr/local/bin"
+	@echo "  uninstall   Remove from /usr/local/bin"
+	@echo "  run         Build and run release version"
+	@echo "  run-debug   Build and run debug version"
+	@echo "  check-deps  Verify all dependencies are installed"
+	@echo "  info        Show build configuration"
+	@echo "  package     Create source package"
+	@echo "  format      Format source code with clang-format"
+	@echo "  analyze     Run static analysis with cppcheck"
+	@echo "  docs        Generate documentation with doxygen"
+	@echo "  help        Show this help message"
+	@echo ""
+	@echo "Example usage:"
+	@echo "  make              # Build release version"
+	@echo "  make debug        # Build debug version"
+	@echo "  make run          # Build and run"
+	@echo "  make clean all    # Clean and rebuild"
+
+# Mark targets as phony
+.PHONY: all debug clean install uninstall run run-debug check-deps info package format analyze docs help
+
+# Keep intermediate files
+.PRECIOUS: %.o %.debug.o
+
+# Automatic dependency generation
+-include $(OBJECTS:.o=.d)
+-include $(DEBUG_OBJECTS:.o=.d)
+
+%.d: %.cpp
+	@$(CXX) $(CXXFLAGS) $(INCLUDES) -MM $< > $@
+	

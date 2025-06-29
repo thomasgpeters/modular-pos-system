@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Restaurant POS System Configuration
+  
+  This configuration file allows customization of the POS system behavior
+  without recompiling the application. Modify values as needed for your
+  restaurant's specific requirements.
+-->
+
+<configuration>
+  
+  <!-- Server Configuration -->
+  <server>
+    <!-- HTTP server settings -->
+    <http-address>0.0.0.0</http-address>
+    <http-port>8080</http-port>
+    <https-port>443</https-port>
+    
+    <!-- Document root for static files -->
+    <docroot>./www</docroot>
+    
+    <!-- Session configuration -->
+    <session-id-cookie>true</session-id-cookie>
+    <session-timeout>1800</session-timeout> <!-- 30 minutes -->
+    
+    <!-- Performance settings -->
+    <max-memory-request-size>134217728</max-memory-request-size> <!-- 128MB -->
+    <max-request-size>134217728</max-request-size>
+    
+    <!-- Security settings -->
+    <plain-ajax-sessions-rate-limit>true</plain-ajax-sessions-rate-limit>
+    <ajax-puzzle>true</ajax-puzzle>
+  </server>
+
+  <!-- Application Settings -->
+  <application>
+    <!-- Restaurant Information -->
+    <restaurant>
+      <name>Demo Restaurant</name>
+      <address>123 Main Street, City, State 12345</address>
+      <phone>(555) 123-4567</phone>
+      <email>info@demorestaurant.com</email>
+      <timezone>America/New_York</timezone>
+    </restaurant>
+    
+    <!-- Order Management Settings -->
+    <orders>
+      <!-- Starting order number -->
+      <starting-order-id>1000</starting-order-id>
+      
+      <!-- Order timeout in minutes -->
+      <order-timeout>120</order-timeout>
+      
+      <!-- Auto-save interval in seconds -->
+      <auto-save-interval>30</auto-save-interval>
+      
+      <!-- Maximum items per order -->
+      <max-items-per-order>50</max-items-per-order>
+    </orders>
+    
+    <!-- Payment Configuration -->
+    <payments>
+      <!-- Tax rate (decimal, e.g., 0.08 for 8%) -->
+      <tax-rate>0.08</tax-rate>
+      
+      <!-- Default tip percentage suggestions -->
+      <tip-suggestions>
+        <suggestion>0.15</suggestion> <!-- 15% -->
+        <suggestion>0.18</suggestion> <!-- 18% -->
+        <suggestion>0.20</suggestion> <!-- 20% -->
+        <suggestion>0.22</suggestion> <!-- 22% -->
+      </tip-suggestions>
+      
+      <!-- Payment method configuration -->
+      <methods>
+        <cash enabled="true" />
+        <credit-card enabled="true" />
+        <debit-card enabled="true" />
+        <mobile-pay enabled="true" />
+        <gift-card enabled="false" />
+      </methods>
+      
+      <!-- Payment gateway settings (placeholder) -->
+      <gateway>
+        <provider>stripe</provider> <!-- stripe, square, authorize.net, etc. -->
+        <test-mode>true</test-mode>
+        <api-key>pk_test_your_key_here</api-key>
+        <secret-key>sk_test_your_secret_here</secret-key>
+      </gateway>
+    </payments>
+    
+    <!-- Kitchen Interface Settings -->
+    <kitchen>
+      <!-- Kitchen display refresh rate in seconds -->
+      <refresh-rate>5</refresh-rate>
+      
+      <!-- Default preparation times by category (minutes) -->
+      <prep-times>
+        <appetizer>8</appetizer>
+        <main-course>15</main-course>
+        <dessert>6</dessert>
+        <beverage>2</beverage>
+        <special>20</special>
+      </prep-times>
+      
+      <!-- Kitchen queue management -->
+      <queue>
+        <busy-threshold>5</busy-threshold> <!-- Orders before considered busy -->
+        <max-queue-size>20</max-queue-size>
+        <alert-wait-time>30</alert-wait-time> <!-- Minutes before alert -->
+      </queue>
+      
+      <!-- Kitchen display settings -->
+      <display>
+        <show-table-numbers>true</show-table-numbers>
+        <show-customer-names>false</show-customer-names>
+        <show-prep-times>true</show-prep-times>
+        <auto-advance>false</auto-advance>
+      </display>
+    </kitchen>
+    
+    <!-- User Interface Settings -->
+    <ui>
+      <!-- Theme configuration -->
+      <theme>bootstrap</theme>
+      
+      <!-- Update intervals -->
+      <update-interval>5</update-interval> <!-- seconds -->
+      
+      <!-- Table management -->
+      <tables>
+        <min-table-number>1</min-table-number>
+        <max-table-number>50</max-table-number>
+        <default-table>1</default-table>
+      </tables>
+      
+      <!-- Menu display options -->
+      <menu>
+        <group-by-category>true</group-by-category>
+        <show-prices>true</show-prices>
+        <show-descriptions>false</show-descriptions>
+        <show-availability>true</show-availability>
+      </menu>
+    </ui>
+    
+    <!-- Logging and Analytics -->
+    <logging>
+      <level>info</level> <!-- debug, info, warning, error -->
+      <file-logging>true</file-logging>
+      <log-directory>./logs</log-directory>
+      <max-log-size>10485760</max-log-size> <!-- 10MB -->
+      <max-log-files>5</max-log-files>
+    </logging>
+    
+    <!-- Database Configuration -->
+    <database>
+      <!-- Database type: sqlite, mysql, postgresql -->
+      <type>sqlite</type>
+      
+      <!-- SQLite settings -->
+      <sqlite>
+        <file>./data/restaurant_pos.db</file>
+        <create-if-missing>true</create-if-missing>
+      </sqlite>
+      
+      <!-- MySQL settings (example) -->
+      <mysql>
+        <host>localhost</host>
+        <port>3306</port>
+        <database>restaurant_pos</database>
+        <username>pos_user</username>
+        <password>secure_password</password>
+        <pool-size>10</pool-size>
+      </mysql>
+      
+      <!-- PostgreSQL settings (example) -->
+      <postgresql>
+        <host>localhost</host>
+        <port>5432</port>
+        <database>restaurant_pos</database>
+        <username>pos_user</username>
+        <password>secure_password</password>
+        <pool-size>10</pool-size>
+      </postgresql>
+    </database>
+    
+    <!-- Feature Flags -->
+    <features>
+      <enable-inventory>false</enable-inventory>
+      <enable-staff-management>false</enable-staff-management>
+      <enable-customer-management>false</enable-customer-management>
+      <enable-reporting>false</enable-reporting>
+      <enable-loyalty-program>false</enable-loyalty-program>
+      <enable-online-ordering>false</enable-online-ordering>
+      <enable-delivery-tracking>false</enable-delivery-tracking>
+    </features>
+    
+    <!-- Integration Settings -->
+    <integrations>
+      <!-- Third-party service integrations -->
+      <accounting>
+        <enabled>false</enabled>
+        <provider>quickbooks</provider> <!-- quickbooks, xero, etc. -->
+        <api-endpoint>https://api.quickbooks.com</api-endpoint>
+        <client-id>your_client_id</client-id>
+        <client-secret>your_client_secret</client-secret>
+      </accounting>
+      
+      <email>
+        <enabled>false</enabled>
+        <smtp-server>smtp.gmail.com</smtp-server>
+        <smtp-port>587</smtp-port>
+        <username>your_email@gmail.com</username>
+        <password>your_app_password</password>
+        <use-ssl>true</use-ssl>
+      </email>
+      
+      <sms>
+        <enabled>false</enabled>
+        <provider>twilio</provider>
+        <account-sid>your_account_sid</account-sid>
+        <auth-token>your_auth_token</auth-token>
+        <from-number>+1234567890</from-number>
+      </sms>
+    </integrations>
+    
+  </application>
+  
+</configuration>
