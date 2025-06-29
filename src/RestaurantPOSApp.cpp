@@ -24,12 +24,17 @@
 #include <iostream>
 
 /**
- * @file RestaurantPOSApp.cpp (Simplified Version)
- * @brief Implementation with simplified theme system - no JSON dependencies
+ * @file RestaurantPOSApp.cpp (Complete Fixed Version)
+ * @brief Implementation with working theme system and all methods
  */
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env) : Wt::WApplication(env) {
     setTitle("Restaurant POS System - Three-Legged Foundation");
+    
+    // IMPORTANT: Set up Bootstrap theme FIRST before any CSS loading
+    auto bootstrapTheme = std::make_shared<Wt::WBootstrapTheme>();
+    bootstrapTheme->setVersion(Wt::BootstrapVersion::v3);
+    setTheme(bootstrapTheme);
     
     // Initialize theme system with hardcoded themes
     initializeHardcodedThemes();
@@ -76,36 +81,40 @@ void RestaurantPOSApp::applyTheme(const std::string& themeName) {
         [&themeName](const ThemeInfo& theme) { return theme.id == themeName; });
     
     if (it == availableThemes_.end()) {
+        std::cerr << "Theme not found: " << themeName << std::endl;
         return; // Theme not found
     }
     
     const ThemeInfo& theme = *it;
     
-    // Handle Bootstrap themes specially
-    if (themeName == "bootstrap" || themeName == "bootstrap-dark") {
+    try {
+        // Always use Bootstrap as the base theme for proper widget styling
         auto bootstrapTheme = std::make_shared<Wt::WBootstrapTheme>();
         bootstrapTheme->setVersion(Wt::BootstrapVersion::v3);
         setTheme(bootstrapTheme);
         
-        // Load external CSS for dark theme
-        if (!theme.externalCss.empty()) {
-            useStyleSheet(theme.externalCss);
+        // Load base CSS first (contains common styles)
+        std::cout << "Loading base CSS..." << std::endl;
+        useStyleSheet(Wt::WLink("themes/base.css"));
+        
+        // Load theme-specific CSS
+        if (!theme.cssFile.empty()) {
+            std::cout << "Loading theme CSS: " << theme.cssFile << std::endl;
+            useStyleSheet(Wt::WLink(theme.cssFile));
         }
-    } else {
-        // Use CSS theme for custom themes
-        auto cssTheme = std::make_shared<Wt::WCssTheme>("polished");
-        setTheme(cssTheme);
+        
+        // Load external CSS if specified (for special themes)
+        if (!theme.externalCss.empty()) {
+            std::cout << "Loading external CSS: " << theme.externalCss << std::endl;
+            useStyleSheet(Wt::WLink(theme.externalCss));
+        }
+        
+        currentTheme_ = themeName;
+        std::cout << "Theme applied successfully: " << themeName << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error applying theme " << themeName << ": " << e.what() << std::endl;
     }
-    
-    // Load base CSS (common styles)
-    loadCSSFile("themes/base.css");
-    
-    // Load theme-specific CSS
-    if (!theme.cssFile.empty()) {
-        loadCSSFile(theme.cssFile);
-    }
-    
-    currentTheme_ = themeName;
     
     // Refresh the UI to apply new theme
     if (root()->children().size() > 0) {
@@ -114,20 +123,9 @@ void RestaurantPOSApp::applyTheme(const std::string& themeName) {
 }
 
 void RestaurantPOSApp::loadCSSFile(const std::string& filepath) {
-    try {
-        // Check if file exists and load it
-        std::ifstream cssFile(filepath);
-        if (cssFile.is_open()) {
-            useStyleSheet(filepath);
-            cssFile.close();
-        } else {
-            // If file doesn't exist, try to serve it from application resources
-            // or log a warning
-            std::cerr << "Warning: CSS file not found: " << filepath << std::endl;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error loading CSS file " << filepath << ": " << e.what() << std::endl;
-    }
+    // DEPRECATED: This method is replaced by direct useStyleSheet calls in applyTheme
+    // Keeping for backward compatibility but not used
+    std::cerr << "Warning: loadCSSFile is deprecated, use applyTheme instead" << std::endl;
 }
 
 void RestaurantPOSApp::showThemeSelector() {
@@ -191,8 +189,7 @@ void RestaurantPOSApp::showThemeSelector() {
         
         // Show CSS file path for debugging
         auto cssPath = std::make_unique<Wt::WText>("CSS: " + theme.cssFile);
-        cssPath->addStyleClass("text-muted small");
-        cssPath->setStyleClass("font-family: monospace; font-size: 0.75rem;");
+        cssPath->addStyleClass("text-muted small font-monospace");
         
         infoLayout->addWidget(std::move(radio));
         infoLayout->addWidget(std::move(description));
@@ -230,10 +227,12 @@ void RestaurantPOSApp::showThemeSelector() {
                     size_t themeIndex = std::stoul(indexStr);
                     if (themeIndex < availableThemes_.size()) {
                         const auto& selectedTheme = availableThemes_[themeIndex];
+                        std::cout << "Applying theme: " << selectedTheme.id << std::endl;
                         applyTheme(selectedTheme.id);
                         showNotification("Theme changed to " + selectedTheme.name, "success");
                     }
                 } catch (const std::exception& e) {
+                    std::cerr << "Error applying theme: " << e.what() << std::endl;
                     showNotification("Error applying theme", "error");
                 }
             }
@@ -282,9 +281,13 @@ void RestaurantPOSApp::buildMainInterface() {
     header->addStyleClass("pos-header");
     auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
     
-    auto title = std::make_unique<Wt::WText>("Restaurant POS System");
+    auto title = std::make_unique<Wt::WText>("🍽️ Restaurant POS System");
     title->addStyleClass("h1 text-primary");
     headerLayout->addWidget(std::move(title));
+    
+    auto subtitle = std::make_unique<Wt::WText>("Three-Legged Foundation: Order Management • Payment Processing • Kitchen Interface");
+    subtitle->addStyleClass("h6 text-muted");
+    headerLayout->addWidget(std::move(subtitle));
     
     auto themeIndicator = std::make_unique<Wt::WText>();
     themeIndicator->addStyleClass("h6 text-muted");
@@ -333,32 +336,31 @@ void RestaurantPOSApp::triggerUpdate() {
     if (kitchenStatusTable_) updateKitchenStatusTable();
 }
 
-// Include all the rest of the existing methods from the original implementation
 void RestaurantPOSApp::initializeSampleMenu() {
-    // Appetizers
-    menuItems_.push_back(std::make_shared<MenuItem>(1, "Caesar Salad", 12.99, MenuItem::APPETIZER));
-    menuItems_.push_back(std::make_shared<MenuItem>(2, "Buffalo Wings", 14.99, MenuItem::APPETIZER));
-    menuItems_.push_back(std::make_shared<MenuItem>(3, "Calamari Rings", 13.99, MenuItem::APPETIZER));
+    // Appetizers with emojis for visual appeal
+    menuItems_.push_back(std::make_shared<MenuItem>(1, "🥗 Caesar Salad", 12.99, MenuItem::APPETIZER));
+    menuItems_.push_back(std::make_shared<MenuItem>(2, "🍗 Buffalo Wings", 14.99, MenuItem::APPETIZER));
+    menuItems_.push_back(std::make_shared<MenuItem>(3, "🦑 Calamari Rings", 13.99, MenuItem::APPETIZER));
     
     // Main Courses
-    menuItems_.push_back(std::make_shared<MenuItem>(4, "Grilled Salmon", 24.99, MenuItem::MAIN_COURSE));
-    menuItems_.push_back(std::make_shared<MenuItem>(5, "Ribeye Steak", 32.99, MenuItem::MAIN_COURSE));
-    menuItems_.push_back(std::make_shared<MenuItem>(6, "Chicken Parmesan", 19.99, MenuItem::MAIN_COURSE));
-    menuItems_.push_back(std::make_shared<MenuItem>(7, "Pasta Primavera", 16.99, MenuItem::MAIN_COURSE));
+    menuItems_.push_back(std::make_shared<MenuItem>(4, "🐟 Grilled Salmon", 24.99, MenuItem::MAIN_COURSE));
+    menuItems_.push_back(std::make_shared<MenuItem>(5, "🥩 Ribeye Steak", 32.99, MenuItem::MAIN_COURSE));
+    menuItems_.push_back(std::make_shared<MenuItem>(6, "🍗 Chicken Parmesan", 19.99, MenuItem::MAIN_COURSE));
+    menuItems_.push_back(std::make_shared<MenuItem>(7, "🍝 Pasta Primavera", 16.99, MenuItem::MAIN_COURSE));
     
     // Desserts
-    menuItems_.push_back(std::make_shared<MenuItem>(8, "Chocolate Cake", 8.99, MenuItem::DESSERT));
-    menuItems_.push_back(std::make_shared<MenuItem>(9, "Tiramisu", 9.99, MenuItem::DESSERT));
-    menuItems_.push_back(std::make_shared<MenuItem>(10, "Ice Cream Sundae", 6.99, MenuItem::DESSERT));
+    menuItems_.push_back(std::make_shared<MenuItem>(8, "🍰 Chocolate Cake", 8.99, MenuItem::DESSERT));
+    menuItems_.push_back(std::make_shared<MenuItem>(9, "🧁 Tiramisu", 9.99, MenuItem::DESSERT));
+    menuItems_.push_back(std::make_shared<MenuItem>(10, "🍨 Ice Cream Sundae", 6.99, MenuItem::DESSERT));
     
     // Beverages
-    menuItems_.push_back(std::make_shared<MenuItem>(11, "House Wine", 7.99, MenuItem::BEVERAGE));
-    menuItems_.push_back(std::make_shared<MenuItem>(12, "Craft Beer", 5.99, MenuItem::BEVERAGE));
-    menuItems_.push_back(std::make_shared<MenuItem>(13, "Soft Drink", 2.99, MenuItem::BEVERAGE));
-    menuItems_.push_back(std::make_shared<MenuItem>(14, "Fresh Juice", 4.99, MenuItem::BEVERAGE));
+    menuItems_.push_back(std::make_shared<MenuItem>(11, "🍷 House Wine", 7.99, MenuItem::BEVERAGE));
+    menuItems_.push_back(std::make_shared<MenuItem>(12, "🍺 Craft Beer", 5.99, MenuItem::BEVERAGE));
+    menuItems_.push_back(std::make_shared<MenuItem>(13, "🥤 Soft Drink", 2.99, MenuItem::BEVERAGE));
+    menuItems_.push_back(std::make_shared<MenuItem>(14, "🧃 Fresh Juice", 4.99, MenuItem::BEVERAGE));
     
     // Daily Special
-    menuItems_.push_back(std::make_shared<MenuItem>(15, "Chef's Special", 28.99, MenuItem::SPECIAL));
+    menuItems_.push_back(std::make_shared<MenuItem>(15, "👨‍🍳 Chef's Special", 28.99, MenuItem::SPECIAL));
 }
 
 std::unique_ptr<Wt::WWidget> RestaurantPOSApp::createOrderEntryPanel() {
@@ -572,7 +574,7 @@ void RestaurantPOSApp::updateCurrentOrderTable() {
     totalLabel->addStyleClass("fw-bold");
     currentOrderTable_->elementAt(totalRow, 0)->addWidget(std::move(totalLabel));
     auto totalAmount = std::make_unique<Wt::WText>(formatCurrency(currentOrder_->getTotal()));
-    totalAmount->addStyleClass("fw-bold");
+    totalAmount->addStyleClass("fw-bold currency");
     currentOrderTable_->elementAt(totalRow, 3)->addWidget(std::move(totalAmount));
 }
 
@@ -819,8 +821,13 @@ void RestaurantPOSApp::showNotification(const std::string& message, const std::s
     if (type == "error") {
         auto messageBox = addChild(std::make_unique<Wt::WMessageBox>("Error", message, Wt::Icon::Critical, Wt::StandardButton::Ok));
         messageBox->show();
+    } else if (type == "warning") {
+        auto messageBox = addChild(std::make_unique<Wt::WMessageBox>("Warning", message, Wt::Icon::Warning, Wt::StandardButton::Ok));
+        messageBox->show();
+    } else {
+        // For info and success, show in console for now
+        std::cout << "Notification (" << type << "): " << message << std::endl;
     }
-    // For other types, we could implement a toast notification system
 }
 
 std::unique_ptr<Wt::WApplication> createApplication(const Wt::WEnvironment& env) {
