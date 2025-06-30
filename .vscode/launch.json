@@ -5,19 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Chrome",
-            "request": "launch",
-            "type": "chrome",
-            "url": "http://localhost",
-            "webRoot": "${workspaceFolder}"
-        },
-        {
             "name": "Restaurant POS System Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${cwd}/build/bin/restaurant_pos",
             "stopAtEntry": false,
-            "cwd": "${fileDirname}/../build/",
+            "cwd": "${workspaceFolder}/build/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb",

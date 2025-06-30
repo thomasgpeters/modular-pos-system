@@ -1,7 +1,7 @@
 /* 
- * Base CSS for Restaurant POS System
- * Fixed version to ensure styles are applied
- * Version: 1.0.1
+ * Enhanced Base CSS for Restaurant POS System
+ * Includes Category Tiles and Preferences Dialog Support
+ * Version: 2.0.0
  */
 
 /* Import Bootstrap for base styling */
@@ -74,7 +74,7 @@ body {
     z-index: 1000 !important;
 }
 
-/* Theme Selection Components */
+/* Theme and Preferences Button */
 .theme-button {
     padding: 8px 15px !important;
     margin: 0 5px !important;
@@ -91,6 +91,242 @@ body {
     transform: scale(1.05) !important;
     background-color: var(--primary-color) !important;
     color: white !important;
+}
+
+/* ===== CATEGORY TILES STYLING ===== */
+.category-tiles-container {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 16px !important;
+    padding: 20px !important;
+    background: white !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    margin-bottom: 20px !important;
+}
+
+.category-tile {
+    background: linear-gradient(135deg, #f8f9fa, #ffffff) !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    padding: 24px 16px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    min-height: 120px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.category-tile:hover {
+    border-color: var(--primary-color) !important;
+    background: linear-gradient(135deg, #e7f3ff, #f8f9fa) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 20px rgba(0,123,255,0.2) !important;
+}
+
+.category-tile-icon {
+    font-size: 2.5rem !important;
+    margin-bottom: 8px !important;
+    color: var(--muted-color) !important;
+    transition: all 0.3s ease !important;
+}
+
+.category-tile:hover .category-tile-icon {
+    color: var(--primary-color) !important;
+    transform: scale(1.1) !important;
+}
+
+.category-tile-title {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    margin-bottom: 4px !important;
+    transition: all 0.3s ease !important;
+}
+
+.category-tile:hover .category-tile-title {
+    color: var(--primary-color) !important;
+}
+
+.category-tile-count {
+    font-size: 0.9rem !important;
+    color: var(--muted-color) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* ===== CATEGORY POPOVER STYLING ===== */
+.category-popover {
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important;
+    border: 1px solid var(--border-color) !important;
+    max-width: 600px !important;
+    width: 90vw !important;
+    overflow: hidden !important;
+}
+
+.popover-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+    color: white !important;
+    border-bottom: none !important;
+    padding: 16px 20px !important;
+}
+
+.popover-title {
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+    color: white !important;
+    margin: 0 !important;
+}
+
+.popover-content {
+    padding: 20px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+}
+
+.menu-item-card {
+    background: #ffffff !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    margin-bottom: 12px !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+}
+
+.menu-item-card:hover {
+    border-color: var(--primary-color) !important;
+    background: linear-gradient(135deg, #f8f9fa, #e7f3ff) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.15) !important;
+}
+
+.menu-item-card:last-child {
+    margin-bottom: 0 !important;
+}
+
+.menu-item-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+}
+
+.menu-item-name {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    flex: 1 !important;
+}
+
+.menu-item-price {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: var(--success-color) !important;
+}
+
+.menu-item-description {
+    font-size: 0.9rem !important;
+    color: var(--muted-color) !important;
+    margin-bottom: 8px !important;
+    line-height: 1.4 !important;
+}
+
+.popover-footer {
+    background: #f8f9fa !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: 12px 20px !important;
+    text-align: right !important;
+}
+
+/* ===== PREFERENCES DIALOG STYLING ===== */
+.preferences-dialog {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+}
+
+.preferences-dialog .modal-content {
+    border: none !important;
+    border-radius: 12px !important;
+}
+
+.preferences-dialog .modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+    color: white !important;
+    border-bottom: none !important;
+    padding: 20px !important;
+}
+
+.preferences-dialog .modal-body {
+    padding: 0 !important;
+}
+
+.preferences-dialog .tab-content {
+    padding: 20px !important;
+}
+
+.preferences-dialog .nav-tabs {
+    border-bottom: 2px solid var(--primary-color) !important;
+    margin: 0 !important;
+    background: #f8f9fa !important;
+}
+
+.preferences-dialog .nav-tabs .nav-link {
+    border: none !important;
+    color: var(--text-color) !important;
+    font-weight: 500 !important;
+    padding: 12px 20px !important;
+    margin: 0 !important;
+}
+
+.preferences-dialog .nav-tabs .nav-link.active {
+    background: white !important;
+    color: var(--primary-color) !important;
+    border-bottom: 3px solid var(--primary-color) !important;
+    font-weight: 600 !important;
+}
+
+.preferences-dialog .nav-tabs .nav-link:hover {
+    background: rgba(0,123,255,0.1) !important;
+    border: none !important;
+}
+
+/* Group boxes in preferences */
+.preferences-dialog .form-group {
+    margin-bottom: 20px !important;
+}
+
+.preferences-dialog .form-group label {
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    margin-bottom: 8px !important;
+}
+
+.preferences-dialog .checkbox {
+    margin: 8px 0 !important;
+}
+
+.preferences-dialog .checkbox label {
+    font-weight: normal !important;
+    margin-left: 8px !important;
+}
+
+/* Theme preview in preferences */
+.theme-preview {
+    width: 60px !important;
+    height: 40px !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 6px !important;
+    margin-right: 12px !important;
+    flex-shrink: 0 !important;
 }
 
 /* Enhanced Table Styles */
@@ -274,6 +510,7 @@ body {
 .p-3 { padding: 1rem !important; }
 .mb-4 { margin-bottom: 1.5rem !important; }
 .mb-3 { margin-bottom: 1rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
 .mt-4 { margin-top: 1.5rem !important; }
 .mt-3 { margin-top: 1rem !important; }
 .me-3 { margin-right: 1rem !important; }
@@ -392,24 +629,28 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Scrollbar Styling */
 .active-orders-panel::-webkit-scrollbar,
-.kitchen-queue-panel::-webkit-scrollbar {
+.kitchen-queue-panel::-webkit-scrollbar,
+.popover-content::-webkit-scrollbar {
     width: 8px !important;
 }
 
 .active-orders-panel::-webkit-scrollbar-track,
-.kitchen-queue-panel::-webkit-scrollbar-track {
+.kitchen-queue-panel::-webkit-scrollbar-track,
+.popover-content::-webkit-scrollbar-track {
     background: #f1f3f4 !important;
     border-radius: 4px !important;
 }
 
 .active-orders-panel::-webkit-scrollbar-thumb,
-.kitchen-queue-panel::-webkit-scrollbar-thumb {
+.kitchen-queue-panel::-webkit-scrollbar-thumb,
+.popover-content::-webkit-scrollbar-thumb {
     background: var(--secondary-color) !important;
     border-radius: 4px !important;
 }
 
 .active-orders-panel::-webkit-scrollbar-thumb:hover,
-.kitchen-queue-panel::-webkit-scrollbar-thumb:hover {
+.kitchen-queue-panel::-webkit-scrollbar-thumb:hover,
+.popover-content::-webkit-scrollbar-thumb:hover {
     background: var(--dark-color) !important;
 }
 
@@ -457,6 +698,20 @@ h1, h2, h3, h4, h5, h6 {
         padding-bottom: 60px !important;
     }
     
+    .category-tiles-container {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        gap: 12px !important;
+    }
+    
+    .category-tile {
+        padding: 16px 12px !important;
+        min-height: 100px !important;
+    }
+    
+    .category-tile-icon {
+        font-size: 2rem !important;
+    }
+    
     .table {
         font-size: 0.875rem !important;
     }
@@ -464,5 +719,15 @@ h1, h2, h3, h4, h5, h6 {
     .btn {
         padding: 0.375rem 0.75rem !important;
         font-size: 0.875rem !important;
+    }
+    
+    .category-popover {
+        width: 95vw !important;
+        max-width: none !important;
+    }
+    
+    .preferences-dialog {
+        width: 95vw !important;
+        max-width: none !important;
     }
 }

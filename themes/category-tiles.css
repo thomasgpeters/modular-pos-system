@@ -1,0 +1,140 @@
+/* 
+ * Category Tiles CSS Fix
+ * Add this CSS to ensure category tiles are styled properly
+ * File: category-tiles-fix.css
+ */
+
+/* Container for all category tiles */
+.category-tiles-container {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 16px !important;
+    padding: 20px !important;
+    background: white !important;
+    border-radius: 8px !important;
+    border: 1px solid #dee2e6 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    margin-bottom: 20px !important;
+}
+
+/* Individual category tile styling */
+.category-tile {
+    background: linear-gradient(135deg, #f8f9fa, #ffffff) !important;
+    border: 2px solid #e9ecef !important;
+    border-radius: 12px !important;
+    padding: 24px 16px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    min-height: 120px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* Hover effect for category tiles */
+.category-tile:hover {
+    border-color: #007bff !important;
+    background: linear-gradient(135deg, #e7f3ff, #f8f9fa) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 20px rgba(0,123,255,0.2) !important;
+}
+
+/* Category icon styling */
+.category-tile-icon {
+    font-size: 2.5rem !important;
+    margin-bottom: 8px !important;
+    color: #6c757d !important;
+    transition: all 0.3s ease !important;
+    line-height: 1 !important;
+    display: block !important;
+}
+
+/* Icon color change on hover */
+.category-tile:hover .category-tile-icon {
+    color: #007bff !important;
+    transform: scale(1.1) !important;
+}
+
+/* Category title styling */
+.category-tile-title {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: #495057 !important;
+    margin-bottom: 4px !important;
+    transition: all 0.3s ease !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+}
+
+/* Title color change on hover */
+.category-tile:hover .category-tile-title {
+    color: #007bff !important;
+}
+
+/* Item count styling */
+.category-tile-count {
+    font-size: 0.9rem !important;
+    color: #6c757d !important;
+    transition: all 0.3s ease !important;
+    margin: 0 !important;
+    font-weight: 400 !important;
+}
+
+/* Count color change on hover */
+.category-tile:hover .category-tile-count {
+    color: #0056b3 !important;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .category-tiles-container {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        gap: 12px !important;
+        padding: 15px !important;
+    }
+    
+    .category-tile {
+        padding: 16px 12px !important;
+        min-height: 100px !important;
+    }
+    
+    .category-tile-icon {
+        font-size: 2rem !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .category-tile-title {
+        font-size: 1rem !important;
+    }
+    
+    .category-tile-count {
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Additional enhancement for better visual appeal */
+.category-tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.category-tile:hover::before {
+    opacity: 1;
+}
+
+/* Ensure proper spacing in the menu container */
+.category-tiles-container + * {
+    margin-top: 20px;
+}

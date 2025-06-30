@@ -13,22 +13,33 @@
 #include <Wt/WTimer.h>
 #include <Wt/WEnvironment.h>
 #include <Wt/WText.h>
+#include <Wt/WComboBox.h>
 
 #include <memory>
 #include <vector>
 #include <string>
+#include <map>
 
 /**
- * @file RestaurantPOSApp.h (Simplified Version)
- * @brief Main application class with simplified theme system - no JSON dependencies
+ * @file RestaurantPOSApp.h
+ * @brief Main application class with user preferences system
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Main application class with hardcoded theme support (no JSON parsing)
+ * @brief Main application class with user preferences and theme support
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
+    /**
+     * @enum MenuViewType
+     * @brief Menu display options
+     */
+    enum MenuViewType {
+        LIST_VIEW,      ///< Traditional table list view
+        TILES_VIEW      ///< Category tiles with pop-overs
+    };
+
     /**
      * @brief Simple theme information structure
      */
@@ -54,6 +65,27 @@ public:
     };
 
     /**
+     * @brief User preferences structure
+     */
+    struct UserPreferences {
+        std::string selectedTheme;           ///< Current theme ID
+        MenuViewType menuView;               ///< Menu display type
+        bool showMenuDescriptions;           ///< Show item descriptions
+        bool showMenuCategories;             ///< Group by categories
+        bool autoRefresh;                    ///< Auto-refresh active orders
+        int refreshInterval;                 ///< Refresh interval in seconds
+        
+        // Constructor with defaults
+        UserPreferences() 
+            : selectedTheme("bootstrap")
+            , menuView(LIST_VIEW)
+            , showMenuDescriptions(false)
+            , showMenuCategories(true)
+            , autoRefresh(true)
+            , refreshInterval(5) {}
+    };
+
+    /**
      * @brief Constructs the main POS application
      * @param env Wt web environment containing request information
      */
@@ -65,11 +97,21 @@ public:
     virtual ~RestaurantPOSApp() = default;
 
 private:
-    // Simplified theme management
+    // Preferences management
     /**
      * @brief Initializes hardcoded theme configuration
      */
     void initializeHardcodedThemes();
+    
+    /**
+     * @brief Shows the user preferences dialog
+     */
+    void showPreferencesDialog();
+    
+    /**
+     * @brief Applies user preferences to the interface
+     */
+    void applyUserPreferences();
     
     /**
      * @brief Applies the specified theme to the application
@@ -78,24 +120,24 @@ private:
     void applyTheme(const std::string& themeName);
     
     /**
-     * @brief Loads a CSS file by path
-     * @param filepath Path to the CSS file to load
+     * @brief Updates the menu display based on current view type
      */
-    void loadCSSFile(const std::string& filepath);
+    void updateMenuDisplay();
     
     /**
-     * @brief Shows the theme selection dialog
+     * @brief Builds category tiles view
      */
-    void showThemeSelector();
+    void buildCategoryTiles();
     
     /**
-     * @brief Updates the theme indicator text
-     * @param indicator Pointer to the theme indicator widget
+     * @brief Shows category pop-over with menu items
+     * @param category Category to display
+     * @param categoryName Display name for the category
      */
-    void updateThemeIndicator(Wt::WText* indicator);
+    void showCategoryPopover(MenuItem::Category category, const std::string& categoryName);
     
     /**
-     * @brief Triggers a UI update to apply theme changes
+     * @brief Triggers a UI update to apply changes
      */
     void triggerUpdate();
 
@@ -124,9 +166,16 @@ private:
     
     // UI building methods
     /**
-     * @brief Builds the menu items table
+     * @brief Builds the menu items table (list view)
      */
     void buildMenuTable();
+    
+    /**
+     * @brief Adds a menu item to the table at the specified row
+     * @param item Menu item to add
+     * @param row Row number in the table
+     */
+    void addMenuItemToTable(std::shared_ptr<MenuItem> item, int row);
     
     /**
      * @brief Updates the current order display table
@@ -232,16 +281,17 @@ private:
     std::unique_ptr<PaymentProcessor> paymentProcessor_; ///< Payment processing system
     std::unique_ptr<KitchenInterface> kitchenInterface_; ///< Kitchen communication system
     
-    // Simplified theme system (no JSON)
-    std::vector<ThemeInfo> availableThemes_;    ///< Hardcoded theme options
-    std::string currentTheme_;                  ///< Currently active theme ID
+    // User preferences and theme system
+    UserPreferences userPreferences_;           ///< Current user preferences
+    std::vector<ThemeInfo> availableThemes_;    ///< Available theme options
     std::string themeDirectory_;                ///< Directory containing theme files
     bool allowUserThemes_;                      ///< Whether to allow user-defined themes
-    Wt::WText* themeIndicator_;                ///< Theme indicator widget
     
     // UI components
     Wt::WSpinBox* tableNumberEdit_;         ///< Table number input
-    Wt::WTable* menuTable_;                 ///< Menu items display
+    Wt::WContainerWidget* menuContainer_;   ///< Container for menu display
+    Wt::WTable* menuTable_;                 ///< Menu items display (list view)
+    Wt::WContainerWidget* categoryTilesContainer_; ///< Category tiles container
     Wt::WTable* currentOrderTable_;         ///< Current order display
     Wt::WTable* activeOrdersTable_;         ///< Active orders display
     Wt::WTable* kitchenStatusTable_;        ///< Kitchen status display

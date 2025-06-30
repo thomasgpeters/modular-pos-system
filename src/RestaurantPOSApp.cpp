@@ -16,6 +16,8 @@
 #include <Wt/WButtonGroup.h>
 #include <Wt/WRadioButton.h>
 #include <Wt/WDialog.h>
+#include <Wt/WCheckBox.h>
+#include <Wt/WSpinBox.h>
 
 #include <sstream>
 #include <iomanip>
@@ -24,12 +26,12 @@
 #include <iostream>
 
 /**
- * @file RestaurantPOSApp.cpp (Complete Fixed Version)
- * @brief Implementation with working theme system and all methods
+ * @file RestaurantPOSApp.cpp
+ * @brief Implementation with user preferences system and category tiles
  */
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env) : Wt::WApplication(env) {
-    setTitle("Restaurant POS System - Three-Legged Foundation");
+    setTitle("Restaurant POS System - Enhanced with User Preferences");
     
     // IMPORTANT: Set up Bootstrap theme FIRST before any CSS loading
     auto bootstrapTheme = std::make_shared<Wt::WBootstrapTheme>();
@@ -47,6 +49,9 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env) : Wt::WApplicati
     // Initialize sample menu items
     initializeSampleMenu();
     
+    // Apply user preferences (including default theme)
+    applyUserPreferences();
+    
     // Build user interface
     buildMainInterface();
     
@@ -55,7 +60,7 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env) : Wt::WApplicati
 }
 
 void RestaurantPOSApp::initializeHardcodedThemes() {
-    // Create hardcoded theme configuration (no JSON parsing)
+    // Create hardcoded theme configuration
     availableThemes_ = {
         {"bootstrap", "Bootstrap (Default)", "Modern responsive Bootstrap theme", 
          "themes/bootstrap.css", "", {"#007bff", "#0056b3"}, true},
@@ -67,158 +72,203 @@ void RestaurantPOSApp::initializeHardcodedThemes() {
          "themes/colorful.css", "", {"#667eea", "#764ba2"}, false}
     };
     
-    currentTheme_ = "bootstrap";
     themeDirectory_ = "themes/";
     allowUserThemes_ = true;
-    
-    // Apply the default theme
-    applyTheme(currentTheme_);
 }
 
-void RestaurantPOSApp::applyTheme(const std::string& themeName) {
-    // Find the theme configuration
-    auto it = std::find_if(availableThemes_.begin(), availableThemes_.end(),
-        [&themeName](const ThemeInfo& theme) { return theme.id == themeName; });
-    
-    if (it == availableThemes_.end()) {
-        std::cerr << "Theme not found: " << themeName << std::endl;
-        return; // Theme not found
-    }
-    
-    const ThemeInfo& theme = *it;
-    
-    try {
-        // Always use Bootstrap as the base theme for proper widget styling
-        auto bootstrapTheme = std::make_shared<Wt::WBootstrapTheme>();
-        bootstrapTheme->setVersion(Wt::BootstrapVersion::v3);
-        setTheme(bootstrapTheme);
-        
-        // Load base CSS first (contains common styles)
-        std::cout << "Loading base CSS..." << std::endl;
-        useStyleSheet(Wt::WLink("themes/base.css"));
-        
-        // Load theme-specific CSS
-        if (!theme.cssFile.empty()) {
-            std::cout << "Loading theme CSS: " << theme.cssFile << std::endl;
-            useStyleSheet(Wt::WLink(theme.cssFile));
-        }
-        
-        // Load external CSS if specified (for special themes)
-        if (!theme.externalCss.empty()) {
-            std::cout << "Loading external CSS: " << theme.externalCss << std::endl;
-            useStyleSheet(Wt::WLink(theme.externalCss));
-        }
-        
-        currentTheme_ = themeName;
-        std::cout << "Theme applied successfully: " << themeName << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Error applying theme " << themeName << ": " << e.what() << std::endl;
-    }
-    
-    // Refresh the UI to apply new theme
-    if (root()->children().size() > 0) {
-        triggerUpdate();
-    }
-}
-
-void RestaurantPOSApp::loadCSSFile(const std::string& filepath) {
-    // DEPRECATED: This method is replaced by direct useStyleSheet calls in applyTheme
-    // Keeping for backward compatibility but not used
-    std::cerr << "Warning: loadCSSFile is deprecated, use applyTheme instead" << std::endl;
-}
-
-void RestaurantPOSApp::showThemeSelector() {
-    auto dialog = addChild(std::make_unique<Wt::WDialog>("Choose Theme"));
-    dialog->addStyleClass("theme-dialog");
-    dialog->setWidth("600px");
+void RestaurantPOSApp::showPreferencesDialog() {
+    auto dialog = addChild(std::make_unique<Wt::WDialog>("User Preferences"));
+    dialog->addStyleClass("preferences-dialog");
+    dialog->setWidth("700px");
     dialog->setResizable(false);
+    dialog->setModal(true);
     
     auto layout = std::make_unique<Wt::WVBoxLayout>();
     
     // Header
-    auto header = std::make_unique<Wt::WText>("Select Your Preferred Theme");
-    header->addStyleClass("h4 mb-4 text-center");
+    auto header = std::make_unique<Wt::WText>("🔧 Customize Your POS Experience");
+    header->addStyleClass("h3 mb-4 text-center text-primary");
     layout->addWidget(std::move(header));
     
-    // Theme options
-    auto buttonGroup = std::make_shared<Wt::WButtonGroup>();
+    // Create tab widget for different preference categories
+    auto tabWidget = std::make_unique<Wt::WTabWidget>();
+    
+    // ===== APPEARANCE TAB =====
+    auto appearanceTab = std::make_unique<Wt::WContainerWidget>();
+    auto appearanceLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Theme Selection Group
+    auto themeGroup = std::make_unique<Wt::WGroupBox>("Theme Selection");
+    auto themeGroupLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    auto themeLabel = std::make_unique<Wt::WText>("Choose your preferred visual theme:");
+    themeLabel->addStyleClass("mb-3");
+    themeGroupLayout->addWidget(std::move(themeLabel));
+    
+    auto themeButtonGroup = std::make_shared<Wt::WButtonGroup>();
     
     for (size_t i = 0; i < availableThemes_.size(); ++i) {
         const auto& theme = availableThemes_[i];
         
         auto themeContainer = std::make_unique<Wt::WContainerWidget>();
-        themeContainer->addStyleClass("mb-3 p-3 border rounded");
+        themeContainer->addStyleClass("mb-2 p-2 border rounded");
         
-        auto themeLayout = std::make_unique<Wt::WHBoxLayout>();
+        auto themeContainerLayout = std::make_unique<Wt::WHBoxLayout>();
         
-        // Theme preview with dynamic colors
+        // Theme preview
         auto preview = std::make_unique<Wt::WContainerWidget>();
-        preview->addStyleClass("theme-preview");
-        preview->setWidth("80px");
-        preview->setHeight("60px");
+        preview->addStyleClass("theme-preview me-3");
+        preview->setWidth("60px");
+        preview->setHeight("40px");
+        preview->addStyleClass("border rounded");
         
-        // Create gradient background from preview colors
         if (theme.previewColors.size() >= 2) {
             std::string gradient = "background: linear-gradient(45deg, " + 
                                  theme.previewColors[0] + ", " + 
                                  theme.previewColors[1] + ");";
             preview->setAttributeValue("style", gradient);
-        } else if (theme.previewColors.size() == 1) {
-            preview->setAttributeValue("style", "background-color: " + theme.previewColors[0] + ";");
         }
         
-        themeLayout->addWidget(std::move(preview));
+        themeContainerLayout->addWidget(std::move(preview));
         
         // Theme info
         auto infoContainer = std::make_unique<Wt::WContainerWidget>();
         auto infoLayout = std::make_unique<Wt::WVBoxLayout>();
         
         auto radio = std::make_unique<Wt::WRadioButton>(theme.name);
-        radio->addStyleClass("h6 mb-1");
-        if (theme.id == currentTheme_) {
+        radio->addStyleClass("fw-bold");
+        if (theme.id == userPreferences_.selectedTheme) {
             radio->setChecked(true);
         }
-        
-        // Store theme index in radio button - use setId instead of data attribute
         radio->setId("theme-radio-" + std::to_string(i));
-        buttonGroup->addButton(radio.get());
+        themeButtonGroup->addButton(radio.get());
         
         auto description = std::make_unique<Wt::WText>(theme.description);
         description->addStyleClass("text-muted small");
         
-        // Show CSS file path for debugging
-        auto cssPath = std::make_unique<Wt::WText>("CSS: " + theme.cssFile);
-        cssPath->addStyleClass("text-muted small font-monospace");
-        
         infoLayout->addWidget(std::move(radio));
         infoLayout->addWidget(std::move(description));
-        infoLayout->addWidget(std::move(cssPath));
         infoContainer->setLayout(std::move(infoLayout));
         
-        themeLayout->addWidget(std::move(infoContainer), 1);
-        themeContainer->setLayout(std::move(themeLayout));
+        themeContainerLayout->addWidget(std::move(infoContainer), 1);
+        themeContainer->setLayout(std::move(themeContainerLayout));
         
-        layout->addWidget(std::move(themeContainer));
+        themeGroupLayout->addWidget(std::move(themeContainer));
     }
+    
+    themeGroup->setLayout(std::move(themeGroupLayout));
+    appearanceLayout->addWidget(std::move(themeGroup));
+    
+    appearanceTab->setLayout(std::move(appearanceLayout));
+    tabWidget->addTab(std::move(appearanceTab), "🎨 Appearance", Wt::ContentLoading::Lazy);
+    
+    // ===== MENU DISPLAY TAB =====
+    auto menuTab = std::make_unique<Wt::WContainerWidget>();
+    auto menuLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Menu View Type Group
+    auto menuViewGroup = std::make_unique<Wt::WGroupBox>("Menu Display Options");
+    auto menuViewLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    auto menuViewLabel = std::make_unique<Wt::WText>("Select how you want to view the menu:");
+    menuViewLabel->addStyleClass("mb-3");
+    menuViewLayout->addWidget(std::move(menuViewLabel));
+    
+    auto menuViewCombo = std::make_unique<Wt::WComboBox>();
+    menuViewCombo->addItem("📋 List View - Traditional table format");
+    menuViewCombo->addItem("🏷️ Category Tiles - Click tiles to browse items");
+    menuViewCombo->setCurrentIndex(userPreferences_.menuView == LIST_VIEW ? 0 : 1);
+    menuViewCombo->addStyleClass("form-control mb-3");
+    
+    auto menuViewComboPtr = menuViewCombo.get();
+    menuViewLayout->addWidget(std::move(menuViewCombo));
+    
+    // Menu Display Options
+    auto menuOptionsContainer = std::make_unique<Wt::WContainerWidget>();
+    auto menuOptionsLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    auto showDescriptions = std::make_unique<Wt::WCheckBox>("Show item descriptions");
+    showDescriptions->setChecked(userPreferences_.showMenuDescriptions);
+    auto showDescriptionsPtr = showDescriptions.get();
+    menuOptionsLayout->addWidget(std::move(showDescriptions));
+    
+    auto showCategories = std::make_unique<Wt::WCheckBox>("Group items by category");
+    showCategories->setChecked(userPreferences_.showMenuCategories);
+    auto showCategoriesPtr = showCategories.get();
+    menuOptionsLayout->addWidget(std::move(showCategories));
+    
+    menuOptionsContainer->setLayout(std::move(menuOptionsLayout));
+    menuViewLayout->addWidget(std::move(menuOptionsContainer));
+    
+    menuViewGroup->setLayout(std::move(menuViewLayout));
+    menuLayout->addWidget(std::move(menuViewGroup));
+    
+    menuTab->setLayout(std::move(menuLayout));
+    tabWidget->addTab(std::move(menuTab), "🍽️ Menu", Wt::ContentLoading::Lazy);
+    
+    // ===== SYSTEM TAB =====
+    auto systemTab = std::make_unique<Wt::WContainerWidget>();
+    auto systemLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Auto-refresh Group
+    auto refreshGroup = std::make_unique<Wt::WGroupBox>("Auto-Refresh Settings");
+    auto refreshLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    auto autoRefresh = std::make_unique<Wt::WCheckBox>("Enable automatic refresh of active orders");
+    autoRefresh->setChecked(userPreferences_.autoRefresh);
+    auto autoRefreshPtr = autoRefresh.get();
+    refreshLayout->addWidget(std::move(autoRefresh));
+    
+    auto refreshIntervalContainer = std::make_unique<Wt::WContainerWidget>();
+    auto refreshIntervalLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    auto refreshLabel = std::make_unique<Wt::WText>("Refresh interval:");
+    refreshLabel->addStyleClass("me-2");
+    refreshIntervalLayout->addWidget(std::move(refreshLabel));
+    
+    auto refreshInterval = std::make_unique<Wt::WSpinBox>();
+    refreshInterval->setMinimum(1);
+    refreshInterval->setMaximum(60);
+    refreshInterval->setValue(userPreferences_.refreshInterval);
+    refreshInterval->addStyleClass("form-control me-2");
+    refreshInterval->setWidth("80px");
+    auto refreshIntervalPtr = refreshInterval.get();
+    refreshIntervalLayout->addWidget(std::move(refreshInterval));
+    
+    auto secondsLabel = std::make_unique<Wt::WText>("seconds");
+    refreshIntervalLayout->addWidget(std::move(secondsLabel));
+    
+    refreshIntervalContainer->setLayout(std::move(refreshIntervalLayout));
+    refreshLayout->addWidget(std::move(refreshIntervalContainer));
+    
+    refreshGroup->setLayout(std::move(refreshLayout));
+    systemLayout->addWidget(std::move(refreshGroup));
+    
+    systemTab->setLayout(std::move(systemLayout));
+    tabWidget->addTab(std::move(systemTab), "⚙️ System", Wt::ContentLoading::Lazy);
+    
+    layout->addWidget(std::move(tabWidget));
     
     // Buttons
     auto buttonContainer = std::make_unique<Wt::WContainerWidget>();
     buttonContainer->addStyleClass("mt-4 text-center");
     auto buttonLayout = std::make_unique<Wt::WHBoxLayout>();
     
-    auto applyBtn = std::make_unique<Wt::WPushButton>("Apply Theme");
+    auto applyBtn = std::make_unique<Wt::WPushButton>("✅ Apply Settings");
     applyBtn->addStyleClass("btn btn-primary me-2");
     
-    auto reloadBtn = std::make_unique<Wt::WPushButton>("Reload Themes");
-    reloadBtn->addStyleClass("btn btn-secondary me-2");
+    auto resetBtn = std::make_unique<Wt::WPushButton>("🔄 Reset to Defaults");
+    resetBtn->addStyleClass("btn btn-outline-secondary me-2");
     
-    auto cancelBtn = std::make_unique<Wt::WPushButton>("Cancel");
+    auto cancelBtn = std::make_unique<Wt::WPushButton>("❌ Cancel");
     cancelBtn->addStyleClass("btn btn-outline-secondary");
     
-    // Event handlers - simplified approach using IDs
-    applyBtn->clicked().connect([this, buttonGroup, dialog]() {
-        auto checkedButton = buttonGroup->checkedButton();
+    // Event handlers
+    applyBtn->clicked().connect([this, dialog, themeButtonGroup, menuViewComboPtr, 
+                                showDescriptionsPtr, showCategoriesPtr, 
+                                autoRefreshPtr, refreshIntervalPtr]() {
+        // Apply theme selection
+        auto checkedButton = themeButtonGroup->checkedButton();
         if (checkedButton) {
             std::string buttonId = checkedButton->id();
             if (buttonId.substr(0, 12) == "theme-radio-") {
@@ -226,26 +276,37 @@ void RestaurantPOSApp::showThemeSelector() {
                     std::string indexStr = buttonId.substr(12);
                     size_t themeIndex = std::stoul(indexStr);
                     if (themeIndex < availableThemes_.size()) {
-                        const auto& selectedTheme = availableThemes_[themeIndex];
-                        std::cout << "Applying theme: " << selectedTheme.id << std::endl;
-                        applyTheme(selectedTheme.id);
-                        showNotification("Theme changed to " + selectedTheme.name, "success");
+                        userPreferences_.selectedTheme = availableThemes_[themeIndex].id;
                     }
                 } catch (const std::exception& e) {
-                    std::cerr << "Error applying theme: " << e.what() << std::endl;
-                    showNotification("Error applying theme", "error");
+                    std::cerr << "Error parsing theme selection: " << e.what() << std::endl;
                 }
             }
         }
+        
+        // Apply menu view settings
+        userPreferences_.menuView = (menuViewComboPtr->currentIndex() == 0) ? LIST_VIEW : TILES_VIEW;
+        userPreferences_.showMenuDescriptions = showDescriptionsPtr->isChecked();
+        userPreferences_.showMenuCategories = showCategoriesPtr->isChecked();
+        
+        // Apply system settings
+        userPreferences_.autoRefresh = autoRefreshPtr->isChecked();
+        userPreferences_.refreshInterval = refreshIntervalPtr->value();
+        
+        // Apply all preferences
+        applyUserPreferences();
+        
+        showNotification("Preferences updated successfully!", "success");
         dialog->accept();
     });
     
-    reloadBtn->clicked().connect([this, dialog]() {
-        initializeHardcodedThemes();
-        showNotification("Themes reloaded", "info");
+    resetBtn->clicked().connect([this, dialog]() {
+        userPreferences_ = UserPreferences(); // Reset to defaults
+        applyUserPreferences();
+        showNotification("Preferences reset to defaults", "info");
         dialog->reject();
-        // Reopen dialog with updated themes
-        showThemeSelector();
+        // Reopen dialog with updated values
+        showPreferencesDialog();
     });
     
     cancelBtn->clicked().connect([dialog]() {
@@ -253,7 +314,7 @@ void RestaurantPOSApp::showThemeSelector() {
     });
     
     buttonLayout->addWidget(std::move(applyBtn));
-    buttonLayout->addWidget(std::move(reloadBtn));
+    buttonLayout->addWidget(std::move(resetBtn));
     buttonLayout->addWidget(std::move(cancelBtn));
     buttonContainer->setLayout(std::move(buttonLayout));
     
@@ -263,20 +324,250 @@ void RestaurantPOSApp::showThemeSelector() {
     dialog->show();
 }
 
+void RestaurantPOSApp::applyUserPreferences() {
+    // Apply theme
+    applyTheme(userPreferences_.selectedTheme);
+    
+    // Update menu display
+    updateMenuDisplay();
+    
+    // Update auto-refresh timer
+    if (updateTimer_) {
+        if (userPreferences_.autoRefresh) {
+            updateTimer_->setInterval(std::chrono::seconds(userPreferences_.refreshInterval));
+            updateTimer_->start();
+        } else {
+            updateTimer_->stop();
+        }
+    }
+}
+
+void RestaurantPOSApp::applyTheme(const std::string& themeName) {
+    auto it = std::find_if(availableThemes_.begin(), availableThemes_.end(),
+        [&themeName](const ThemeInfo& theme) { return theme.id == themeName; });
+    
+    if (it == availableThemes_.end()) {
+        std::cerr << "Theme not found: " << themeName << std::endl;
+        return;
+    }
+    
+    const ThemeInfo& theme = *it;
+    
+    try {
+        auto bootstrapTheme = std::make_shared<Wt::WBootstrapTheme>();
+        bootstrapTheme->setVersion(Wt::BootstrapVersion::v3);
+        setTheme(bootstrapTheme);
+        
+        useStyleSheet(Wt::WLink("themes/base.css"));
+        
+        if (!theme.cssFile.empty()) {
+            useStyleSheet(Wt::WLink(theme.cssFile));
+        }
+        
+        if (!theme.externalCss.empty()) {
+            useStyleSheet(Wt::WLink(theme.externalCss));
+        }
+        
+        userPreferences_.selectedTheme = themeName;
+        std::cout << "Theme applied successfully: " << themeName << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error applying theme " << themeName << ": " << e.what() << std::endl;
+    }
+    
+    triggerUpdate();
+}
+
+void RestaurantPOSApp::updateMenuDisplay() {
+    if (!menuContainer_) return;
+    
+    // Clear existing menu display
+    menuContainer_->clear();
+    
+    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    
+    auto menuHeader = std::make_unique<Wt::WText>("Menu Items");
+    menuHeader->addStyleClass("h4 mb-3 text-secondary");
+    layout->addWidget(std::move(menuHeader));
+    
+    if (userPreferences_.menuView == TILES_VIEW) {
+        // Build category tiles view
+        categoryTilesContainer_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
+        buildCategoryTiles();
+    } else {
+        // Build traditional table view
+        menuTable_ = layout->addWidget(std::make_unique<Wt::WTable>());
+        menuTable_->addStyleClass("table table-striped table-hover");
+        buildMenuTable();
+    }
+    
+    menuContainer_->setLayout(std::move(layout));
+}
+
+void RestaurantPOSApp::buildCategoryTiles() {
+    if (!categoryTilesContainer_) return;
+    
+    categoryTilesContainer_->clear();
+    categoryTilesContainer_->addStyleClass("category-tiles-container");
+    
+    // Group items by category
+    std::map<MenuItem::Category, std::vector<std::shared_ptr<MenuItem>>> itemsByCategory;
+    for (const auto& item : menuItems_) {
+        itemsByCategory[item->getCategory()].push_back(item);
+    }
+    
+    // Create tile for each category
+    for (const auto& categoryPair : itemsByCategory) {
+        auto tile = std::make_unique<Wt::WContainerWidget>();
+        tile->addStyleClass("category-tile");
+        
+        auto tileLayout = std::make_unique<Wt::WVBoxLayout>();
+        
+        // Category icon
+        std::string iconEmoji;
+        switch (categoryPair.first) {
+            case MenuItem::APPETIZER:   iconEmoji = "🥗"; break;
+            case MenuItem::MAIN_COURSE: iconEmoji = "🍽️"; break;
+            case MenuItem::DESSERT:     iconEmoji = "🧁"; break;
+            case MenuItem::BEVERAGE:    iconEmoji = "🥤"; break;
+            case MenuItem::SPECIAL:     iconEmoji = "⭐"; break;
+            default:                    iconEmoji = "🍴"; break;
+        }
+        
+        auto icon = std::make_unique<Wt::WText>(iconEmoji);
+        icon->addStyleClass("category-tile-icon");
+        tileLayout->addWidget(std::move(icon));
+        
+        // Category title
+        auto title = std::make_unique<Wt::WText>(MenuItem::categoryToString(categoryPair.first));
+        title->addStyleClass("category-tile-title");
+        tileLayout->addWidget(std::move(title));
+        
+        // Item count
+        auto count = std::make_unique<Wt::WText>(std::to_string(categoryPair.second.size()) + " items");
+        count->addStyleClass("category-tile-count");
+        tileLayout->addWidget(std::move(count));
+        
+        tile->setLayout(std::move(tileLayout));
+        
+        // Click handler to show category popover
+        tile->clicked().connect([this, categoryPair] {
+            showCategoryPopover(categoryPair.first, MenuItem::categoryToString(categoryPair.first));
+        });
+        
+        categoryTilesContainer_->addWidget(std::move(tile));
+    }
+}
+
+void RestaurantPOSApp::showCategoryPopover(MenuItem::Category category, const std::string& categoryName) {
+    auto dialog = addChild(std::make_unique<Wt::WDialog>(categoryName + " Menu"));
+    dialog->addStyleClass("category-popover");
+    dialog->setModal(true);
+    dialog->setWidth("600px");
+    dialog->setResizable(false);
+    
+    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Header
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->addStyleClass("popover-header");
+    auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    auto title = std::make_unique<Wt::WText>(categoryName);
+    title->addStyleClass("popover-title");
+    headerLayout->addWidget(std::move(title));
+    
+    header->setLayout(std::move(headerLayout));
+    layout->addWidget(std::move(header));
+    
+    // Content
+    auto content = std::make_unique<Wt::WContainerWidget>();
+    content->addStyleClass("popover-content");
+    auto contentLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Filter items by category
+    std::vector<std::shared_ptr<MenuItem>> categoryItems;
+    for (const auto& item : menuItems_) {
+        if (item->getCategory() == category) {
+            categoryItems.push_back(item);
+        }
+    }
+    
+    // Create item cards
+    for (const auto& item : categoryItems) {
+        auto itemCard = std::make_unique<Wt::WContainerWidget>();
+        itemCard->addStyleClass("menu-item-card");
+        
+        auto cardLayout = std::make_unique<Wt::WVBoxLayout>();
+        
+        // Item header (name and price)
+        auto itemHeader = std::make_unique<Wt::WContainerWidget>();
+        itemHeader->addStyleClass("menu-item-header");
+        auto itemHeaderLayout = std::make_unique<Wt::WHBoxLayout>();
+        
+        auto itemName = std::make_unique<Wt::WText>(item->getName());
+        itemName->addStyleClass("menu-item-name");
+        itemHeaderLayout->addWidget(std::move(itemName));
+        
+        auto itemPrice = std::make_unique<Wt::WText>(formatCurrency(item->getPrice()));
+        itemPrice->addStyleClass("menu-item-price");
+        itemHeaderLayout->addWidget(std::move(itemPrice));
+        
+        itemHeader->setLayout(std::move(itemHeaderLayout));
+        cardLayout->addWidget(std::move(itemHeader));
+        
+        // Item description (if enabled)
+        if (userPreferences_.showMenuDescriptions) {
+            auto description = std::make_unique<Wt::WText>("Fresh and delicious " + item->getName().substr(2)); // Remove emoji
+            description->addStyleClass("menu-item-description");
+            cardLayout->addWidget(std::move(description));
+        }
+        
+        itemCard->setLayout(std::move(cardLayout));
+        
+        // Click handler to add item to order
+        itemCard->clicked().connect([this, item, dialog] {
+            addItemToCurrentOrder(item);
+            dialog->accept(); // Close popover after selection
+        });
+        
+        contentLayout->addWidget(std::move(itemCard));
+    }
+    
+    content->setLayout(std::move(contentLayout));
+    layout->addWidget(std::move(content));
+    
+    // Footer with cancel button
+    auto footer = std::make_unique<Wt::WContainerWidget>();
+    footer->addStyleClass("popover-footer");
+    auto footerLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    auto cancelBtn = std::make_unique<Wt::WPushButton>("Cancel");
+    cancelBtn->addStyleClass("btn btn-secondary");
+    cancelBtn->clicked().connect([dialog] { dialog->reject(); });
+    
+    footerLayout->addWidget(std::move(cancelBtn));
+    footer->setLayout(std::move(footerLayout));
+    layout->addWidget(std::move(footer));
+    
+    dialog->contents()->setLayout(std::move(layout));
+    dialog->show();
+}
+
 void RestaurantPOSApp::buildMainInterface() {
     root()->addStyleClass("container-fluid");
     
-    // Add theme selector button
-    auto themeSelector = std::make_unique<Wt::WContainerWidget>();
-    themeSelector->addStyleClass("pos-theme-selector");
+    // Add preferences button instead of theme button
+    auto preferencesContainer = std::make_unique<Wt::WContainerWidget>();
+    preferencesContainer->addStyleClass("pos-theme-selector");
     
-    auto themeBtn = std::make_unique<Wt::WPushButton>("🎨 Themes");
-    themeBtn->addStyleClass("btn btn-outline-secondary btn-sm theme-button");
-    themeBtn->clicked().connect([this]() { showThemeSelector(); });
-    themeSelector->addWidget(std::move(themeBtn));
-    root()->addWidget(std::move(themeSelector));
+    auto preferencesBtn = std::make_unique<Wt::WPushButton>("⚙️ Preferences");
+    preferencesBtn->addStyleClass("btn btn-outline-primary btn-sm theme-button");
+    preferencesBtn->clicked().connect([this]() { showPreferencesDialog(); });
+    preferencesContainer->addWidget(std::move(preferencesBtn));
+    root()->addWidget(std::move(preferencesContainer));
     
-    // Add header with current theme indicator
+    // Add header
     auto header = std::make_unique<Wt::WContainerWidget>();
     header->addStyleClass("pos-header");
     auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
@@ -285,15 +576,9 @@ void RestaurantPOSApp::buildMainInterface() {
     title->addStyleClass("h1 text-primary");
     headerLayout->addWidget(std::move(title));
     
-    auto subtitle = std::make_unique<Wt::WText>("Three-Legged Foundation: Order Management • Payment Processing • Kitchen Interface");
+    auto subtitle = std::make_unique<Wt::WText>("Enhanced with User Preferences & Category Tiles");
     subtitle->addStyleClass("h6 text-muted");
     headerLayout->addWidget(std::move(subtitle));
-    
-    auto themeIndicator = std::make_unique<Wt::WText>();
-    themeIndicator->addStyleClass("h6 text-muted");
-    updateThemeIndicator(themeIndicator.get());
-    themeIndicator_ = themeIndicator.get();
-    headerLayout->addWidget(std::move(themeIndicator));
     
     header->setLayout(std::move(headerLayout));
     root()->addWidget(std::move(header));
@@ -314,23 +599,9 @@ void RestaurantPOSApp::buildMainInterface() {
     root()->addWidget(std::move(mainContainer));
 }
 
-void RestaurantPOSApp::updateThemeIndicator(Wt::WText* indicator) {
-    if (indicator) {
-        auto it = std::find_if(availableThemes_.begin(), availableThemes_.end(),
-            [this](const ThemeInfo& theme) { return theme.id == currentTheme_; });
-        
-        if (it != availableThemes_.end()) {
-            indicator->setText("Current Theme: " + it->name);
-        }
-    }
-}
-
 void RestaurantPOSApp::triggerUpdate() {
-    // Update theme indicator
-    updateThemeIndicator(themeIndicator_);
-    
-    // Refresh all tables to apply new theme
-    if (menuTable_) buildMenuTable();
+    // Refresh all displays to apply new preferences
+    updateMenuDisplay();
     if (currentOrderTable_) updateCurrentOrderTable();
     if (activeOrdersTable_) updateActiveOrdersTable();
     if (kitchenStatusTable_) updateKitchenStatusTable();
@@ -397,14 +668,9 @@ std::unique_ptr<Wt::WWidget> RestaurantPOSApp::createOrderEntryPanel() {
     tableContainer->setLayout(std::move(tableLayout));
     layout->addWidget(std::move(tableContainer));
     
-    // Menu items section
-    auto menuHeader = std::make_unique<Wt::WText>("Menu Items");
-    menuHeader->addStyleClass("h4 mb-3 text-secondary");
-    layout->addWidget(std::move(menuHeader));
-    
-    menuTable_ = layout->addWidget(std::make_unique<Wt::WTable>());
-    menuTable_->addStyleClass("table table-striped table-hover");
-    buildMenuTable();
+    // Menu container (will be populated based on preferences)
+    menuContainer_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    updateMenuDisplay();
     
     // Current order section
     auto orderHeader = std::make_unique<Wt::WText>("Current Order");
@@ -477,6 +743,8 @@ std::unique_ptr<Wt::WWidget> RestaurantPOSApp::createOrderStatusPanel() {
 }
 
 void RestaurantPOSApp::buildMenuTable() {
+    if (!menuTable_) return;
+    
     menuTable_->clear();
     
     // Headers
@@ -490,37 +758,50 @@ void RestaurantPOSApp::buildMenuTable() {
         menuTable_->elementAt(0, col)->addStyleClass("table-dark");
     }
     
-    // Menu items grouped by category
-    std::map<MenuItem::Category, std::vector<std::shared_ptr<MenuItem>>> itemsByCategory;
-    for (const auto& item : menuItems_) {
-        itemsByCategory[item->getCategory()].push_back(item);
-    }
-    
-    int row = 1;
-    for (const auto& categoryPair : itemsByCategory) {
-        // Category header
-        auto categoryText = std::make_unique<Wt::WText>(MenuItem::categoryToString(categoryPair.first));
-        categoryText->addStyleClass("fw-bold text-primary");
-        menuTable_->elementAt(row, 0)->addWidget(std::move(categoryText));
-        menuTable_->elementAt(row, 0)->setColumnSpan(4);
-        menuTable_->elementAt(row, 0)->addStyleClass("table-secondary");
-        row++;
+    if (userPreferences_.showMenuCategories) {
+        // Group by category
+        std::map<MenuItem::Category, std::vector<std::shared_ptr<MenuItem>>> itemsByCategory;
+        for (const auto& item : menuItems_) {
+            itemsByCategory[item->getCategory()].push_back(item);
+        }
         
-        // Items in category
-        for (const auto& item : categoryPair.second) {
-            menuTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(item->getName()));
-            menuTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(MenuItem::categoryToString(item->getCategory())));
-            menuTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(formatCurrency(item->getPrice())));
-            
-            auto addBtn = std::make_unique<Wt::WPushButton>("Add");
-            addBtn->addStyleClass("btn btn-sm btn-outline-primary");
-            addBtn->clicked().connect([this, item] { addItemToCurrentOrder(item); });
-            menuTable_->elementAt(row, 3)->addWidget(std::move(addBtn));
-            
+        int row = 1;
+        for (const auto& categoryPair : itemsByCategory) {
+            // Category header
+            auto categoryText = std::make_unique<Wt::WText>(MenuItem::categoryToString(categoryPair.first));
+            categoryText->addStyleClass("fw-bold text-primary");
+            menuTable_->elementAt(row, 0)->addWidget(std::move(categoryText));
+            menuTable_->elementAt(row, 0)->setColumnSpan(4);
+            menuTable_->elementAt(row, 0)->addStyleClass("table-secondary");
             row++;
+            
+            // Items in category
+            for (const auto& item : categoryPair.second) {
+                addMenuItemToTable(item, row++);
+            }
+        }
+    } else {
+        // Simple list without grouping
+        int row = 1;
+        for (const auto& item : menuItems_) {
+            addMenuItemToTable(item, row++);
         }
     }
 }
+
+void RestaurantPOSApp::addMenuItemToTable(std::shared_ptr<MenuItem> item, int row) {
+    menuTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(item->getName()));
+    menuTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(MenuItem::categoryToString(item->getCategory())));
+    menuTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(formatCurrency(item->getPrice())));
+    
+    auto addBtn = std::make_unique<Wt::WPushButton>("Add");
+    addBtn->addStyleClass("btn btn-sm btn-outline-primary");
+    addBtn->clicked().connect([this, item] { addItemToCurrentOrder(item); });
+    menuTable_->elementAt(row, 3)->addWidget(std::move(addBtn));
+}
+
+// Continue with the rest of the implementation methods...
+// [The remaining methods would be the same as in the previous implementation]
 
 void RestaurantPOSApp::updateCurrentOrderTable() {
     currentOrderTable_->clear();
@@ -578,110 +859,8 @@ void RestaurantPOSApp::updateCurrentOrderTable() {
     currentOrderTable_->elementAt(totalRow, 3)->addWidget(std::move(totalAmount));
 }
 
-void RestaurantPOSApp::updateActiveOrdersTable() {
-    activeOrdersTable_->clear();
-    
-    auto orders = orderManager_->getActiveOrders();
-    
-    if (orders.empty()) {
-        auto noOrdersText = std::make_unique<Wt::WText>("No active orders.");
-        noOrdersText->addStyleClass("text-muted fst-italic");
-        activeOrdersTable_->elementAt(0, 0)->addWidget(std::move(noOrdersText));
-        return;
-    }
-    
-    // Headers
-    activeOrdersTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
-    activeOrdersTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
-    activeOrdersTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
-    activeOrdersTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
-    activeOrdersTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Items"));
-    
-    // Apply header styling
-    for (int col = 0; col < 5; ++col) {
-        activeOrdersTable_->elementAt(0, col)->addStyleClass("table-dark");
-    }
-    
-    for (size_t i = 0; i < orders.size(); ++i) {
-        const auto& order = orders[i];
-        int row = i + 1;
-        
-        activeOrdersTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(std::to_string(order->getOrderId())));
-        activeOrdersTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(std::to_string(order->getTableNumber())));
-        activeOrdersTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(getStatusString(order->getStatus())));
-        activeOrdersTable_->elementAt(row, 3)->addWidget(std::make_unique<Wt::WText>(formatCurrency(order->getTotal())));
-        activeOrdersTable_->elementAt(row, 4)->addWidget(std::make_unique<Wt::WText>(std::to_string(order->getItems().size()) + " items"));
-    }
-}
-
-void RestaurantPOSApp::updateKitchenStatusTable() {
-    kitchenStatusTable_->clear();
-    
-    auto tickets = kitchenInterface_->getActiveTickets();
-    
-    if (tickets.empty()) {
-        auto noTicketsText = std::make_unique<Wt::WText>("No orders in kitchen queue.");
-        noTicketsText->addStyleClass("text-muted fst-italic");
-        kitchenStatusTable_->elementAt(0, 0)->addWidget(std::move(noTicketsText));
-        return;
-    }
-    
-    // Headers
-    kitchenStatusTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
-    kitchenStatusTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
-    kitchenStatusTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Kitchen Status"));
-    kitchenStatusTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Est. Time"));
-    kitchenStatusTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
-    
-    // Apply header styling
-    for (int col = 0; col < 5; ++col) {
-        kitchenStatusTable_->elementAt(0, col)->addStyleClass("table-dark");
-    }
-    
-    for (size_t i = 0; i < tickets.size(); ++i) {
-        const auto& ticket = tickets[i];
-        int row = i + 1;
-        
-        kitchenStatusTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(std::to_string(ticket.orderId)));
-        kitchenStatusTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(std::to_string(ticket.tableNumber)));
-        kitchenStatusTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(getKitchenStatusString(ticket.status)));
-        kitchenStatusTable_->elementAt(row, 3)->addWidget(std::make_unique<Wt::WText>(std::to_string(ticket.estimatedPrepTime) + " min"));
-        
-        // Status update buttons
-        auto buttonContainer = std::make_unique<Wt::WContainerWidget>();
-        auto buttonLayout = std::make_unique<Wt::WHBoxLayout>();
-        
-        if (ticket.status == KitchenInterface::ORDER_RECEIVED) {
-            auto startBtn = std::make_unique<Wt::WPushButton>("Start");
-            startBtn->addStyleClass("btn btn-sm btn-success me-1");
-            startBtn->clicked().connect([this, ticket] { 
-                updateOrderKitchenStatus(ticket.orderId, KitchenInterface::PREP_STARTED); 
-            });
-            buttonLayout->addWidget(std::move(startBtn));
-        }
-        
-        if (ticket.status == KitchenInterface::PREP_STARTED) {
-            auto readyBtn = std::make_unique<Wt::WPushButton>("Ready");
-            readyBtn->addStyleClass("btn btn-sm btn-warning me-1");
-            readyBtn->clicked().connect([this, ticket] { 
-                updateOrderKitchenStatus(ticket.orderId, KitchenInterface::READY_FOR_PICKUP); 
-            });
-            buttonLayout->addWidget(std::move(readyBtn));
-        }
-        
-        if (ticket.status == KitchenInterface::READY_FOR_PICKUP) {
-            auto servedBtn = std::make_unique<Wt::WPushButton>("Served");
-            servedBtn->addStyleClass("btn btn-sm btn-primary me-1");
-            servedBtn->clicked().connect([this, ticket] { 
-                updateOrderKitchenStatus(ticket.orderId, KitchenInterface::SERVED); 
-            });
-            buttonLayout->addWidget(std::move(servedBtn));
-        }
-        
-        buttonContainer->setLayout(std::move(buttonLayout));
-        kitchenStatusTable_->elementAt(row, 4)->addWidget(std::move(buttonContainer));
-    }
-}
+// [Continue with all the other methods from the previous implementation...]
+// I'll include the key missing methods:
 
 void RestaurantPOSApp::startNewOrder() {
     int tableNumber = tableNumberEdit_->value();
@@ -790,11 +969,119 @@ void RestaurantPOSApp::updateOrderKitchenStatus(int orderId, KitchenInterface::K
     }
 }
 
+void RestaurantPOSApp::updateActiveOrdersTable() {
+    activeOrdersTable_->clear();
+    
+    auto orders = orderManager_->getActiveOrders();
+    
+    if (orders.empty()) {
+        auto noOrdersText = std::make_unique<Wt::WText>("No active orders.");
+        noOrdersText->addStyleClass("text-muted fst-italic");
+        activeOrdersTable_->elementAt(0, 0)->addWidget(std::move(noOrdersText));
+        return;
+    }
+    
+    // Headers
+    activeOrdersTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
+    activeOrdersTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
+    activeOrdersTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
+    activeOrdersTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
+    activeOrdersTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Items"));
+    
+    // Apply header styling
+    for (int col = 0; col < 5; ++col) {
+        activeOrdersTable_->elementAt(0, col)->addStyleClass("table-dark");
+    }
+    
+    for (size_t i = 0; i < orders.size(); ++i) {
+        const auto& order = orders[i];
+        int row = i + 1;
+        
+        activeOrdersTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(std::to_string(order->getOrderId())));
+        activeOrdersTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(std::to_string(order->getTableNumber())));
+        activeOrdersTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(getStatusString(order->getStatus())));
+        activeOrdersTable_->elementAt(row, 3)->addWidget(std::make_unique<Wt::WText>(formatCurrency(order->getTotal())));
+        activeOrdersTable_->elementAt(row, 4)->addWidget(std::make_unique<Wt::WText>(std::to_string(order->getItems().size()) + " items"));
+    }
+}
+
+void RestaurantPOSApp::updateKitchenStatusTable() {
+    kitchenStatusTable_->clear();
+    
+    auto tickets = kitchenInterface_->getActiveTickets();
+    
+    if (tickets.empty()) {
+        auto noTicketsText = std::make_unique<Wt::WText>("No orders in kitchen queue.");
+        noTicketsText->addStyleClass("text-muted fst-italic");
+        kitchenStatusTable_->elementAt(0, 0)->addWidget(std::move(noTicketsText));
+        return;
+    }
+    
+    // Headers
+    kitchenStatusTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
+    kitchenStatusTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
+    kitchenStatusTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Kitchen Status"));
+    kitchenStatusTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Est. Time"));
+    kitchenStatusTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
+    
+    // Apply header styling
+    for (int col = 0; col < 5; ++col) {
+        kitchenStatusTable_->elementAt(0, col)->addStyleClass("table-dark");
+    }
+    
+    for (size_t i = 0; i < tickets.size(); ++i) {
+        const auto& ticket = tickets[i];
+        int row = i + 1;
+        
+        kitchenStatusTable_->elementAt(row, 0)->addWidget(std::make_unique<Wt::WText>(std::to_string(ticket.orderId)));
+        kitchenStatusTable_->elementAt(row, 1)->addWidget(std::make_unique<Wt::WText>(std::to_string(ticket.tableNumber)));
+        kitchenStatusTable_->elementAt(row, 2)->addWidget(std::make_unique<Wt::WText>(getKitchenStatusString(ticket.status)));
+        kitchenStatusTable_->elementAt(row, 3)->addWidget(std::make_unique<Wt::WText>(std::to_string(ticket.estimatedPrepTime) + " min"));
+        
+        // Status update buttons
+        auto buttonContainer = std::make_unique<Wt::WContainerWidget>();
+        auto buttonLayout = std::make_unique<Wt::WHBoxLayout>();
+        
+        if (ticket.status == KitchenInterface::ORDER_RECEIVED) {
+            auto startBtn = std::make_unique<Wt::WPushButton>("Start");
+            startBtn->addStyleClass("btn btn-sm btn-success me-1");
+            startBtn->clicked().connect([this, ticket] { 
+                updateOrderKitchenStatus(ticket.orderId, KitchenInterface::PREP_STARTED); 
+            });
+            buttonLayout->addWidget(std::move(startBtn));
+        }
+        
+        if (ticket.status == KitchenInterface::PREP_STARTED) {
+            auto readyBtn = std::make_unique<Wt::WPushButton>("Ready");
+            readyBtn->addStyleClass("btn btn-sm btn-warning me-1");
+            readyBtn->clicked().connect([this, ticket] { 
+                updateOrderKitchenStatus(ticket.orderId, KitchenInterface::READY_FOR_PICKUP); 
+            });
+            buttonLayout->addWidget(std::move(readyBtn));
+        }
+        
+        if (ticket.status == KitchenInterface::READY_FOR_PICKUP) {
+            auto servedBtn = std::make_unique<Wt::WPushButton>("Served");
+            servedBtn->addStyleClass("btn btn-sm btn-primary me-1");
+            servedBtn->clicked().connect([this, ticket] { 
+                updateOrderKitchenStatus(ticket.orderId, KitchenInterface::SERVED); 
+            });
+            buttonLayout->addWidget(std::move(servedBtn));
+        }
+        
+        buttonContainer->setLayout(std::move(buttonLayout));
+        kitchenStatusTable_->elementAt(row, 4)->addWidget(std::move(buttonContainer));
+    }
+}
+
 void RestaurantPOSApp::setupRealTimeUpdates() {
     updateTimer_ = root()->addChild(std::make_unique<Wt::WTimer>());
-    updateTimer_->setInterval(std::chrono::seconds(UPDATE_INTERVAL_SECONDS));
+    updateTimer_->setInterval(std::chrono::seconds(userPreferences_.refreshInterval));
     updateTimer_->timeout().connect([this] { performPeriodicUpdate(); });
-    updateTimer_->start();
+    
+    if (userPreferences_.autoRefresh) {
+        updateTimer_->start();
+    }
 }
 
 void RestaurantPOSApp::performPeriodicUpdate() {
