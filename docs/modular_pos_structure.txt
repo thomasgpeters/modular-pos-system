@@ -1,0 +1,100 @@
+# Modular Restaurant POS System Architecture
+
+## Directory Structure
+```
+restaurant-pos/
+├── CMakeLists.txt
+├── src/
+│   ├── main.cpp
+│   ├── core/
+│   │   ├── RestaurantPOSApp.cpp         # Simplified orchestrator
+│   │   └── ConfigurationManager.cpp     # Centralized configuration
+│   ├── services/
+│   │   ├── POSService.cpp               # Business logic coordinator
+│   │   ├── ThemeService.cpp             # Theme management
+│   │   └── NotificationService.cpp      # Notification handling
+│   ├── ui/
+│   │   ├── components/
+│   │   │   ├── OrderEntryPanel.cpp      # Order entry UI
+│   │   │   ├── OrderStatusPanel.cpp     # Order status UI
+│   │   │   ├── MenuDisplay.cpp          # Menu display component
+│   │   │   ├── CurrentOrderDisplay.cpp  # Current order display
+│   │   │   ├── ActiveOrdersDisplay.cpp  # Active orders table
+│   │   │   ├── KitchenStatusDisplay.cpp # Kitchen status panel
+│   │   │   └── ThemeSelector.cpp        # Theme selection component
+│   │   ├── dialogs/
+│   │   │   ├── PaymentDialog.cpp        # Payment processing dialog
+│   │   │   ├── CategoryPopover.cpp      # Category selection popup
+│   │   │   └── ThemeSelectionDialog.cpp # Theme selection dialog
+│   │   └── factories/
+│   │       └── UIComponentFactory.cpp   # UI component factory
+│   ├── events/
+│   │   ├── EventManager.cpp             # Event system
+│   │   └── POSEvents.cpp                # POS-specific events
+│   └── utils/
+│       ├── UIHelpers.cpp                # UI utility functions
+│       └── FormatUtils.cpp              # Formatting utilities
+├── include/
+│   ├── core/
+│   │   ├── RestaurantPOSApp.hpp
+│   │   └── ConfigurationManager.hpp
+│   ├── services/
+│   │   ├── POSService.hpp
+│   │   ├── ThemeService.hpp
+│   │   └── NotificationService.hpp
+│   ├── ui/
+│   │   ├── components/
+│   │   │   ├── OrderEntryPanel.hpp
+│   │   │   ├── OrderStatusPanel.hpp
+│   │   │   ├── MenuDisplay.hpp
+│   │   │   ├── CurrentOrderDisplay.hpp
+│   │   │   ├── ActiveOrdersDisplay.hpp
+│   │   │   ├── KitchenStatusDisplay.hpp
+│   │   │   └── ThemeSelector.hpp
+│   │   ├── dialogs/
+│   │   │   ├── PaymentDialog.hpp
+│   │   │   ├── CategoryPopover.hpp
+│   │   │   └── ThemeSelectionDialog.hpp
+│   │   └── factories/
+│   │       └── UIComponentFactory.hpp
+│   ├── events/
+│   │   ├── EventManager.hpp
+│   │   └── POSEvents.hpp
+│   └── utils/
+│       ├── UIHelpers.hpp
+│       └── FormatUtils.hpp
+└── themes/ (existing theme files)
+```
+
+## Key Benefits of This Modular Architecture:
+
+### 1. **Separation of Concerns**
+- **Core**: Application orchestration and configuration
+- **Services**: Business logic and data management
+- **UI**: User interface components
+- **Events**: Communication between components
+- **Utils**: Shared utilities and helpers
+
+### 2. **Enterprise Scalability**
+- Each component can be developed and tested independently
+- Easy to add new features without affecting existing code
+- Clear interfaces between layers
+- Supports dependency injection and mocking for testing
+
+### 3. **Maintainability**
+- Smaller, focused files (200-400 lines vs 1000+ lines)
+- Clear responsibilities for each class
+- Easier debugging and troubleshooting
+- Better code reusability
+
+### 4. **Team Development**
+- Multiple developers can work on different components simultaneously
+- Clear ownership boundaries
+- Easier code reviews
+- Reduced merge conflicts
+
+### 5. **Testing Strategy**
+- Unit tests for individual components
+- Integration tests for service interactions
+- UI tests for component behavior
+- Mock services for isolated testing
