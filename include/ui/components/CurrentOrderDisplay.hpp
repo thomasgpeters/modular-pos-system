@@ -120,7 +120,7 @@ protected:
      * @param item Order item to add
      * @param index Index of the item in the order
      */
-    void addOrderItemRow(const Order::OrderItem& item, size_t index);
+    void addOrderItemRow(const OrderItem& item, size_t index);
 
 private:
     // Services and dependencies
@@ -156,8 +156,8 @@ private:
     
     // Helper methods
     std::string formatCurrency(double amount) const;
-    std::string formatItemName(const Order::OrderItem& item) const;
-    std::string formatItemPrice(const Order::OrderItem& item) const;
+    std::string formatItemName(const OrderItem& item) const;
+    std::string formatItemPrice(const OrderItem& item) const;
     void showEmptyOrderMessage();
     void hideEmptyOrderMessage();
     bool hasCurrentOrder() const;

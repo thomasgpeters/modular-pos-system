@@ -1,532 +1,299 @@
-#include "../../include/services/NotificationService.hpp"
+#ifndef NOTIFICATIONSERVICE_H
+#define NOTIFICATIONSERVICE_H
 
-#include <Wt/WPushButton.h>
-#include <Wt/WIcon.h>
-#include <Wt/WHBoxLayout.h>
-#include <Wt/WVBoxLayout.h>
+#include "../events/EventManager.hpp"
+#include "../events/POSEvents.hpp"
+
 #include <Wt/WApplication.h>
+#include <Wt/WContainerWidget.h>
+#include <Wt/WText.h>
+#include <Wt/WPushButton.h>
+#include <Wt/WTimer.h>
 
-#include <iostream>
-#include <algorithm>
+#include <memory>
+#include <vector>
+#include <functional>
+#include <string>
+#include <queue>
 
-NotificationService::NotificationService(std::shared_ptr<EventManager> eventManager)
-    : eventManager_(eventManager)
-    , notificationContainer_(nullptr)
-    , autoRemovalTimer_(nullptr)
-    , queueProcessTimer_(nullptr)
-    , maxNotificationCount_(DEFAULT_MAX_NOTIFICATIONS)
-    , defaultDuration_(DEFAULT_DURATION_MS)
-    , soundsEnabled_(false)
-    , notificationPosition_("top-right") {
-}
+/**
+ * @file NotificationService.hpp
+ * @brief Centralized notification system for user feedback
+ * 
+ * This service provides toast-style notifications, alerts, and other
+ * user feedback mechanisms throughout the POS system.
+ * 
+ * @author Restaurant POS Team
+ * @version 2.0.0
+ */
 
-void NotificationService::initialize() {
-    std::cout << "Initializing NotificationService..." << std::endl;
+/**
+ * @class NotificationService
+ * @brief Service for managing user notifications and feedback
+ * 
+ * The NotificationService provides a centralized system for displaying
+ * notifications to users, including toast messages, alerts, and action
+ * prompts. It integrates with the event system to automatically show
+ * notifications for business events.
+ */
+class NotificationService {
+public:
+    /**
+     * @brief Notification types
+     */
+    enum NotificationType {
+        INFO,
+        SUCCESS,
+        WARNING,
+        ERROR
+    };
     
-    setupNotificationContainer();
-    setupEventListeners();
+    /**
+     * @brief Notification position on screen
+     */
+    enum NotificationPosition {
+        TOP_RIGHT,
+        TOP_LEFT,
+        BOTTOM_RIGHT,
+        BOTTOM_LEFT,
+        TOP_CENTER,
+        BOTTOM_CENTER
+    };
     
-    // Set up auto-removal timer
-    if (Wt::WApplication::instance()) {
-        autoRemovalTimer_ = Wt::WApplication::instance()->root()->addChild(
-            std::make_unique<Wt::WTimer>());
-        autoRemovalTimer_->setInterval(std::chrono::milliseconds(AUTO_REMOVAL_CHECK_INTERVAL_MS));
-        autoRemovalTimer_->timeout().connect([this] { autoremoveExpiredNotifications(); });
-        autoRemovalTimer_->start();
+    /**
+     * @brief Action callback function type
+     */
+    using ActionCallback = std::function<void()>;
+    
+    /**
+     * @struct NotificationConfig
+     * @brief Configuration for notification appearance and behavior
+     */
+    struct NotificationConfig {
+        NotificationPosition position = TOP_RIGHT;
+        int defaultDuration = 3000;          // milliseconds
+        int maxNotifications = 5;
+        bool enableSounds = false;
+        bool enableAnimations = true;
+        bool autoStackManagement = true;
         
-        // Set up queue processing timer
-        queueProcessTimer_ = Wt::WApplication::instance()->root()->addChild(
-            std::make_unique<Wt::WTimer>());
-        queueProcessTimer_->setInterval(std::chrono::milliseconds(QUEUE_PROCESS_INTERVAL_MS));
-        queueProcessTimer_->timeout().connect([this] { processNotificationQueue(); });
-        queueProcessTimer_->start();
-    }
+        NotificationConfig() = default;
+    };
     
-    std::cout << "✓ NotificationService initialized" << std::endl;
-}
+    /**
+     * @brief Constructs the notification service
+     * @param eventManager Shared event manager for automatic notifications
+     */
+    explicit NotificationService(std::shared_ptr<EventManager> eventManager);
+    
+    /**
+     * @brief Virtual destructor
+     */
+    virtual ~NotificationService() = default;
+    
+    /**
+     * @brief Initializes the notification service
+     * Sets up event listeners and notification container
+     */
+    void initialize();
+    
+    /**
+     * @brief Shows an info notification
+     * @param message Message to display
+     * @param duration Duration in milliseconds (0 = permanent)
+     * @return Notification ID for later reference
+     */
+    int showInfo(const std::string& message, int duration = 0);
+    
+    /**
+     * @brief Shows a success notification
+     * @param message Message to display
+     * @param duration Duration in milliseconds (0 = permanent)
+     * @return Notification ID for later reference
+     */
+    int showSuccess(const std::string& message, int duration = 0);
+    
+    /**
+     * @brief Shows a warning notification
+     * @param message Message to display
+     * @param duration Duration in milliseconds (0 = permanent)
+     * @return Notification ID for later reference
+     */
+    int showWarning(const std::string& message, int duration = 0);
+    
+    /**
+     * @brief Shows an error notification
+     * @param message Message to display
+     * @param duration Duration in milliseconds (0 = permanent)
+     * @return Notification ID for later reference
+     */
+    int showError(const std::string& message, int duration = 0);
+    
+    /**
+     * @brief Shows a notification with custom type
+     * @param message Message to display
+     * @param type Notification type
+     * @param duration Duration in milliseconds (0 = permanent)
+     * @return Notification ID for later reference
+     */
+    int showNotification(const std::string& message, NotificationType type, int duration = 0);
+    
+    /**
+     * @brief Shows a notification with an action button
+     * @param message Message to display
+     * @param type Notification type
+     * @param actionLabel Label for the action button
+     * @param callback Function to call when action is clicked
+     * @param duration Duration in milliseconds (0 = permanent)
+     * @return Notification ID for later reference
+     */
+    int showNotificationWithAction(const std::string& message,
+                                  NotificationType type,
+                                  const std::string& actionLabel,
+                                  ActionCallback callback,
+                                  int duration = 0);
+    
+    /**
+     * @brief Dismisses a specific notification
+     * @param notificationId ID of notification to dismiss
+     * @return True if notification was found and dismissed
+     */
+    bool dismissNotification(int notificationId);
+    
+    /**
+     * @brief Dismisses all notifications
+     */
+    void dismissAllNotifications();
+    
+    /**
+     * @brief Dismisses all notifications of a specific type
+     * @param type Type of notifications to dismiss
+     */
+    void dismissNotificationsByType(NotificationType type);
+    
+    /**
+     * @brief Gets the current notification configuration
+     * @return Current configuration settings
+     */
+    const NotificationConfig& getConfiguration() const;
+    
+    /**
+     * @brief Updates notification configuration
+     * @param config New configuration settings
+     */
+    void setConfiguration(const NotificationConfig& config);
+    
+    /**
+     * @brief Gets the number of active notifications
+     * @return Number of currently displayed notifications
+     */
+    size_t getActiveNotificationCount() const;
+    
+    /**
+     * @brief Sets the notification container widget
+     * @param container Container widget for notifications
+     */
+    void setNotificationContainer(Wt::WContainerWidget* container);
+    
+    /**
+     * @brief Handles notification events from the event system
+     * @param eventData Event data containing notification information
+     */
+    void handleNotification(const std::any& eventData);
 
-void NotificationService::setupNotificationContainer() {
-    if (!Wt::WApplication::instance()) {
-        std::cerr << "Warning: No WApplication instance available for notification container" << std::endl;
-        return;
-    }
+protected:
+    /**
+     * @brief Sets up event listeners for automatic notifications
+     */
+    void setupEventListeners();
     
-    // Create notification container
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    notificationContainer_ = container.get();
+    /**
+     * @brief Creates the notification container
+     * @return Pointer to the notification container widget
+     */
+    Wt::WContainerWidget* createNotificationContainer();
     
-    // Set up container styling
-    notificationContainer_->addStyleClass("notification-container");
-    notificationContainer_->addStyleClass("position-fixed");
-    notificationContainer_->addStyleClass("d-flex");
-    notificationContainer_->addStyleClass("flex-column");
+    /**
+     * @brief Creates a notification widget
+     * @param message Message to display
+     * @param type Notification type
+     * @param actionLabel Optional action button label
+     * @param callback Optional action callback
+     * @return Unique pointer to the notification widget
+     */
+    std::unique_ptr<Wt::WContainerWidget> createNotificationWidget(
+        const std::string& message,
+        NotificationType type,
+        const std::string& actionLabel = "",
+        ActionCallback callback = nullptr);
     
-    // Apply position styling
-    setNotificationPosition(notificationPosition_);
+    /**
+     * @brief Gets CSS class for notification type
+     * @param type Notification type
+     * @return CSS class name
+     */
+    std::string getNotificationTypeClass(NotificationType type) const;
     
-    // Add to application root
-    Wt::WApplication::instance()->root()->addWidget(std::move(container));
+    /**
+     * @brief Gets icon for notification type
+     * @param type Notification type
+     * @return Icon string (emoji or class name)
+     */
+    std::string getNotificationIcon(NotificationType type) const;
     
-    std::cout << "✓ Notification container created" << std::endl;
-}
+    /**
+     * @brief Manages notification stack overflow
+     */
+    void manageNotificationStack();
 
-void NotificationService::setupEventListeners() {
-    if (!eventManager_) {
-        std::cerr << "Error: EventManager not available for NotificationService" << std::endl;
-        return;
-    }
-    
-    // Subscribe to notification events
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::NOTIFICATION_REQUESTED,
-            [this](const std::any& data) { handleNotification(data); }));
-    
-    // Subscribe to business events for automatic notifications
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::SYSTEM_ERROR,
-            [this](const std::any& data) { handleSystemError(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_CREATED,
-            [this](const std::any& data) { handleOrderCreated(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_COMPLETED,
-            [this](const std::any& data) { handleOrderCompleted(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::PAYMENT_COMPLETED,
-            [this](const std::any& data) { handlePaymentProcessed(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::KITCHEN_STATUS_CHANGED,
-            [this](const std::any& data) { handleKitchenStatusChanged(data); }));
-    
-    std::cout << "✓ NotificationService event listeners setup complete" << std::endl;
-}
-
-std::string NotificationService::showInfo(const std::string& message, int duration) {
-    return showNotification(NotificationData(message, INFO, duration));
-}
-
-std::string NotificationService::showSuccess(const std::string& message, int duration) {
-    return showNotification(NotificationData(message, SUCCESS, duration));
-}
-
-std::string NotificationService::showWarning(const std::string& message, int duration) {
-    return showNotification(NotificationData(message, WARNING, duration));
-}
-
-std::string NotificationService::showError(const std::string& message, int duration) {
-    return showNotification(NotificationData(message, ERROR, duration));
-}
-
-std::string NotificationService::showNotification(const NotificationData& notification) {
-    if (!notificationContainer_) {
-        std::cerr << "Warning: Notification container not available, queuing notification" << std::endl;
-        const_cast<NotificationService*>(this)->addNotificationToQueue(notification);
-        return notification.id;
-    }
-    
-    // Enforce max notification limit
-    enforceMaxNotificationLimit();
-    
-    // Create notification widget
-    auto widget = createNotificationWidget(notification);
-    auto widgetPtr = widget.get();
-    
-    // Add to container
-    notificationContainer_->addWidget(std::move(widget));
-    
-    // Store references
-    activeNotifications_.push_back(notification);
-    notificationWidgets_[notification.id] = widgetPtr;
-    
-    // Play sound if enabled
-    if (soundsEnabled_) {
-        playNotificationSound(notification.type);
-    }
-    
-    // Trigger triggerUpdate to ensure the notification is displayed
-    if (Wt::WApplication::instance()) {
-        Wt::WApplication::instance()->triggerUpdate();
-    }
-    
-    std::cout << "Notification displayed: " << notification.message << std::endl;
-    return notification.id;
-}
-
-std::string NotificationService::showNotificationWithAction(
-    const std::string& message,
-    NotificationType type,
-    const std::string& actionText,
-    std::function<void()> actionCallback,
-    int duration) {
-    
-    NotificationData notification(message, type, duration, false, actionText, actionCallback);
-    return showNotification(notification);
-}
-
-std::unique_ptr<Wt::WWidget> NotificationService::createNotificationWidget(
-    const NotificationData& notification) {
-    
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("alert");
-    container->addStyleClass(getNotificationCssClass(notification.type));
-    container->addStyleClass("alert-dismissible");
-    container->addStyleClass("notification-item");
-    container->addStyleClass("mb-2");
-    container->addStyleClass("shadow-sm");
-    
-    auto layout = std::make_unique<Wt::WHBoxLayout>();
-    
-    // Icon
-    auto icon = std::make_unique<Wt::WText>(getNotificationIcon(notification.type));
-    icon->addStyleClass("notification-icon");
-    icon->addStyleClass("me-2");
-    layout->addWidget(std::move(icon));
-    
-    // Message
-    auto message = std::make_unique<Wt::WText>(notification.message);
-    message->addStyleClass("notification-message");
-    message->addStyleClass("flex-grow-1");
-    layout->addWidget(std::move(message), 1);
-    
-    // Action button (if provided)
-    if (!notification.actionText.empty() && notification.actionCallback) {
-        auto actionBtn = std::make_unique<Wt::WPushButton>(notification.actionText);
-        actionBtn->addStyleClass("btn");
-        actionBtn->addStyleClass("btn-sm");
-        actionBtn->addStyleClass("btn-outline-secondary");
-        actionBtn->addStyleClass("me-2");
-        actionBtn->clicked().connect([notification]() {
-            if (notification.actionCallback) {
-                notification.actionCallback();
-            }
-        });
-        layout->addWidget(std::move(actionBtn));
-    }
-    
-    // Close button
-    auto closeBtn = std::make_unique<Wt::WPushButton>("×");
-    closeBtn->addStyleClass("btn-close");
-    closeBtn->clicked().connect([this, id = notification.id]() {
-        dismissNotification(id);
-    });
-    layout->addWidget(std::move(closeBtn));
-    
-    container->setLayout(std::move(layout));
-    
-    // Add fade-in animation
-    container->addStyleClass("notification-fade-in");
-    
-    return std::move(container);
-}
-
-bool NotificationService::dismissNotification(const std::string& notificationId) {
-    auto it = std::find_if(activeNotifications_.begin(), activeNotifications_.end(),
-        [&notificationId](const NotificationData& n) { return n.id == notificationId; });
-    
-    if (it == activeNotifications_.end()) {
-        return false;
-    }
-    
-    // Remove from active notifications
-    activeNotifications_.erase(it);
-    
-    // Remove widget
-    removeNotificationWidget(notificationId);
-    
-    return true;
-}
-
-void NotificationService::dismissAllNotifications() {
-    // Clear all active notifications
-    activeNotifications_.clear();
-    
-    // Remove all widgets
-    if (notificationContainer_) {
-        notificationContainer_->clear();
-    }
-    notificationWidgets_.clear();
-    
-    std::cout << "All notifications dismissed" << std::endl;
-}
-
-void NotificationService::dismissNotificationsByType(NotificationType type) {
-    // Find notifications of the specified type
-    auto it = activeNotifications_.begin();
-    while (it != activeNotifications_.end()) {
-        if (it->type == type) {
-            removeNotificationWidget(it->id);
-            it = activeNotifications_.erase(it);
-        } else {
-            ++it;
-        }
-    }
-    
-    std::cout << "Dismissed all " << getNotificationTypeString(type) << " notifications" << std::endl;
-}
-
-void NotificationService::removeNotificationWidget(const std::string& notificationId) {
-    auto widgetIt = notificationWidgets_.find(notificationId);
-    if (widgetIt != notificationWidgets_.end()) {
-        if (notificationContainer_ && widgetIt->second) {
-            // Add fade-out animation
-            widgetIt->second->addStyleClass("notification-fade-out");
-            
-            // Remove after animation
-            notificationContainer_->removeWidget(widgetIt->second);
-        }
-        notificationWidgets_.erase(widgetIt);
-    }
-}
-
-void NotificationService::autoremoveExpiredNotifications() {
-    auto now = std::chrono::steady_clock::now();
-    
-    auto it = activeNotifications_.begin();
-    while (it != activeNotifications_.end()) {
-        if (it->duration > 0) {
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now - it->timestamp).count();
-            
-            if (elapsed >= it->duration) {
-                removeNotificationWidget(it->id);
-                it = activeNotifications_.erase(it);
-                continue;
-            }
-        }
-        ++it;
-    }
-}
-
-void NotificationService::addNotificationToQueue(const NotificationData& notification) {
-    notificationQueue_.push(notification);
-}
-
-void NotificationService::processNotificationQueue() {
-    if (notificationQueue_.empty() || !notificationContainer_) {
-        return;
-    }
-    
-    // Process one notification from queue
-    auto notification = notificationQueue_.front();
-    notificationQueue_.pop();
-    
-    showNotification(notification);
-}
-
-void NotificationService::enforceMaxNotificationLimit() {
-    if (maxNotificationCount_ <= 0) {
-        return; // No limit
-    }
-    
-    while (activeNotifications_.size() >= static_cast<size_t>(maxNotificationCount_)) {
-        // Remove oldest notification
-        if (!activeNotifications_.empty()) {
-            auto oldest = activeNotifications_.front();
-            dismissNotification(oldest.id);
-        }
-    }
-}
-
-void NotificationService::handleNotification(const std::any& eventData) {
-    try {
-        auto notificationData = std::any_cast<POSEvents::NotificationEventData>(eventData);
+private:
+    /**
+     * @struct ActiveNotification
+     * @brief Information about an active notification
+     */
+    struct ActiveNotification {
+        int id;
+        Wt::WContainerWidget* widget;
+        NotificationType type;
+        std::unique_ptr<Wt::WTimer> timer;
+        std::string message;
         
-        NotificationType type = INFO;
-        if (notificationData.type == "success") type = SUCCESS;
-        else if (notificationData.type == "warning") type = WARNING;
-        else if (notificationData.type == "error") type = ERROR;
-        
-        showNotification(NotificationData(notificationData.message, type, 
-                                        notificationData.duration));
-        
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error handling notification event: invalid data type" << std::endl;
-    }
-}
-
-void NotificationService::handleSystemError(const std::any& eventData) {
-    try {
-        auto errorData = std::any_cast<POSEvents::ErrorEventData>(eventData);
-        
-        std::string message = errorData.errorMessage;
-        if (!errorData.component.empty()) {
-            message = errorData.component + ": " + message;
-        }
-        
-        showError(message, errorData.isCritical ? 0 : 5000);
-        
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error handling system error event: invalid data type" << std::endl;
-    }
-}
-
-void NotificationService::handleOrderCreated(const std::any& eventData) {
-    try {
-        auto orderData = std::any_cast<POSEvents::OrderEventData>(eventData);
-        showSuccess("Order created for Table " + 
-                   std::to_string(orderData.order->getTableNumber()));
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error handling order created event: invalid data type" << std::endl;
-    }
-}
-
-void NotificationService::handleOrderCompleted(const std::any& eventData) {
-    try {
-        auto orderData = std::any_cast<POSEvents::OrderEventData>(eventData);
-        showSuccess("Order #" + std::to_string(orderData.order->getId()) + " completed!");
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error handling order completed event: invalid data type" << std::endl;
-    }
-}
-
-void NotificationService::handlePaymentProcessed(const std::any& eventData) {
-    try {
-        auto paymentData = std::any_cast<POSEvents::PaymentEventData>(eventData);
-        if (paymentData.result.success) {
-            showSuccess("Payment processed successfully - $" + 
-                       std::to_string(paymentData.result.amountCharged));
-        } else {
-            showError("Payment failed: " + paymentData.result.errorMessage);
-        }
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error handling payment event: invalid data type" << std::endl;
-    }
-}
-
-void NotificationService::handleKitchenStatusChanged(const std::any& eventData) {
-    try {
-        auto kitchenData = std::any_cast<POSEvents::KitchenEventData>(eventData);
-        
-        std::string statusMsg;
-        switch (kitchenData.status) {
-            case KitchenInterface::ORDER_RECEIVED:
-                statusMsg = "Order #" + std::to_string(kitchenData.orderId) + " received by kitchen";
-                showInfo(statusMsg);
-                break;
-            case KitchenInterface::IN_PREPARATION:
-                statusMsg = "Order #" + std::to_string(kitchenData.orderId) + " is being prepared";
-                showInfo(statusMsg);
-                break;
-            case KitchenInterface::READY_TO_SERVE:
-                statusMsg = "Order #" + std::to_string(kitchenData.orderId) + " is ready to serve!";
-                showSuccess(statusMsg, 10000); // Longer duration for important status
-                break;
-            case KitchenInterface::SERVED:
-                statusMsg = "Order #" + std::to_string(kitchenData.orderId) + " has been served";
-                showSuccess(statusMsg);
-                break;
-        }
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error handling kitchen status event: invalid data type" << std::endl;
-    }
-}
-
-// Getters and setters
-size_t NotificationService::getActiveNotificationCount() const {
-    return activeNotifications_.size();
-}
-
-std::vector<std::string> NotificationService::getActiveNotificationIds() const {
-    std::vector<std::string> ids;
-    for (const auto& notification : activeNotifications_) {
-        ids.push_back(notification.id);
-    }
-    return ids;
-}
-
-bool NotificationService::isNotificationActive(const std::string& notificationId) const {
-    return std::any_of(activeNotifications_.begin(), activeNotifications_.end(),
-        [&notificationId](const NotificationData& n) { return n.id == notificationId; });
-}
-
-void NotificationService::setMaxNotificationCount(int maxCount) {
-    maxNotificationCount_ = maxCount;
-    enforceMaxNotificationLimit();
-}
-
-int NotificationService::getMaxNotificationCount() const {
-    return maxNotificationCount_;
-}
-
-void NotificationService::setDefaultDuration(int duration) {
-    defaultDuration_ = duration;
-}
-
-int NotificationService::getDefaultDuration() const {
-    return defaultDuration_;
-}
-
-void NotificationService::setSoundsEnabled(bool enabled) {
-    soundsEnabled_ = enabled;
-}
-
-bool NotificationService::areSoundsEnabled() const {
-    return soundsEnabled_;
-}
-
-void NotificationService::setNotificationPosition(const std::string& position) {
-    notificationPosition_ = position;
+        ActiveNotification(int notificationId, Wt::WContainerWidget* w, 
+                         NotificationType t, const std::string& msg)
+            : id(notificationId), widget(w), type(t), message(msg) {}
+    };
     
-    if (notificationContainer_) {
-        // Remove existing position classes
-        notificationContainer_->removeStyleClass("top-right");
-        notificationContainer_->removeStyleClass("top-left");
-        notificationContainer_->removeStyleClass("bottom-right");
-        notificationContainer_->removeStyleClass("bottom-left");
-        
-        // Add new position class
-        notificationContainer_->addStyleClass(position);
-        
-        // Apply specific styling based on position
-        if (position == "top-right") {
-            notificationContainer_->addStyleClass("top-0 end-0");
-        } else if (position == "top-left") {
-            notificationContainer_->addStyleClass("top-0 start-0");
-        } else if (position == "bottom-right") {
-            notificationContainer_->addStyleClass("bottom-0 end-0");
-        } else if (position == "bottom-left") {
-            notificationContainer_->addStyleClass("bottom-0 start-0");
-        }
-    }
-}
+    // Dependencies
+    std::shared_ptr<EventManager> eventManager_;
+    
+    // Configuration
+    NotificationConfig config_;
+    
+    // UI components
+    Wt::WContainerWidget* notificationContainer_;
+    Wt::WApplication* application_;
+    
+    // Notification management
+    std::vector<std::unique_ptr<ActiveNotification>> activeNotifications_;
+    std::queue<POSEvents::NotificationEventData> pendingNotifications_;
+    int nextNotificationId_;
+    
+    // Event subscriptions
+    std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
+    
+    // Helper methods
+    void removeNotificationWidget(int notificationId);
+    void processNotificationEvent(const POSEvents::NotificationEventData& data);
+    void setupNotificationTimer(ActiveNotification* notification, int duration);
+    void applyNotificationStyling(Wt::WContainerWidget* widget, NotificationType type);
+    void positionNotificationContainer();
+    
+    // Business event handlers
+    void handleOrderEvent(const std::any& eventData);
+    void handlePaymentEvent(const std::any& eventData);
+    void handleKitchenEvent(const std::any& eventData);
+    void handleSystemError(const std::any& eventData);
+};
 
-// Helper methods
-std::string NotificationService::getNotificationIcon(NotificationType type) const {
-    switch (type) {
-        case INFO:    return "ℹ️";
-        case SUCCESS: return "✅";
-        case WARNING: return "⚠️";
-        case ERROR:   return "❌";
-        default:      return "ℹ️";
-    }
-}
+#endif // NOTIFICATIONSERVICE_H
 
-std::string NotificationService::getNotificationCssClass(NotificationType type) const {
-    switch (type) {
-        case INFO:    return "alert-info";
-        case SUCCESS: return "alert-success";
-        case WARNING: return "alert-warning";
-        case ERROR:   return "alert-danger";
-        default:      return "alert-info";
-    }
-}
-
-std::string NotificationService::getNotificationTypeString(NotificationType type) const {
-    switch (type) {
-        case INFO:    return "info";
-        case SUCCESS: return "success";
-        case WARNING: return "warning";
-        case ERROR:   return "error";
-        default:      return "info";
-    }
-}
-
-void NotificationService::playNotificationSound(NotificationType type) {
-    // For now, just log that a sound should be played
-    // In a real implementation, you might use HTML5 audio or system sounds
-    std::cout << "♪ Playing " << getNotificationTypeString(type) << " notification sound" << std::endl;
-}

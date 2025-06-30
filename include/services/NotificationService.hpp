@@ -4,23 +4,24 @@
 #include "../events/EventManager.hpp"
 #include "../events/POSEvents.hpp"
 
+#include <Wt/WApplication.h>
 #include <Wt/WContainerWidget.h>
 #include <Wt/WText.h>
+#include <Wt/WPushButton.h>
 #include <Wt/WTimer.h>
-#include <Wt/WApplication.h>
 
 #include <memory>
-#include <queue>
+#include <vector>
+#include <functional>
 #include <string>
-#include <chrono>
+#include <queue>
 
 /**
  * @file NotificationService.hpp
- * @brief Centralized notification management service
+ * @brief Centralized notification system for user feedback
  * 
- * This service handles all user notifications including success messages,
- * warnings, errors, and informational alerts. It provides toast-style
- * notifications and manages their display, queuing, and auto-dismissal.
+ * This service provides toast-style notifications, alerts, and other
+ * user feedback mechanisms throughout the POS system.
  * 
  * @author Restaurant POS Team
  * @version 2.0.0
@@ -28,56 +29,60 @@
 
 /**
  * @class NotificationService
- * @brief Service for managing user notifications and alerts
+ * @brief Service for managing user notifications and feedback
  * 
- * The NotificationService provides centralized notification management,
- * displaying messages to users in a non-intrusive toast-style format.
- * It handles notification queuing, auto-dismissal, and different severity levels.
+ * The NotificationService provides a centralized system for displaying
+ * notifications to users, including toast messages, alerts, and action
+ * prompts. It integrates with the event system to automatically show
+ * notifications for business events.
  */
 class NotificationService {
 public:
     /**
-     * @enum NotificationType
-     * @brief Types of notifications supported
+     * @brief Notification types
      */
     enum NotificationType {
-        INFO,       ///< Informational message (blue)
-        SUCCESS,    ///< Success message (green)
-        WARNING,    ///< Warning message (yellow/orange)
-        ERROR       ///< Error message (red)
+        INFO,
+        SUCCESS,
+        WARNING,
+        ERROR
     };
     
     /**
-     * @struct NotificationData
-     * @brief Data structure for a notification
+     * @brief Notification position on screen
      */
-    struct NotificationData {
-        std::string message;                        ///< Notification message
-        NotificationType type;                      ///< Notification type
-        int duration;                              ///< Duration in milliseconds (0 = permanent)
-        std::chrono::steady_clock::time_point timestamp; ///< When notification was created
-        std::string id;                            ///< Unique notification ID
-        bool persistent;                           ///< Whether notification persists across page changes
-        std::string actionText;                    ///< Optional action button text
-        std::function<void()> actionCallback;      ///< Optional action callback
+    enum NotificationPosition {
+        TOP_RIGHT,
+        TOP_LEFT,
+        BOTTOM_RIGHT,
+        BOTTOM_LEFT,
+        TOP_CENTER,
+        BOTTOM_CENTER
+    };
+    
+    /**
+     * @brief Action callback function type
+     */
+    using ActionCallback = std::function<void()>;
+    
+    /**
+     * @struct NotificationConfig
+     * @brief Configuration for notification appearance and behavior
+     */
+    struct NotificationConfig {
+        NotificationPosition position = TOP_RIGHT;
+        int defaultDuration = 3000;          // milliseconds
+        int maxNotifications = 5;
+        bool enableSounds = false;
+        bool enableAnimations = true;
+        bool autoStackManagement = true;
         
-        NotificationData(const std::string& msg, NotificationType t = INFO, 
-                        int dur = 3000, bool persist = false,
-                        const std::string& action = "",
-                        std::function<void()> callback = nullptr)
-            : message(msg), type(t), duration(dur), 
-              timestamp(std::chrono::steady_clock::now()),
-              persistent(persist), actionText(action), actionCallback(callback) {
-            // Generate unique ID
-            id = "notification_" + std::to_string(
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    timestamp.time_since_epoch()).count());
-        }
+        NotificationConfig() = default;
     };
     
     /**
      * @brief Constructs the notification service
-     * @param eventManager Shared event manager for listening to notification events
+     * @param eventManager Shared event manager for automatic notifications
      */
     explicit NotificationService(std::shared_ptr<EventManager> eventManager);
     
@@ -88,21 +93,17 @@ public:
     
     /**
      * @brief Initializes the notification service
-     * Sets up the notification container and event listeners
+     * Sets up event listeners and notification container
      */
     void initialize();
     
-    // =================================================================
-    // Notification Display Methods
-    // =================================================================
-    
     /**
-     * @brief Shows an informational notification
+     * @brief Shows an info notification
      * @param message Message to display
      * @param duration Duration in milliseconds (0 = permanent)
      * @return Notification ID for later reference
      */
-    std::string showInfo(const std::string& message, int duration = 3000);
+    int showInfo(const std::string& message, int duration = 0);
     
     /**
      * @brief Shows a success notification
@@ -110,7 +111,7 @@ public:
      * @param duration Duration in milliseconds (0 = permanent)
      * @return Notification ID for later reference
      */
-    std::string showSuccess(const std::string& message, int duration = 3000);
+    int showSuccess(const std::string& message, int duration = 0);
     
     /**
      * @brief Shows a warning notification
@@ -118,7 +119,7 @@ public:
      * @param duration Duration in milliseconds (0 = permanent)
      * @return Notification ID for later reference
      */
-    std::string showWarning(const std::string& message, int duration = 5000);
+    int showWarning(const std::string& message, int duration = 0);
     
     /**
      * @brief Shows an error notification
@@ -126,40 +127,38 @@ public:
      * @param duration Duration in milliseconds (0 = permanent)
      * @return Notification ID for later reference
      */
-    std::string showError(const std::string& message, int duration = 0);
+    int showError(const std::string& message, int duration = 0);
     
     /**
-     * @brief Shows a custom notification
-     * @param notification Notification data structure
+     * @brief Shows a notification with custom type
+     * @param message Message to display
+     * @param type Notification type
+     * @param duration Duration in milliseconds (0 = permanent)
      * @return Notification ID for later reference
      */
-    std::string showNotification(const NotificationData& notification);
+    int showNotification(const std::string& message, NotificationType type, int duration = 0);
     
     /**
      * @brief Shows a notification with an action button
      * @param message Message to display
      * @param type Notification type
-     * @param actionText Text for the action button
-     * @param actionCallback Function to call when action is clicked
+     * @param actionLabel Label for the action button
+     * @param callback Function to call when action is clicked
      * @param duration Duration in milliseconds (0 = permanent)
      * @return Notification ID for later reference
      */
-    std::string showNotificationWithAction(const std::string& message,
-                                          NotificationType type,
-                                          const std::string& actionText,
-                                          std::function<void()> actionCallback,
-                                          int duration = 0);
-    
-    // =================================================================
-    // Notification Management
-    // =================================================================
+    int showNotificationWithAction(const std::string& message,
+                                  NotificationType type,
+                                  const std::string& actionLabel,
+                                  ActionCallback callback,
+                                  int duration = 0);
     
     /**
-     * @brief Dismisses a notification by ID
+     * @brief Dismisses a specific notification
      * @param notificationId ID of notification to dismiss
      * @return True if notification was found and dismissed
      */
-    bool dismissNotification(const std::string& notificationId);
+    bool dismissNotification(int notificationId);
     
     /**
      * @brief Dismisses all notifications
@@ -173,160 +172,128 @@ public:
     void dismissNotificationsByType(NotificationType type);
     
     /**
+     * @brief Gets the current notification configuration
+     * @return Current configuration settings
+     */
+    const NotificationConfig& getConfiguration() const;
+    
+    /**
+     * @brief Updates notification configuration
+     * @param config New configuration settings
+     */
+    void setConfiguration(const NotificationConfig& config);
+    
+    /**
      * @brief Gets the number of active notifications
      * @return Number of currently displayed notifications
      */
     size_t getActiveNotificationCount() const;
     
     /**
-     * @brief Gets all active notification IDs
-     * @return Vector of active notification IDs
+     * @brief Sets the notification container widget
+     * @param container Container widget for notifications
      */
-    std::vector<std::string> getActiveNotificationIds() const;
-    
-    /**
-     * @brief Checks if a notification is currently active
-     * @param notificationId ID to check
-     * @return True if notification is active
-     */
-    bool isNotificationActive(const std::string& notificationId) const;
-    
-    // =================================================================
-    // Event Handling
-    // =================================================================
+    void setNotificationContainer(Wt::WContainerWidget* container);
     
     /**
      * @brief Handles notification events from the event system
      * @param eventData Event data containing notification information
      */
     void handleNotification(const std::any& eventData);
-    
-    // =================================================================
-    // Configuration
-    // =================================================================
-    
-    /**
-     * @brief Sets the maximum number of notifications to display
-     * @param maxCount Maximum number of notifications (0 = unlimited)
-     */
-    void setMaxNotificationCount(int maxCount);
-    
-    /**
-     * @brief Gets the maximum notification count
-     * @return Maximum number of notifications
-     */
-    int getMaxNotificationCount() const;
-    
-    /**
-     * @brief Sets the default notification duration
-     * @param duration Default duration in milliseconds
-     */
-    void setDefaultDuration(int duration);
-    
-    /**
-     * @brief Gets the default notification duration
-     * @return Default duration in milliseconds
-     */
-    int getDefaultDuration() const;
-    
-    /**
-     * @brief Enables or disables notification sounds
-     * @param enabled True to enable sounds
-     */
-    void setSoundsEnabled(bool enabled);
-    
-    /**
-     * @brief Checks if notification sounds are enabled
-     * @return True if sounds are enabled
-     */
-    bool areSoundsEnabled() const;
-    
-    /**
-     * @brief Sets the notification container position
-     * @param position CSS position ("top-right", "top-left", "bottom-right", "bottom-left")
-     */
-    void setNotificationPosition(const std::string& position);
 
 protected:
     /**
-     * @brief Sets up the notification container UI
-     */
-    void setupNotificationContainer();
-    
-    /**
-     * @brief Sets up event listeners for notification events
+     * @brief Sets up event listeners for automatic notifications
      */
     void setupEventListeners();
     
     /**
+     * @brief Creates the notification container
+     * @return Pointer to the notification container widget
+     */
+    Wt::WContainerWidget* createNotificationContainer();
+    
+    /**
      * @brief Creates a notification widget
-     * @param notification Notification data
-     * @return Widget representing the notification
+     * @param message Message to display
+     * @param type Notification type
+     * @param actionLabel Optional action button label
+     * @param callback Optional action callback
+     * @return Unique pointer to the notification widget
      */
-    std::unique_ptr<Wt::WWidget> createNotificationWidget(const NotificationData& notification);
+    std::unique_ptr<Wt::WContainerWidget> createNotificationWidget(
+        const std::string& message,
+        NotificationType type,
+        const std::string& actionLabel = "",
+        ActionCallback callback = nullptr);
     
     /**
-     * @brief Adds a notification to the display queue
-     * @param notification Notification to add
+     * @brief Gets CSS class for notification type
+     * @param type Notification type
+     * @return CSS class name
      */
-    void addNotificationToQueue(const NotificationData& notification);
+    std::string getNotificationTypeClass(NotificationType type) const;
     
     /**
-     * @brief Processes the notification queue
+     * @brief Gets icon for notification type
+     * @param type Notification type
+     * @return Icon string (emoji or class name)
      */
-    void processNotificationQueue();
+    std::string getNotificationIcon(NotificationType type) const;
     
     /**
-     * @brief Auto-dismisses expired notifications
+     * @brief Manages notification stack overflow
      */
-    void autoremoveExpiredNotifications();
+    void manageNotificationStack();
 
 private:
+    /**
+     * @struct ActiveNotification
+     * @brief Information about an active notification
+     */
+    struct ActiveNotification {
+        int id;
+        Wt::WContainerWidget* widget;
+        NotificationType type;
+        std::unique_ptr<Wt::WTimer> timer;
+        std::string message;
+        
+        ActiveNotification(int notificationId, Wt::WContainerWidget* w, 
+                         NotificationType t, const std::string& msg)
+            : id(notificationId), widget(w), type(t), message(msg) {}
+    };
+    
     // Dependencies
     std::shared_ptr<EventManager> eventManager_;
     
+    // Configuration
+    NotificationConfig config_;
+    
     // UI components
     Wt::WContainerWidget* notificationContainer_;
+    Wt::WApplication* application_;
     
     // Notification management
-    std::queue<NotificationData> notificationQueue_;
-    std::vector<NotificationData> activeNotifications_;
-    std::map<std::string, Wt::WWidget*> notificationWidgets_;
+    std::vector<std::unique_ptr<ActiveNotification>> activeNotifications_;
+    std::queue<POSEvents::NotificationEventData> pendingNotifications_;
+    int nextNotificationId_;
     
-    // Timers
-    Wt::WTimer* autoRemovalTimer_;
-    Wt::WTimer* queueProcessTimer_;
-    
-    // Configuration
-    int maxNotificationCount_;
-    int defaultDuration_;
-    bool soundsEnabled_;
-    std::string notificationPosition_;
-    
-    // Event subscription handles
+    // Event subscriptions
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
     
     // Helper methods
-    std::string getNotificationIcon(NotificationType type) const;
-    std::string getNotificationCssClass(NotificationType type) const;
-    std::string getNotificationTypeString(NotificationType type) const;
-    void playNotificationSound(NotificationType type);
-    void removeNotificationWidget(const std::string& notificationId);
-    void repositionNotifications();
-    void enforceMaxNotificationLimit();
+    void removeNotificationWidget(int notificationId);
+    void processNotificationEvent(const POSEvents::NotificationEventData& data);
+    void setupNotificationTimer(ActiveNotification* notification, int duration);
+    void applyNotificationStyling(Wt::WContainerWidget* widget, NotificationType type);
+    void positionNotificationContainer();
     
-    // Event handlers
+    // Business event handlers
+    void handleOrderEvent(const std::any& eventData);
+    void handlePaymentEvent(const std::any& eventData);
+    void handleKitchenEvent(const std::any& eventData);
     void handleSystemError(const std::any& eventData);
-    void handleOrderCreated(const std::any& eventData);
-    void handleOrderCompleted(const std::any& eventData);
-    void handlePaymentProcessed(const std::any& eventData);
-    void handleKitchenStatusChanged(const std::any& eventData);
-    
-    // Constants
-    static constexpr int DEFAULT_MAX_NOTIFICATIONS = 5;
-    static constexpr int DEFAULT_DURATION_MS = 3000;
-    static constexpr int AUTO_REMOVAL_CHECK_INTERVAL_MS = 1000;
-    static constexpr int QUEUE_PROCESS_INTERVAL_MS = 100;
 };
 
 #endif // NOTIFICATIONSERVICE_H
+

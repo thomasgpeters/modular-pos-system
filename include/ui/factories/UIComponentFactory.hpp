@@ -20,16 +20,13 @@
 #include "../dialogs/ThemeSelectionDialog.hpp"
 
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 /**
  * @file UIComponentFactory.hpp
- * @brief Factory for creating UI components with proper dependency injection
+ * @brief Factory for creating UI components with dependency injection
  * 
- * This factory centralizes the creation of UI components, ensuring proper
- * dependency injection and consistent configuration across the application.
- * It implements the Factory pattern for UI component creation.
+ * This factory centralizes the creation of UI components and handles
+ * dependency injection, making the system more modular and testable.
  * 
  * @author Restaurant POS Team
  * @version 2.0.0
@@ -37,19 +34,19 @@
 
 /**
  * @class UIComponentFactory
- * @brief Factory for creating UI components with dependency injection
+ * @brief Factory for creating and configuring UI components
  * 
  * The UIComponentFactory provides centralized creation of UI components
- * with proper dependency injection. It ensures all components receive
- * the correct service instances and configuration settings.
+ * with proper dependency injection. This promotes loose coupling and
+ * makes the system easier to test and maintain.
  */
 class UIComponentFactory {
 public:
     /**
      * @brief Constructs the UI component factory
-     * @param posService Shared POS service instance
-     * @param eventManager Shared event manager instance
-     * @param configManager Shared configuration manager instance
+     * @param posService POS service for business logic
+     * @param eventManager Event manager for component communication
+     * @param configManager Configuration manager for settings
      */
     UIComponentFactory(std::shared_ptr<POSService> posService,
                       std::shared_ptr<EventManager> eventManager,
@@ -60,37 +57,21 @@ public:
      */
     virtual ~UIComponentFactory() = default;
     
-    /**
-     * @brief Sets the theme service instance
-     * @param themeService Shared theme service instance
-     */
-    void setThemeService(std::shared_ptr<ThemeService> themeService);
-    
-    /**
-     * @brief Sets the notification service instance
-     * @param notificationService Shared notification service instance
-     */
-    void setNotificationService(std::shared_ptr<NotificationService> notificationService);
-    
     // =================================================================
-    // Main Component Creation
+    // Component Creation Methods
     // =================================================================
     
     /**
      * @brief Creates an order entry panel
-     * @return Unique pointer to the created panel
+     * @return Unique pointer to the created component
      */
     std::unique_ptr<OrderEntryPanel> createOrderEntryPanel();
     
     /**
      * @brief Creates an order status panel
-     * @return Unique pointer to the created panel
+     * @return Unique pointer to the created component
      */
     std::unique_ptr<OrderStatusPanel> createOrderStatusPanel();
-    
-    // =================================================================
-    // Individual Component Creation
-    // =================================================================
     
     /**
      * @brief Creates a menu display component
@@ -118,168 +99,93 @@ public:
     
     /**
      * @brief Creates a theme selector component
-     * @param mode Display mode for the theme selector
      * @return Unique pointer to the created component
      */
-    std::unique_ptr<ThemeSelector> createThemeSelector(
-        ThemeSelector::DisplayMode mode = ThemeSelector::COMPACT);
+    std::unique_ptr<ThemeSelector> createThemeSelector();
     
     // =================================================================
-    // Dialog Creation
+    // Dialog Creation Methods
     // =================================================================
     
     /**
      * @brief Creates a payment dialog
      * @param order Order to process payment for
+     * @param callback Payment completion callback
      * @return Unique pointer to the created dialog
      */
-    std::unique_ptr<PaymentDialog> createPaymentDialog(std::shared_ptr<Order> order);
+    std::unique_ptr<PaymentDialog> createPaymentDialog(
+        std::shared_ptr<Order> order,
+        PaymentDialog::PaymentCallback callback = nullptr);
     
     /**
-     * @brief Creates a category popover dialog
-     * @param category Category to display
-     * @return Unique pointer to the created dialog
+     * @brief Creates a category popover
+     * @param category Menu category to display
+     * @param items Menu items in the category
+     * @param callback Item selection callback
+     * @return Unique pointer to the created popover
      */
-    std::unique_ptr<CategoryPopover> createCategoryPopover(MenuItem::Category category);
+    std::unique_ptr<CategoryPopover> createCategoryPopover(
+        MenuItem::Category category,
+        const std::vector<std::shared_ptr<MenuItem>>& items,
+        CategoryPopover::ItemSelectionCallback callback = nullptr);
     
     /**
      * @brief Creates a theme selection dialog
+     * @param callback Theme selection callback
      * @return Unique pointer to the created dialog
      */
-    std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog();
+    std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
+        ThemeSelectionDialog::ThemeSelectionCallback callback = nullptr);
     
     // =================================================================
-    // Configuration and Customization
-    // =================================================================
-    
-    /**
-     * @brief Sets default styling for created components
-     * @param componentType Type of component to style
-     * @param styleClasses CSS classes to apply
-     */
-    void setDefaultStyling(const std::string& componentType, 
-                          const std::vector<std::string>& styleClasses);
-    
-    /**
-     * @brief Gets default styling for a component type
-     * @param componentType Type of component
-     * @return Vector of CSS classes
-     */
-    std::vector<std::string> getDefaultStyling(const std::string& componentType) const;
-    
-    /**
-     * @brief Enables or disables component features
-     * @param featureName Name of the feature
-     * @param enabled True to enable, false to disable
-     */
-    void setFeatureEnabled(const std::string& featureName, bool enabled);
-    
-    /**
-     * @brief Checks if a feature is enabled
-     * @param featureName Name of the feature
-     * @return True if enabled, false otherwise
-     */
-    bool isFeatureEnabled(const std::string& featureName) const;
-    
-    // =================================================================
-    // Component Registry and Management
+    // Service Registration
     // =================================================================
     
     /**
-     * @brief Registers a created component for lifecycle management
-     * @param componentId Unique identifier for the component
-     * @param component Pointer to the component
+     * @brief Registers the theme service
+     * @param themeService Theme service instance
      */
-    void registerComponent(const std::string& componentId, Wt::WWidget* component);
+    void registerThemeService(std::shared_ptr<ThemeService> themeService);
     
     /**
-     * @brief Unregisters a component
-     * @param componentId Unique identifier for the component
+     * @brief Registers the notification service
+     * @param notificationService Notification service instance
      */
-    void unregisterComponent(const std::string& componentId);
-    
-    /**
-     * @brief Gets a registered component by ID
-     * @param componentId Unique identifier for the component
-     * @return Pointer to the component, or nullptr if not found
-     */
-    Wt::WWidget* getComponent(const std::string& componentId) const;
-    
-    /**
-     * @brief Gets all registered component IDs
-     * @return Vector of component IDs
-     */
-    std::vector<std::string> getRegisteredComponentIds() const;
-    
-    /**
-     * @brief Refreshes all registered components
-     */
-    void refreshAllComponents();
+    void registerNotificationService(std::shared_ptr<NotificationService> notificationService);
 
 protected:
     /**
-     * @brief Applies default styling to a component
-     * @param component Component to style
-     * @param componentType Type of component for styling lookup
+     * @brief Configures a component with common dependencies
+     * @tparam T Component type
+     * @param component Component to configure
      */
-    void applyDefaultStyling(Wt::WWidget* component, const std::string& componentType);
+    template<typename T>
+    void configureComponent(T* component);
     
     /**
-     * @brief Validates that required services are available
-     * @return True if all required services are available
+     * @brief Applies configuration settings to a component
+     * @tparam T Component type
+     * @param component Component to configure
      */
-    bool validateServices() const;
-    
-    /**
-     * @brief Logs component creation
-     * @param componentType Type of component created
-     * @param componentId Optional component ID
-     */
-    void logComponentCreation(const std::string& componentType, 
-                             const std::string& componentId = "") const;
+    template<typename T>
+    void applyComponentConfiguration(T* component);
 
 private:
-    // Service dependencies
+    // Core services
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
     std::shared_ptr<ConfigurationManager> configManager_;
+    
+    // Optional services (registered separately)
     std::shared_ptr<ThemeService> themeService_;
     std::shared_ptr<NotificationService> notificationService_;
     
-    // Component registry
-    std::unordered_map<std::string, Wt::WWidget*> registeredComponents_;
-    
-    // Default styling configuration
-    std::unordered_map<std::string, std::vector<std::string>> defaultStyling_;
-    
-    // Feature flags
-    std::unordered_map<std::string, bool> featureFlags_;
-    
-    // Component creation counters for unique IDs
-    mutable std::unordered_map<std::string, int> componentCounters_;
+    // Factory state
+    bool initialized_;
     
     // Helper methods
-    std::string generateComponentId(const std::string& componentType) const;
-    void initializeDefaultStyling();
-    void initializeFeatureFlags();
-    void setupComponentDefaults();
-    
-    // Component configuration methods
-    void configureMenuDisplay(MenuDisplay* menuDisplay);
-    void configureCurrentOrderDisplay(CurrentOrderDisplay* currentOrderDisplay);
-    void configureThemeSelector(ThemeSelector* themeSelector);
-    
-    // Constants
-    static constexpr const char* COMPONENT_ORDER_ENTRY = "order_entry_panel";
-    static constexpr const char* COMPONENT_ORDER_STATUS = "order_status_panel";
-    static constexpr const char* COMPONENT_MENU_DISPLAY = "menu_display";
-    static constexpr const char* COMPONENT_CURRENT_ORDER = "current_order_display";
-    static constexpr const char* COMPONENT_ACTIVE_ORDERS = "active_orders_display";
-    static constexpr const char* COMPONENT_KITCHEN_STATUS = "kitchen_status_display";
-    static constexpr const char* COMPONENT_THEME_SELECTOR = "theme_selector";
-    static constexpr const char* DIALOG_PAYMENT = "payment_dialog";
-    static constexpr const char* DIALOG_CATEGORY = "category_popover";
-    static constexpr const char* DIALOG_THEME_SELECTION = "theme_selection_dialog";
+    void validateDependencies() const;
+    void logComponentCreation(const std::string& componentName) const;
 };
 
 #endif // UICOMPONENTFACTORY_H

@@ -1,8 +1,12 @@
-#include "../../include/services/ThemeService.hpp"
+//=============================================================================
+// IMPLEMENTATION FILE: ThemeService.cpp
+//=============================================================================
+
+#include "ThemeService.hpp"
+#include "../events/POSEvents.hpp"
 
 #include <Wt/WBootstrapTheme.h>
-#include <Wt/WEnvironment.h>
-#include <Wt/WServer.h>
+#include <Wt/WApplication.h>
 
 #include <iostream>
 #include <fstream>
@@ -10,136 +14,89 @@
 
 ThemeService::ThemeService(std::shared_ptr<EventManager> eventManager,
                           Wt::WApplication* application)
-    : eventManager_(eventManager)
-    , application_(application)
-    , themeDirectory_("themes/")
-    , customThemeDirectory_("themes/custom/")
-    , allowUserThemes_(true)
-    , persistUserPreference_(true) {
+    : eventManager_(eventManager), application_(application),
+      themeDirectory_("themes/"), customThemeDirectory_("themes/custom/"),
+      allowUserThemes_(true), persistUserPreference_(true) {
+    
 }
 
 void ThemeService::initialize() {
     std::cout << "Initializing ThemeService..." << std::endl;
     
-    // Load available themes
-    loadHardcodedThemes();
-    
-    // Try to load themes from configuration file
+    // Load themes from configuration or use hardcoded defaults
     if (!loadThemesFromConfiguration()) {
-        std::cout << "No theme configuration file found, using hardcoded themes" << std::endl;
+        std::cout << "Loading hardcoded themes as fallback..." << std::endl;
+        loadHardcodedThemes();
     }
     
-    // Apply user's preferred theme or default
+    // Apply user's preferred theme or default theme
     std::string preferredTheme = getUserPreferredTheme();
     if (!preferredTheme.empty() && applyTheme(preferredTheme)) {
-        std::cout << "Applied user's preferred theme: " << preferredTheme << std::endl;
+        std::cout << "Applied user preferred theme: " << preferredTheme << std::endl;
     } else {
-        applyDefaultTheme();
+        if (!applyDefaultTheme()) {
+            std::cerr << "Warning: No default theme found, using bootstrap fallback" << std::endl;
+            applyTheme("bootstrap");
+        }
     }
     
     std::cout << "✓ ThemeService initialized with " << availableThemes_.size() 
-              << " available themes" << std::endl;
+              << " themes" << std::endl;
 }
 
 void ThemeService::loadHardcodedThemes() {
     availableThemes_.clear();
     
-    // Bootstrap Theme (Default)
-    availableThemes_.emplace_back(
-        "bootstrap",
-        "Bootstrap",
-        "Clean, modern Bootstrap-based theme",
-        "themes/bootstrap.css",
-        "",
-        std::vector<std::string>{"#007bff", "#6c757d", "#28a745", "#dc3545"},
-        true,  // isDefault
-        true   // isEnabled
-    );
+    // Bootstrap theme (default)
+    ThemeInfo bootstrap("bootstrap", "Bootstrap Default", 
+                       "Clean, modern Bootstrap styling",
+                       "themes/bootstrap.css", "",
+                       {"#007bff", "#6c757d", "#28a745", "#dc3545", "#ffc107"},
+                       true, true);
+    availableThemes_.push_back(bootstrap);
     
-    // Dark Theme
-    availableThemes_.emplace_back(
-        "dark",
-        "Dark Mode",
-        "Professional dark theme for low-light environments",
-        "themes/dark.css",
-        "",
-        std::vector<std::string>{"#1a1a1a", "#333333", "#007bff", "#28a745"},
-        false, // isDefault
-        true   // isEnabled
-    );
+    // Dark theme
+    ThemeInfo dark("dark", "Dark Mode",
+                  "Professional dark theme for low-light environments",
+                  "themes/dark.css", "",
+                  {"#212529", "#343a40", "#495057", "#6c757d", "#adb5bd"},
+                  false, true);
+    availableThemes_.push_back(dark);
     
-    // Light Theme
-    availableThemes_.emplace_back(
-        "light",
-        "Light Mode",
-        "Bright, clean theme with high contrast",
-        "themes/light.css",
-        "",
-        std::vector<std::string>{"#ffffff", "#f8f9fa", "#0066cc", "#28a745"},
-        false, // isDefault
-        true   // isEnabled
-    );
+    // Light theme
+    ThemeInfo light("light", "Light Mode",
+                   "Bright theme with high contrast",
+                   "themes/light.css", "",
+                   {"#ffffff", "#f8f9fa", "#e9ecef", "#dee2e6", "#ced4da"},
+                   false, true);
+    availableThemes_.push_back(light);
     
-    // Professional Theme
-    availableThemes_.emplace_back(
-        "professional",
-        "Professional",
-        "Corporate-style theme with neutral colors",
-        "themes/professional.css",
-        "",
-        std::vector<std::string>{"#2c3e50", "#34495e", "#3498db", "#27ae60"},
-        false, // isDefault
-        true   // isEnabled
-    );
+    // Professional theme
+    ThemeInfo professional("professional", "Professional",
+                          "Corporate-style neutral colors",
+                          "themes/professional.css", "",
+                          {"#2c3e50", "#34495e", "#7f8c8d", "#95a5a6", "#bdc3c7"},
+                          false, true);
+    availableThemes_.push_back(professional);
     
-    // Restaurant Theme
-    availableThemes_.emplace_back(
-        "restaurant",
-        "Restaurant",
-        "Warm, inviting theme designed for restaurant environments",
-        "themes/restaurant.css",
-        "",
-        std::vector<std::string>{"#8B4513", "#D2691E", "#FF6347", "#32CD32"},
-        false, // isDefault
-        true   // isEnabled
-    );
+    // Restaurant theme
+    ThemeInfo restaurant("restaurant", "Restaurant",
+                        "Warm, inviting theme for restaurant environments",
+                        "themes/restaurant.css", "",
+                        {"#8b4513", "#cd853f", "#daa520", "#ff6347", "#ffa500"},
+                        false, true);
+    availableThemes_.push_back(restaurant);
     
     std::cout << "✓ Loaded " << availableThemes_.size() << " hardcoded themes" << std::endl;
 }
 
 bool ThemeService::loadThemesFromConfiguration() {
     // This would load themes from a configuration file
-    // For now, we'll just return false to indicate no config file
-    // In a real implementation, you'd parse JSON/XML/YAML config files
+    // For now, we'll use the hardcoded themes
+    // In a full implementation, this would parse a JSON or XML config file
     
-    std::ifstream configFile(themeDirectory_ + "themes.json");
-    if (!configFile.is_open()) {
-        return false;
-    }
-    
-    // TODO: Parse configuration file and add themes
-    // This is where you'd parse JSON configuration like:
-    /*
-    {
-        "themes": [
-            {
-                "id": "custom1",
-                "name": "Custom Theme 1",
-                "description": "A custom theme",
-                "cssFile": "themes/custom1.css",
-                "previewColors": ["#ff0000", "#00ff00", "#0000ff"],
-                "enabled": true
-            }
-        ]
-    }
-    */
-    
-    configFile.close();
-    return false; // Return true when actually implemented
-}
-
-void ThemeService::initializeDefaultThemes() {
-    // This is called by loadHardcodedThemes()
+    std::cout << "Theme configuration file not implemented, using hardcoded themes" << std::endl;
+    return false;
 }
 
 const std::vector<ThemeService::ThemeInfo>& ThemeService::getAvailableThemes() const {
@@ -147,15 +104,13 @@ const std::vector<ThemeService::ThemeInfo>& ThemeService::getAvailableThemes() c
 }
 
 std::vector<ThemeService::ThemeInfo> ThemeService::getEnabledThemes() const {
-    std::vector<ThemeInfo> enabledThemes;
+    std::vector<ThemeInfo> enabled;
     
-    for (const auto& theme : availableThemes_) {
-        if (theme.isEnabled) {
-            enabledThemes.push_back(theme);
-        }
-    }
+    std::copy_if(availableThemes_.begin(), availableThemes_.end(),
+                std::back_inserter(enabled),
+                [](const ThemeInfo& theme) { return theme.isEnabled; });
     
-    return enabledThemes;
+    return enabled;
 }
 
 const ThemeService::ThemeInfo* ThemeService::getThemeById(const std::string& themeId) const {
@@ -174,50 +129,55 @@ const ThemeService::ThemeInfo* ThemeService::getCurrentTheme() const {
 }
 
 bool ThemeService::applyTheme(const std::string& themeId) {
-    const auto* theme = getThemeById(themeId);
+    const ThemeInfo* theme = getThemeById(themeId);
     if (!theme) {
-        std::cerr << "Error: Theme '" << themeId << "' not found" << std::endl;
+        std::cerr << "ThemeService: Theme '" << themeId << "' not found" << std::endl;
         return false;
     }
     
     if (!theme->isEnabled) {
-        std::cerr << "Error: Theme '" << themeId << "' is disabled" << std::endl;
+        std::cerr << "ThemeService: Theme '" << themeId << "' is disabled" << std::endl;
         return false;
     }
     
     if (!validateTheme(*theme)) {
-        std::cerr << "Error: Theme '" << themeId << "' failed validation" << std::endl;
+        std::cerr << "ThemeService: Theme '" << themeId << "' failed validation" << std::endl;
         return false;
     }
     
-    // Store previous theme
-    previousThemeId_ = currentThemeId_;
-    
-    // Remove previous CSS files
-    removePreviousCSSFiles();
-    
-    // Apply new theme CSS
-    if (!applyCSSFiles(*theme)) {
-        std::cerr << "Error: Failed to apply CSS files for theme '" << themeId << "'" << std::endl;
+    try {
+        // Remove previous CSS files
+        removePreviousCSSFiles();
+        
+        // Apply new theme CSS
+        if (!applyCSSFiles(*theme)) {
+            std::cerr << "ThemeService: Failed to apply CSS for theme '" << themeId << "'" << std::endl;
+            return false;
+        }
+        
+        // Update current theme
+        previousThemeId_ = currentThemeId_;
+        currentThemeId_ = themeId;
+        
+        // Notify theme change
+        notifyThemeChanged(themeId, previousThemeId_);
+        
+        // Save user preference
+        if (persistUserPreference_) {
+            setUserPreferredTheme(themeId);
+        }
+        
+        std::cout << "Theme applied successfully: " << theme->name << " (" << themeId << ")" << std::endl;
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "ThemeService: Error applying theme '" << themeId << "': " << e.what() << std::endl;
         return false;
     }
-    
-    // Update current theme
-    currentThemeId_ = themeId;
-    
-    // Save user preference
-    if (persistUserPreference_) {
-        saveThemePreference(themeId);
-    }
-    
-    // Notify about theme change
-    notifyThemeChanged(themeId, previousThemeId_);
-    
-    std::cout << "✓ Applied theme: " << theme->name << " (" << themeId << ")" << std::endl;
-    return true;
 }
 
 bool ThemeService::applyDefaultTheme() {
+    // Find the default theme
     auto it = std::find_if(availableThemes_.begin(), availableThemes_.end(),
         [](const ThemeInfo& theme) { return theme.isDefault && theme.isEnabled; });
     
@@ -225,59 +185,58 @@ bool ThemeService::applyDefaultTheme() {
         return applyTheme(it->id);
     }
     
-    // If no default theme found, use the first enabled theme
-    auto enabledThemes = getEnabledThemes();
-    if (!enabledThemes.empty()) {
-        return applyTheme(enabledThemes[0].id);
+    // If no default theme, use first enabled theme
+    auto enabled = getEnabledThemes();
+    if (!enabled.empty()) {
+        return applyTheme(enabled[0].id);
     }
     
-    std::cerr << "Error: No default or enabled themes available" << std::endl;
     return false;
 }
 
 bool ThemeService::applyCSSFiles(const ThemeInfo& theme) {
     if (!application_) {
-        std::cerr << "Error: WApplication not available for CSS application" << std::endl;
+        std::cerr << "ThemeService: No application instance available" << std::endl;
         return false;
     }
     
-    bool success = true;
-    
-    // Apply main CSS file
-    if (!theme.cssFile.empty()) {
-        try {
-            Wt::WLink cssLink(theme.cssFile);
+    try {
+        // Apply local CSS file
+        if (!theme.cssFile.empty()) {
+            Wt::WLink cssLink(Wt::LinkType::Url, theme.cssFile);
+            cssLink.setTarget(Wt::LinkTarget::Self);
             application_->useStyleSheet(cssLink);
             appliedCSSLinks_.push_back(cssLink);
+            
             std::cout << "Applied CSS file: " << theme.cssFile << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Error applying CSS file " << theme.cssFile << ": " << e.what() << std::endl;
-            success = false;
         }
-    }
-    
-    // Apply external CSS (if any)
-    if (!theme.externalCss.empty()) {
-        try {
+        
+        // Apply external CSS (e.g., CDN links)
+        if (!theme.externalCss.empty()) {
             Wt::WLink externalLink(Wt::LinkType::Url, theme.externalCss);
+            externalLink.setTarget(Wt::LinkTarget::Self);
             application_->useStyleSheet(externalLink);
             appliedCSSLinks_.push_back(externalLink);
+            
             std::cout << "Applied external CSS: " << theme.externalCss << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Error applying external CSS " << theme.externalCss << ": " << e.what() << std::endl;
-            success = false;
         }
+        
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "ThemeService: Error applying CSS files: " << e.what() << std::endl;
+        return false;
     }
-    
-    return success;
 }
 
 void ThemeService::removePreviousCSSFiles() {
-    // Note: Wt doesn't provide a direct way to remove stylesheets
-    // In practice, theme switching often requires page reload
-    // For dynamic theme switching, you'd typically use CSS custom properties (CSS variables)
+    if (!application_) return;
     
+    // Remove previously applied CSS links
+    // Note: Wt doesn't provide a direct way to remove stylesheets,
+    // so we'll clear our tracking and let the browser handle it
     appliedCSSLinks_.clear();
+    
     std::cout << "Previous CSS files marked for removal" << std::endl;
 }
 
@@ -286,15 +245,17 @@ void ThemeService::reloadThemes() {
     
     std::string currentTheme = currentThemeId_;
     
-    // Reload theme definitions
-    loadHardcodedThemes();
-    loadThemesFromConfiguration();
+    // Reload themes from configuration
+    if (!loadThemesFromConfiguration()) {
+        loadHardcodedThemes();
+    }
     
-    // Reapply current theme if it still exists
-    if (getThemeById(currentTheme)) {
-        applyTheme(currentTheme);
-    } else {
-        applyDefaultTheme();
+    // Try to reapply current theme
+    if (!currentTheme.empty()) {
+        if (!applyTheme(currentTheme)) {
+            std::cout << "Could not reapply previous theme, applying default" << std::endl;
+            applyDefaultTheme();
+        }
     }
     
     std::cout << "✓ Themes reloaded" << std::endl;
@@ -302,19 +263,19 @@ void ThemeService::reloadThemes() {
 
 bool ThemeService::addTheme(const ThemeInfo& theme) {
     // Check if theme ID already exists
-    if (getThemeById(theme.id)) {
-        std::cerr << "Error: Theme with ID '" << theme.id << "' already exists" << std::endl;
+    if (getThemeById(theme.id) != nullptr) {
+        std::cerr << "ThemeService: Theme with ID '" << theme.id << "' already exists" << std::endl;
         return false;
     }
     
     if (!validateTheme(theme)) {
-        std::cerr << "Error: Theme validation failed for '" << theme.id << "'" << std::endl;
+        std::cerr << "ThemeService: Theme '" << theme.id << "' failed validation" << std::endl;
         return false;
     }
     
     availableThemes_.push_back(theme);
     
-    std::cout << "Added theme: " << theme.name << " (" << theme.id << ")" << std::endl;
+    std::cout << "Theme added: " << theme.name << " (" << theme.id << ")" << std::endl;
     return true;
 }
 
@@ -323,20 +284,26 @@ bool ThemeService::removeTheme(const std::string& themeId) {
         [&themeId](const ThemeInfo& theme) { return theme.id == themeId; });
     
     if (it == availableThemes_.end()) {
-        std::cerr << "Error: Theme '" << themeId << "' not found for removal" << std::endl;
+        std::cerr << "ThemeService: Theme '" << themeId << "' not found" << std::endl;
         return false;
     }
     
-    // Don't allow removal of the currently active theme
+    // Don't allow removing the current theme
     if (themeId == currentThemeId_) {
-        std::cerr << "Error: Cannot remove currently active theme '" << themeId << "'" << std::endl;
+        std::cerr << "ThemeService: Cannot remove currently active theme" << std::endl;
+        return false;
+    }
+    
+    // Don't allow removing the default theme
+    if (it->isDefault) {
+        std::cerr << "ThemeService: Cannot remove default theme" << std::endl;
         return false;
     }
     
     std::string themeName = it->name;
     availableThemes_.erase(it);
     
-    std::cout << "Removed theme: " << themeName << " (" << themeId << ")" << std::endl;
+    std::cout << "Theme removed: " << themeName << " (" << themeId << ")" << std::endl;
     return true;
 }
 
@@ -345,20 +312,26 @@ bool ThemeService::setThemeEnabled(const std::string& themeId, bool enabled) {
         [&themeId](ThemeInfo& theme) { return theme.id == themeId; });
     
     if (it == availableThemes_.end()) {
-        std::cerr << "Error: Theme '" << themeId << "' not found" << std::endl;
+        std::cerr << "ThemeService: Theme '" << themeId << "' not found" << std::endl;
         return false;
     }
     
-    // Don't allow disabling the currently active theme
+    // Don't allow disabling the current theme
     if (!enabled && themeId == currentThemeId_) {
-        std::cerr << "Error: Cannot disable currently active theme '" << themeId << "'" << std::endl;
+        std::cerr << "ThemeService: Cannot disable currently active theme" << std::endl;
+        return false;
+    }
+    
+    // Don't allow disabling the default theme
+    if (!enabled && it->isDefault) {
+        std::cerr << "ThemeService: Cannot disable default theme" << std::endl;
         return false;
     }
     
     it->isEnabled = enabled;
     
-    std::cout << (enabled ? "Enabled" : "Disabled") << " theme: " << it->name 
-              << " (" << themeId << ")" << std::endl;
+    std::cout << "Theme " << (enabled ? "enabled" : "disabled") << ": " 
+              << it->name << " (" << themeId << ")" << std::endl;
     return true;
 }
 
@@ -386,54 +359,23 @@ void ThemeService::clearUserPreferredTheme() {
     saveThemePreference("");
 }
 
-void ThemeService::notifyThemeChanged(const std::string& newThemeId, const std::string& oldThemeId) {
-    if (!eventManager_) {
-        return;
-    }
-    
-    const auto* newTheme = getThemeById(newThemeId);
-    const auto* oldTheme = getThemeById(oldThemeId);
-    
-    std::string newThemeName = newTheme ? newTheme->name : newThemeId;
-    std::string oldThemeName = oldTheme ? oldTheme->name : oldThemeId;
-    
-    // Create theme event data
-    POSEvents::ThemeEventData themeData(newThemeId, newThemeName, oldThemeId);
-    
-    // Publish theme changed event
-    eventManager_->publish(POSEvents::THEME_CHANGED, themeData);
-    
-    std::cout << "Theme change event published: " << oldThemeName 
-              << " → " << newThemeName << std::endl;
-}
-
 bool ThemeService::validateTheme(const ThemeInfo& theme) const {
     // Basic validation
-    if (theme.id.empty()) {
-        std::cerr << "Theme validation failed: empty ID" << std::endl;
+    if (theme.id.empty() || theme.name.empty()) {
+        std::cerr << "ThemeService: Theme must have ID and name" << std::endl;
         return false;
     }
     
-    if (theme.name.empty()) {
-        std::cerr << "Theme validation failed: empty name" << std::endl;
+    // Validate ID format (no spaces, special chars)
+    if (sanitizeThemeId(theme.id) != theme.id) {
+        std::cerr << "ThemeService: Theme ID contains invalid characters: " << theme.id << std::endl;
         return false;
     }
     
-    // Sanitize theme ID
-    std::string sanitizedId = sanitizeThemeId(theme.id);
-    if (sanitizedId != theme.id) {
-        std::cerr << "Theme validation failed: invalid characters in ID" << std::endl;
+    // Validate that at least one CSS source is provided
+    if (theme.cssFile.empty() && theme.externalCss.empty()) {
+        std::cerr << "ThemeService: Theme must have at least one CSS source" << std::endl;
         return false;
-    }
-    
-    // Check if CSS file exists (basic check)
-    if (!theme.cssFile.empty()) {
-        std::ifstream cssFile(theme.cssFile);
-        if (!cssFile.good()) {
-            std::cerr << "Theme validation warning: CSS file '" << theme.cssFile 
-                      << "' not accessible" << std::endl;
-            // Don't fail validation, as file might be created later
-        }
     }
     
     return true;
@@ -451,40 +393,28 @@ std::string ThemeService::sanitizeThemeId(const std::string& themeId) const {
     return sanitized;
 }
 
-void ThemeService::saveThemePreference(const std::string& themeId) {
-    // In a real implementation, this would save to a database, 
-    // configuration file, or browser storage
-    // For now, we'll just log it
-    
-    std::cout << "Saving theme preference: " << themeId << std::endl;
-    
-    // Example implementation might save to a user preference file:
-    /*
-    std::ofstream prefFile("user_preferences.txt");
-    if (prefFile.is_open()) {
-        prefFile << "theme=" << themeId << std::endl;
-        prefFile.close();
+void ThemeService::notifyThemeChanged(const std::string& newThemeId, const std::string& oldThemeId) {
+    if (eventManager_) {
+        const ThemeInfo* theme = getThemeById(newThemeId);
+        std::string themeName = theme ? theme->name : newThemeId;
+        
+        eventManager_->publish(POSEvents::THEME_CHANGED,
+            POSEvents::createThemeChangedEvent(newThemeId, themeName, oldThemeId));
     }
-    */
+}
+
+// Storage methods (simplified implementation)
+void ThemeService::saveThemePreference(const std::string& themeId) {
+    // In a real implementation, this would save to a persistent storage
+    // For now, we'll just store in memory (lost on restart)
+    // This could save to a file, database, or browser localStorage
+    
+    std::cout << "Theme preference saved: " << themeId << std::endl;
 }
 
 std::string ThemeService::loadThemePreference() const {
-    // In a real implementation, this would load from storage
-    // For now, we'll return empty string
+    // In a real implementation, this would load from persistent storage
+    // For now, return empty string (no saved preference)
     
-    // Example implementation might load from a user preference file:
-    /*
-    std::ifstream prefFile("user_preferences.txt");
-    if (prefFile.is_open()) {
-        std::string line;
-        while (std::getline(prefFile, line)) {
-            if (line.find("theme=") == 0) {
-                return line.substr(6); // Return everything after "theme="
-            }
-        }
-        prefFile.close();
-    }
-    */
-    
-    return ""; // No preference found
+    return "";
 }

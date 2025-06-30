@@ -1,15 +1,16 @@
-#include "../../include/core/ConfigurationManager.hpp"
+//=============================================================================
+// IMPLEMENTATION FILE: ConfigurationManager.cpp
+//=============================================================================
+
+#include "ConfigurationManager.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
+#include <algorithm>
 #include <cstdlib>
-#include <regex>
-#include <iomanip>
 
 ConfigurationManager::ConfigurationManager() {
-    // Constructor - initialization happens in initialize()
 }
 
 void ConfigurationManager::initialize() {
@@ -19,123 +20,123 @@ void ConfigurationManager::initialize() {
     loadDefaults();
     
     // Try to load from configuration file
-    std::vector<std::string> configFiles = {
-        "config/pos_config.json",
-        "pos_config.json",
-        "../config/pos_config.json"
-    };
-    
-    bool configLoaded = false;
-    for (const auto& configFile : configFiles) {
-        if (loadFromFile(configFile)) {
-            std::cout << "✓ Configuration loaded from: " << configFile << std::endl;
-            configLoaded = true;
-            break;
-        }
-    }
-    
-    if (!configLoaded) {
+    if (!loadFromFile("pos_config.json")) {
         std::cout << "No configuration file found, using defaults" << std::endl;
     }
     
-    // Load environment variables (these override file settings)
-    loadFromEnvironment();
+    // Load from environment variables (these override file settings)
+    loadFromEnvironment("POS_");
     
     std::cout << "✓ ConfigurationManager initialized" << std::endl;
 }
 
 bool ConfigurationManager::loadFromFile(const std::string& filePath) {
-    std::ifstream configFile(filePath);
-    if (!configFile.is_open()) {
+    std::cout << "Loading configuration from file: " << filePath << std::endl;
+    
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "ConfigurationManager: Could not open file: " << filePath << std::endl;
         return false;
     }
     
-    lastLoadedFile_ = filePath;
-    
-    // For now, we'll implement a simple key=value parser
-    // In a real implementation, you'd use a JSON/XML/YAML parser
-    
-    std::string line;
-    int lineNumber = 0;
-    
-    while (std::getline(configFile, line)) {
-        lineNumber++;
+    try {
+        std::string line;
+        std::string section = "general";
         
-        // Skip empty lines and comments
-        if (line.empty() || line[0] == '#' || line[0] == ';') {
-            continue;
+        while (std::getline(file, line)) {
+            // Remove whitespace
+            line.erase(std::remove_if(line.begin(), line.end(), ::isspace), line.end());
+            
+            // Skip empty lines and comments
+            if (line.empty() || line[0] == '#' || line[0] == ';') {
+                continue;
+            }
+            
+            // Check for section headers [section_name]
+            if (line[0] == '[' && line.back() == ']') {
+                section = line.substr(1, line.length() - 2);
+                continue;
+            }
+            
+            // Parse key=value pairs
+            size_t equalPos = line.find('=');
+            if (equalPos != std::string::npos) {
+                std::string key = line.substr(0, equalPos);
+                std::string value = line.substr(equalPos + 1);
+                
+                // Remove quotes if present
+                if (value.length() >= 2 && value[0] == '"' && value.back() == '"') {
+                    value = value.substr(1, value.length() - 2);
+                }
+                
+                // Store in appropriate section
+                auto& configSection = getOrCreateSection(section);
+                
+                // Try to convert to appropriate type
+                if (value == "true" || value == "false") {
+                    configSection[key] = (value == "true");
+                } else if (value.find('.') != std::string::npos) {
+                    try {
+                        configSection[key] = std::stod(value);
+                    } catch (...) {
+                        configSection[key] = value; // Store as string if conversion fails
+                    }
+                } else {
+                    try {
+                        configSection[key] = std::stoi(value);
+                    } catch (...) {
+                        configSection[key] = value; // Store as string if conversion fails
+                    }
+                }
+            }
         }
         
-        // Parse key=value format
-        size_t equalPos = line.find('=');
-        if (equalPos == std::string::npos) {
-            std::cerr << "Warning: Invalid configuration line " << lineNumber 
-                      << " in " << filePath << ": " << line << std::endl;
-            continue;
-        }
+        lastLoadedFile_ = filePath;
+        std::cout << "✓ Configuration loaded from file: " << filePath << std::endl;
+        return true;
         
-        std::string key = line.substr(0, equalPos);
-        std::string value = line.substr(equalPos + 1);
-        
-        // Trim whitespace
-        key.erase(0, key.find_first_not_of(" \t"));
-        key.erase(key.find_last_not_of(" \t") + 1);
-        value.erase(0, value.find_first_not_of(" \t"));
-        value.erase(value.find_last_not_of(" \t") + 1);
-        
-        // Remove quotes from value if present
-        if (value.size() >= 2 && 
-            ((value.front() == '"' && value.back() == '"') ||
-             (value.front() == '\'' && value.back() == '\''))) {
-            value = value.substr(1, value.length() - 2);
-        }
-        
-        if (isValidKey(key)) {
-            setValue(key, value);
-        } else {
-            std::cerr << "Warning: Invalid configuration key: " << key << std::endl;
-        }
+    } catch (const std::exception& e) {
+        std::cerr << "ConfigurationManager: Error loading file: " << e.what() << std::endl;
+        return false;
     }
-    
-    configFile.close();
-    std::cout << "Configuration loaded from file: " << filePath << std::endl;
-    return true;
 }
 
 void ConfigurationManager::loadFromEnvironment(const std::string& prefix) {
-    std::cout << "Loading configuration from environment variables (prefix: " 
-              << prefix << ")..." << std::endl;
+    std::cout << "Loading configuration from environment variables with prefix: " << prefix << std::endl;
     
-    // List of environment variables to check
-    std::vector<std::string> envVars = {
-        prefix + "RESTAURANT_NAME",
-        prefix + "RESTAURANT_ADDRESS",
-        prefix + "RESTAURANT_PHONE",
-        prefix + "TAX_RATE",
-        prefix + "SERVER_PORT",
-        prefix + "SERVER_ADDRESS",
-        prefix + "DEFAULT_THEME",
-        prefix + "UI_UPDATE_INTERVAL",
-        prefix + "KITCHEN_REFRESH_RATE"
-    };
+    // Get all environment variables
+    extern char **environ;
+    int count = 0;
     
-    int loadedCount = 0;
-    for (const auto& envVar : envVars) {
-        const char* value = std::getenv(envVar.c_str());
-        if (value) {
-            // Convert environment variable name to configuration key
-            std::string key = envVar.substr(prefix.length());
-            std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-            std::replace(key.begin(), key.end(), '_', '.');
-            
-            setValue(key, std::string(value));
-            loadedCount++;
+    for (char **env = environ; *env; ++env) {
+        std::string envVar(*env);
+        
+        // Check if it starts with our prefix
+        if (envVar.substr(0, prefix.length()) == prefix) {
+            size_t equalPos = envVar.find('=');
+            if (equalPos != std::string::npos) {
+                std::string key = envVar.substr(prefix.length(), equalPos - prefix.length());
+                std::string value = envVar.substr(equalPos + 1);
+                
+                // Convert underscores to dots and lowercase
+                std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+                std::replace(key.begin(), key.end(), '_', '.');
+                
+                // Parse section and key
+                auto [section, keyName] = parseKey(key);
+                if (section.empty()) section = "general";
+                
+                auto& configSection = getOrCreateSection(section);
+                
+                // Store as string (environment variables are always strings)
+                // Type conversion will happen when getValue is called
+                configSection[keyName] = value;
+                count++;
+            }
         }
     }
     
-    if (loadedCount > 0) {
-        std::cout << "✓ Loaded " << loadedCount << " configuration values from environment" << std::endl;
-    }
+    std::cout << "✓ Loaded " << count << " configuration values from environment" << std::endl;
 }
 
 void ConfigurationManager::loadDefaults() {
@@ -153,72 +154,60 @@ void ConfigurationManager::loadDefaults() {
 }
 
 void ConfigurationManager::setDefaultRestaurantConfig() {
-    auto& restaurantConfig = getOrCreateSection("restaurant");
-    
-    restaurantConfig["name"] = std::string("Demo Restaurant");
-    restaurantConfig["address"] = std::string("123 Main Street, Pittsburgh, PA 15213");
-    restaurantConfig["phone"] = std::string("(412) 555-0123");
-    restaurantConfig["tax.rate"] = 0.0825; // 8.25% tax rate
+    auto& section = getOrCreateSection("restaurant");
+    section["name"] = std::string("Restaurant POS System");
+    section["address"] = std::string("123 Main Street, City, State 12345");
+    section["phone"] = std::string("(555) 123-4567");
+    section["tax.rate"] = 0.0825; // 8.25%
 }
 
 void ConfigurationManager::setDefaultServerConfig() {
-    auto& serverConfig = getOrCreateSection("server");
-    
-    serverConfig["port"] = 8081;
-    serverConfig["address"] = std::string("0.0.0.0");
-    serverConfig["session.timeout"] = 1800; // 30 minutes
+    auto& section = getOrCreateSection("server");
+    section["port"] = 8081;
+    section["address"] = std::string("0.0.0.0");
+    section["session.timeout"] = 3600; // 1 hour
 }
 
 void ConfigurationManager::setDefaultOrderConfig() {
-    auto& orderConfig = getOrCreateSection("order");
-    
-    orderConfig["starting.id"] = 1000;
-    orderConfig["timeout"] = 60; // 60 minutes
-    orderConfig["max.items"] = 50;
+    auto& section = getOrCreateSection("order");
+    section["starting.id"] = 1001;
+    section["timeout"] = 30; // 30 minutes
+    section["max.items"] = 50;
 }
 
 void ConfigurationManager::setDefaultKitchenConfig() {
-    auto& kitchenConfig = getOrCreateSection("kitchen");
-    
-    kitchenConfig["refresh.rate"] = 5; // 5 seconds
-    kitchenConfig["busy.threshold"] = 10; // 10 orders
-    
-    // Default preparation times by category (in minutes)
-    kitchenConfig["prep.time.appetizer"] = 10;
-    kitchenConfig["prep.time.main_course"] = 20;
-    kitchenConfig["prep.time.dessert"] = 8;
-    kitchenConfig["prep.time.beverage"] = 2;
+    auto& section = getOrCreateSection("kitchen");
+    section["refresh.rate"] = 5; // 5 seconds
+    section["busy.threshold"] = 10; // 10 orders
+    section["prep.time.appetizer"] = 10; // 10 minutes
+    section["prep.time.main"] = 20; // 20 minutes
+    section["prep.time.dessert"] = 8; // 8 minutes
+    section["prep.time.beverage"] = 3; // 3 minutes
 }
 
 void ConfigurationManager::setDefaultUIConfig() {
-    auto& uiConfig = getOrCreateSection("ui");
-    
-    uiConfig["default.theme"] = std::string("bootstrap");
-    uiConfig["update.interval"] = 5; // 5 seconds
-    uiConfig["group.menu.by.category"] = true;
+    auto& section = getOrCreateSection("ui");
+    section["default.theme"] = std::string("bootstrap");
+    section["update.interval"] = 5; // 5 seconds
+    section["group.menu.by.category"] = true;
 }
 
 void ConfigurationManager::setDefaultFeatureFlags() {
-    auto& featuresConfig = getOrCreateSection("features");
-    
-    featuresConfig["inventory"] = false;
-    featuresConfig["staff.management"] = false;
-    featuresConfig["customer.management"] = false;
-    featuresConfig["reporting"] = true;
-    featuresConfig["loyalty.program"] = false;
+    auto& section = getOrCreateSection("features");
+    section["inventory"] = false;
+    section["staff.management"] = false;
+    section["customer.management"] = false;
+    section["reporting"] = true;
+    section["loyalty.program"] = false;
 }
 
 void ConfigurationManager::setDefaultPaymentConfig() {
-    auto& paymentConfig = getOrCreateSection("payment");
-    
-    paymentConfig["enabled.methods"] = std::string("cash,credit_card,debit_card");
-    paymentConfig["tip.suggestions"] = std::string("15,18,20,25");
+    auto& section = getOrCreateSection("payment");
+    section["enabled.methods"] = std::string("cash,credit_card,debit_card");
+    section["tip.suggestions"] = std::string("15,18,20,25");
 }
 
-// =================================================================
-// Configuration Access
-// =================================================================
-
+// Generic configuration access
 bool ConfigurationManager::hasKey(const std::string& key) const {
     auto [sectionName, keyName] = parseKey(key);
     
@@ -248,12 +237,13 @@ bool ConfigurationManager::removeKey(const std::string& key) {
 }
 
 std::vector<std::string> ConfigurationManager::getSectionKeys(const std::string& sectionName) const {
+    std::vector<std::string> keys;
+    
     const auto* section = getSection(sectionName);
     if (!section) {
-        return {};
+        return keys;
     }
     
-    std::vector<std::string> keys;
     for (const auto& pair : *section) {
         keys.push_back(pair.first);
     }
@@ -261,12 +251,9 @@ std::vector<std::string> ConfigurationManager::getSectionKeys(const std::string&
     return keys;
 }
 
-// =================================================================
-// Restaurant Configuration
-// =================================================================
-
+// Restaurant configuration
 std::string ConfigurationManager::getRestaurantName() const {
-    return getValue<std::string>("restaurant.name", "Demo Restaurant");
+    return getValue<std::string>("restaurant.name", "Restaurant POS System");
 }
 
 void ConfigurationManager::setRestaurantName(const std::string& name) {
@@ -274,7 +261,7 @@ void ConfigurationManager::setRestaurantName(const std::string& name) {
 }
 
 std::string ConfigurationManager::getRestaurantAddress() const {
-    return getValue<std::string>("restaurant.address", "123 Main Street, Pittsburgh, PA 15213");
+    return getValue<std::string>("restaurant.address", "");
 }
 
 void ConfigurationManager::setRestaurantAddress(const std::string& address) {
@@ -282,7 +269,7 @@ void ConfigurationManager::setRestaurantAddress(const std::string& address) {
 }
 
 std::string ConfigurationManager::getRestaurantPhone() const {
-    return getValue<std::string>("restaurant.phone", "(412) 555-0123");
+    return getValue<std::string>("restaurant.phone", "");
 }
 
 void ConfigurationManager::setRestaurantPhone(const std::string& phone) {
@@ -297,10 +284,7 @@ void ConfigurationManager::setTaxRate(double rate) {
     setValue("restaurant.tax.rate", rate);
 }
 
-// =================================================================
-// Server Configuration
-// =================================================================
-
+// Server configuration
 int ConfigurationManager::getServerPort() const {
     return getValue<int>("server.port", 8081);
 }
@@ -318,19 +302,16 @@ void ConfigurationManager::setServerAddress(const std::string& address) {
 }
 
 int ConfigurationManager::getSessionTimeout() const {
-    return getValue<int>("server.session.timeout", 1800);
+    return getValue<int>("server.session.timeout", 3600);
 }
 
 void ConfigurationManager::setSessionTimeout(int timeoutSeconds) {
     setValue("server.session.timeout", timeoutSeconds);
 }
 
-// =================================================================
-// Order Configuration
-// =================================================================
-
+// Order configuration
 int ConfigurationManager::getStartingOrderId() const {
-    return getValue<int>("order.starting.id", 1000);
+    return getValue<int>("order.starting.id", 1001);
 }
 
 void ConfigurationManager::setStartingOrderId(int startId) {
@@ -338,7 +319,7 @@ void ConfigurationManager::setStartingOrderId(int startId) {
 }
 
 int ConfigurationManager::getOrderTimeout() const {
-    return getValue<int>("order.timeout", 60);
+    return getValue<int>("order.timeout", 30);
 }
 
 void ConfigurationManager::setOrderTimeout(int timeoutMinutes) {
@@ -353,10 +334,7 @@ void ConfigurationManager::setMaxItemsPerOrder(int maxItems) {
     setValue("order.max.items", maxItems);
 }
 
-// =================================================================
-// Kitchen Configuration
-// =================================================================
-
+// Kitchen configuration
 int ConfigurationManager::getKitchenRefreshRate() const {
     return getValue<int>("kitchen.refresh.rate", 5);
 }
@@ -377,9 +355,9 @@ std::unordered_map<std::string, int> ConfigurationManager::getKitchenPrepTimes()
     std::unordered_map<std::string, int> prepTimes;
     
     prepTimes["appetizer"] = getValue<int>("kitchen.prep.time.appetizer", 10);
-    prepTimes["main_course"] = getValue<int>("kitchen.prep.time.main_course", 20);
+    prepTimes["main"] = getValue<int>("kitchen.prep.time.main", 20);
     prepTimes["dessert"] = getValue<int>("kitchen.prep.time.dessert", 8);
-    prepTimes["beverage"] = getValue<int>("kitchen.prep.time.beverage", 2);
+    prepTimes["beverage"] = getValue<int>("kitchen.prep.time.beverage", 3);
     
     return prepTimes;
 }
@@ -388,10 +366,7 @@ void ConfigurationManager::setKitchenPrepTime(const std::string& category, int m
     setValue("kitchen.prep.time." + category, minutes);
 }
 
-// =================================================================
-// UI Configuration
-// =================================================================
-
+// UI configuration
 std::string ConfigurationManager::getDefaultTheme() const {
     return getValue<std::string>("ui.default.theme", "bootstrap");
 }
@@ -416,10 +391,7 @@ void ConfigurationManager::setGroupMenuByCategory(bool group) {
     setValue("ui.group.menu.by.category", group);
 }
 
-// =================================================================
-// Feature Flags
-// =================================================================
-
+// Feature flags
 bool ConfigurationManager::isFeatureEnabled(const std::string& featureName) const {
     return getValue<bool>("features." + featureName, false);
 }
@@ -448,22 +420,16 @@ bool ConfigurationManager::isLoyaltyProgramEnabled() const {
     return isFeatureEnabled("loyalty.program");
 }
 
-// =================================================================
-// Payment Configuration
-// =================================================================
-
+// Payment configuration
 std::vector<std::string> ConfigurationManager::getEnabledPaymentMethods() const {
     std::string methodsStr = getValue<std::string>("payment.enabled.methods", "cash,credit_card,debit_card");
-    
     std::vector<std::string> methods;
+    
     std::stringstream ss(methodsStr);
     std::string method;
-    
     while (std::getline(ss, method, ',')) {
         // Trim whitespace
-        method.erase(0, method.find_first_not_of(" \t"));
-        method.erase(method.find_last_not_of(" \t") + 1);
-        
+        method.erase(std::remove_if(method.begin(), method.end(), ::isspace), method.end());
         if (!method.empty()) {
             methods.push_back(method);
         }
@@ -473,41 +439,38 @@ std::vector<std::string> ConfigurationManager::getEnabledPaymentMethods() const 
 }
 
 void ConfigurationManager::setPaymentMethodEnabled(const std::string& method, bool enabled) {
-    auto currentMethods = getEnabledPaymentMethods();
+    auto methods = getEnabledPaymentMethods();
     
-    auto it = std::find(currentMethods.begin(), currentMethods.end(), method);
+    auto it = std::find(methods.begin(), methods.end(), method);
     
-    if (enabled && it == currentMethods.end()) {
-        // Add method if not present
-        currentMethods.push_back(method);
-    } else if (!enabled && it != currentMethods.end()) {
-        // Remove method if present
-        currentMethods.erase(it);
+    if (enabled && it == methods.end()) {
+        methods.push_back(method);
+    } else if (!enabled && it != methods.end()) {
+        methods.erase(it);
     }
     
     // Convert back to string
-    std::stringstream ss;
-    for (size_t i = 0; i < currentMethods.size(); ++i) {
-        if (i > 0) ss << ",";
-        ss << currentMethods[i];
+    std::string methodsStr;
+    for (size_t i = 0; i < methods.size(); ++i) {
+        if (i > 0) methodsStr += ",";
+        methodsStr += methods[i];
     }
     
-    setValue("payment.enabled.methods", ss.str());
+    setValue("payment.enabled.methods", methodsStr);
 }
 
 std::vector<double> ConfigurationManager::getTipSuggestions() const {
     std::string suggestionsStr = getValue<std::string>("payment.tip.suggestions", "15,18,20,25");
-    
     std::vector<double> suggestions;
+    
     std::stringstream ss(suggestionsStr);
     std::string suggestion;
-    
     while (std::getline(ss, suggestion, ',')) {
         try {
             double value = std::stod(suggestion);
             suggestions.push_back(value);
-        } catch (const std::exception& e) {
-            std::cerr << "Warning: Invalid tip suggestion value: " << suggestion << std::endl;
+        } catch (...) {
+            // Skip invalid values
         }
     }
     
@@ -515,71 +478,76 @@ std::vector<double> ConfigurationManager::getTipSuggestions() const {
 }
 
 void ConfigurationManager::setTipSuggestions(const std::vector<double>& suggestions) {
-    std::stringstream ss;
+    std::string suggestionsStr;
     for (size_t i = 0; i < suggestions.size(); ++i) {
-        if (i > 0) ss << ",";
-        ss << std::fixed << std::setprecision(1) << suggestions[i];
+        if (i > 0) suggestionsStr += ",";
+        suggestionsStr += std::to_string(suggestions[i]);
     }
     
-    setValue("payment.tip.suggestions", ss.str());
+    setValue("payment.tip.suggestions", suggestionsStr);
 }
 
-// =================================================================
 // Persistence
-// =================================================================
-
 bool ConfigurationManager::saveToFile(const std::string& filePath) const {
-    std::ofstream configFile(filePath);
-    if (!configFile.is_open()) {
-        std::cerr << "Error: Could not open configuration file for writing: " << filePath << std::endl;
+    std::cout << "Saving configuration to file: " << filePath << std::endl;
+    
+    std::ofstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "ConfigurationManager: Could not open file for writing: " << filePath << std::endl;
         return false;
     }
     
-    configFile << "# Restaurant POS Configuration File\n";
-    configFile << "# Generated automatically - edit with care\n\n";
-    
-    for (const auto& sectionPair : config_) {
-        const std::string& sectionName = sectionPair.first;
-        const ConfigSection& section = sectionPair.second;
+    try {
+        file << "# Restaurant POS Configuration File\n";
+        file << "# Generated automatically - edit with care\n\n";
         
-        configFile << "# " << sectionName << " configuration\n";
-        
-        for (const auto& keyPair : section) {
-            const std::string& keyName = keyPair.first;
-            const ConfigValue& value = keyPair.second;
+        for (const auto& sectionPair : config_) {
+            file << "[" << sectionPair.first << "]\n";
             
-            std::string fullKey = sectionName + "." + keyName;
-            
-            // Convert value to string for output
-            try {
-                if (value.type() == typeid(std::string)) {
-                    configFile << fullKey << "=" << std::any_cast<std::string>(value) << "\n";
-                } else if (value.type() == typeid(int)) {
-                    configFile << fullKey << "=" << std::any_cast<int>(value) << "\n";
-                } else if (value.type() == typeid(double)) {
-                    configFile << fullKey << "=" << std::fixed << std::setprecision(4) 
-                              << std::any_cast<double>(value) << "\n";
-                } else if (value.type() == typeid(bool)) {
-                    configFile << fullKey << "=" << (std::any_cast<bool>(value) ? "true" : "false") << "\n";
-                } else {
-                    std::cerr << "Warning: Unknown type for configuration key: " << fullKey << std::endl;
+            for (const auto& keyPair : sectionPair.second) {
+                file << keyPair.first << "=";
+                
+                // Handle different types
+                try {
+                    auto strValue = std::any_cast<std::string>(keyPair.second);
+                    file << "\"" << strValue << "\"";
+                } catch (const std::bad_any_cast&) {
+                    try {
+                        auto intValue = std::any_cast<int>(keyPair.second);
+                        file << intValue;
+                    } catch (const std::bad_any_cast&) {
+                        try {
+                            auto doubleValue = std::any_cast<double>(keyPair.second);
+                            file << doubleValue;
+                        } catch (const std::bad_any_cast&) {
+                            try {
+                                auto boolValue = std::any_cast<bool>(keyPair.second);
+                                file << (boolValue ? "true" : "false");
+                            } catch (const std::bad_any_cast&) {
+                                file << "\"unknown\"";
+                            }
+                        }
+                    }
                 }
-            } catch (const std::bad_any_cast& e) {
-                std::cerr << "Error converting configuration value for key: " << fullKey << std::endl;
+                
+                file << "\n";
             }
+            
+            file << "\n";
         }
         
-        configFile << "\n";
+        std::cout << "✓ Configuration saved to: " << filePath << std::endl;
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "ConfigurationManager: Error saving file: " << e.what() << std::endl;
+        return false;
     }
-    
-    configFile.close();
-    std::cout << "Configuration saved to: " << filePath << std::endl;
-    return true;
 }
 
 bool ConfigurationManager::reload() {
     if (lastLoadedFile_.empty()) {
-        std::cerr << "No configuration file to reload" << std::endl;
+        std::cerr << "ConfigurationManager: No file to reload" << std::endl;
         return false;
     }
     
@@ -588,39 +556,32 @@ bool ConfigurationManager::reload() {
     // Clear current configuration
     config_.clear();
     
-    // Reload defaults first
+    // Reload defaults and file
     loadDefaults();
+    bool success = loadFromFile(lastLoadedFile_);
+    loadFromEnvironment("POS_");
     
-    // Reload from file
-    return loadFromFile(lastLoadedFile_);
+    return success;
 }
 
-// =================================================================
-// Helper Methods
-// =================================================================
-
+// Helper methods
 std::pair<std::string, std::string> ConfigurationManager::parseKey(const std::string& key) const {
     size_t dotPos = key.find('.');
-    
     if (dotPos == std::string::npos) {
-        // No section specified, use "general" as default
-        return std::make_pair("general", key);
+        return {"general", key};
     }
     
-    std::string sectionName = key.substr(0, dotPos);
-    std::string keyName = key.substr(dotPos + 1);
-    
-    return std::make_pair(sectionName, keyName);
+    return {key.substr(0, dotPos), key.substr(dotPos + 1)};
 }
 
 ConfigurationManager::ConfigSection* ConfigurationManager::getSection(const std::string& sectionName) {
     auto it = config_.find(sectionName);
-    return (it != config_.end()) ? &(it->second) : nullptr;
+    return (it != config_.end()) ? &it->second : nullptr;
 }
 
 const ConfigurationManager::ConfigSection* ConfigurationManager::getSection(const std::string& sectionName) const {
     auto it = config_.find(sectionName);
-    return (it != config_.end()) ? &(it->second) : nullptr;
+    return (it != config_.end()) ? &it->second : nullptr;
 }
 
 ConfigurationManager::ConfigSection& ConfigurationManager::getOrCreateSection(const std::string& sectionName) {
@@ -628,85 +589,38 @@ ConfigurationManager::ConfigSection& ConfigurationManager::getOrCreateSection(co
 }
 
 bool ConfigurationManager::isValidKey(const std::string& key) const {
-    // Basic validation - key should not be empty and should contain only valid characters
-    if (key.empty()) {
-        return false;
-    }
-    
-    // Check for valid characters (alphanumeric, dots, underscores, hyphens)
-    std::regex validKeyRegex("^[a-zA-Z][a-zA-Z0-9._-]*$");
-    return std::regex_match(key, validKeyRegex);
+    return !key.empty() && key.find('=') == std::string::npos;
 }
 
-// Template specializations for type conversion
-template<>
-std::string ConfigurationManager::convertValue<std::string>(const ConfigValue& value, const std::string& defaultValue) const {
+// Type conversion helper
+template<typename T>
+T ConfigurationManager::convertValue(const ConfigValue& value, const T& defaultValue) const {
     try {
-        if (value.type() == typeid(std::string)) {
-            return std::any_cast<std::string>(value);
-        } else if (value.type() == typeid(int)) {
-            return std::to_string(std::any_cast<int>(value));
-        } else if (value.type() == typeid(double)) {
-            return std::to_string(std::any_cast<double>(value));
-        } else if (value.type() == typeid(bool)) {
-            return std::any_cast<bool>(value) ? "true" : "false";
+        return std::any_cast<T>(value);
+    } catch (const std::bad_any_cast&) {
+        // Try string conversion for basic types
+        try {
+            auto strValue = std::any_cast<std::string>(value);
+            
+            if constexpr (std::is_same_v<T, int>) {
+                return std::stoi(strValue);
+            } else if constexpr (std::is_same_v<T, double>) {
+                return std::stod(strValue);
+            } else if constexpr (std::is_same_v<T, bool>) {
+                return (strValue == "true" || strValue == "1" || strValue == "yes");
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                return strValue;
+            }
+        } catch (...) {
+            // Fall through to default
         }
-    } catch (const std::bad_any_cast& e) {
-        std::cerr << "Error converting configuration value to string" << std::endl;
+        
+        return defaultValue;
     }
-    
-    return defaultValue;
 }
 
-template<>
-int ConfigurationManager::convertValue<int>(const ConfigValue& value, const int& defaultValue) const {
-    try {
-        if (value.type() == typeid(int)) {
-            return std::any_cast<int>(value);
-        } else if (value.type() == typeid(std::string)) {
-            return std::stoi(std::any_cast<std::string>(value));
-        } else if (value.type() == typeid(double)) {
-            return static_cast<int>(std::any_cast<double>(value));
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error converting configuration value to int: " << e.what() << std::endl;
-    }
-    
-    return defaultValue;
-}
-
-template<>
-double ConfigurationManager::convertValue<double>(const ConfigValue& value, const double& defaultValue) const {
-    try {
-        if (value.type() == typeid(double)) {
-            return std::any_cast<double>(value);
-        } else if (value.type() == typeid(std::string)) {
-            return std::stod(std::any_cast<std::string>(value));
-        } else if (value.type() == typeid(int)) {
-            return static_cast<double>(std::any_cast<int>(value));
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error converting configuration value to double: " << e.what() << std::endl;
-    }
-    
-    return defaultValue;
-}
-
-template<>
-bool ConfigurationManager::convertValue<bool>(const ConfigValue& value, const bool& defaultValue) const {
-    try {
-        if (value.type() == typeid(bool)) {
-            return std::any_cast<bool>(value);
-        } else if (value.type() == typeid(std::string)) {
-            std::string strValue = std::any_cast<std::string>(value);
-            std::transform(strValue.begin(), strValue.end(), strValue.begin(), ::tolower);
-            return strValue == "true" || strValue == "yes" || strValue == "1" || strValue == "on";
-        } else if (value.type() == typeid(int)) {
-            return std::any_cast<int>(value) != 0;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error converting configuration value to bool: " << e.what() << std::endl;
-    }
-    
-    return defaultValue;
-}
+// Explicit template instantiations for common types
+template int ConfigurationManager::convertValue<int>(const ConfigValue&, const int&) const;
+template double ConfigurationManager::convertValue<double>(const ConfigValue&, const double&) const;
+template bool ConfigurationManager::convertValue<bool>(const ConfigValue&, const bool&) const;
+template std::string ConfigurationManager::convertValue<std::string>(const ConfigValue&, const std::string&) const;
