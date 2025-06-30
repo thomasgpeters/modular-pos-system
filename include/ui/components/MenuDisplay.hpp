@@ -3,6 +3,7 @@
 
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../events/POSEvents.hpp"
 #include "../../MenuItem.hpp"
 
 #include <Wt/WContainerWidget.h>

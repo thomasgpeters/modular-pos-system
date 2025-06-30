@@ -1,0 +1,464 @@
+cmake_minimum_required(VERSION 3.12)
+project(RestaurantPOS VERSION 2.0.0 LANGUAGES CXX)
+
+# ==============================================================================
+# Project Configuration
+# ==============================================================================
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Build configuration
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Compiler flags
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic -DDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
+
+# ==============================================================================
+# Dependencies
+# ==============================================================================
+
+find_package(PkgConfig REQUIRED)
+find_package(wt REQUIRED)
+find_package(wthttp REQUIRED)
+
+# Optional dependencies
+find_package(Threads REQUIRED)
+
+# ==============================================================================
+# Project Structure
+# ==============================================================================
+
+# Include directories
+set(INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/events
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
+)
+
+# Source directories
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# ==============================================================================
+# Source Files Organization
+# ==============================================================================
+
+# Core business logic (existing three-legged foundation)
+set(BUSINESS_LOGIC_SOURCES
+    ${SRC_DIR}/MenuItem.cpp
+    ${SRC_DIR}/Order.cpp
+    ${SRC_DIR}/OrderManager.cpp
+    ${SRC_DIR}/PaymentProcessor.cpp
+    ${SRC_DIR}/KitchenInterface.cpp
+)
+
+# Core application files
+set(CORE_SOURCES
+    ${SRC_DIR}/core/ConfigurationManager.cpp
+)
+
+# Service layer sources
+set(SERVICE_SOURCES
+    ${SRC_DIR}/services/POSService.cpp
+    ${SRC_DIR}/services/ThemeService.cpp
+    ${SRC_DIR}/services/NotificationService.cpp
+)
+
+# Event system sources
+set(EVENT_SOURCES
+    ${SRC_DIR}/events/EventManager.cpp
+    ${SRC_DIR}/events/POSEvents.cpp
+)
+
+# UI component sources
+set(UI_COMPONENT_SOURCES
+    ${SRC_DIR}/ui/components/OrderEntryPanel.cpp
+    ${SRC_DIR}/ui/components/OrderStatusPanel.cpp
+    ${SRC_DIR}/ui/components/MenuDisplay.cpp
+    ${SRC_DIR}/ui/components/CurrentOrderDisplay.cpp
+    ${SRC_DIR}/ui/components/ActiveOrdersDisplay.cpp
+    ${SRC_DIR}/ui/components/KitchenStatusDisplay.cpp
+    ${SRC_DIR}/ui/components/ThemeSelector.cpp
+)
+
+# UI dialog sources
+set(UI_DIALOG_SOURCES
+    ${SRC_DIR}/ui/dialogs/PaymentDialog.cpp
+    ${SRC_DIR}/ui/dialogs/CategoryPopover.cpp
+    ${SRC_DIR}/ui/dialogs/ThemeSelectionDialog.cpp
+)
+
+# UI factory sources
+set(UI_FACTORY_SOURCES
+    ${SRC_DIR}/ui/factories/UIComponentFactory.cpp
+)
+
+# Utility sources
+set(UTIL_SOURCES
+    ${SRC_DIR}/utils/UIHelpers.cpp
+    ${SRC_DIR}/utils/FormatUtils.cpp
+)
+
+# Main application sources
+set(APP_SOURCES
+    ${SRC_DIR}/core/RestaurantPOSApp.cpp
+    ${SRC_DIR}/main.cpp
+)
+
+# All sources combined
+set(ALL_SOURCES
+    ${BUSINESS_LOGIC_SOURCES}
+    ${CORE_SOURCES}
+    ${SERVICE_SOURCES}
+    ${EVENT_SOURCES}
+    ${UI_COMPONENT_SOURCES}
+    ${UI_DIALOG_SOURCES}
+    ${UI_FACTORY_SOURCES}
+    ${UTIL_SOURCES}
+    ${APP_SOURCES}
+)
+
+# ==============================================================================
+# Header Files (for IDE organization)
+# ==============================================================================
+
+set(BUSINESS_LOGIC_HEADERS
+    include/MenuItem.hpp
+    include/Order.hpp
+    include/OrderManager.hpp
+    include/PaymentProcessor.hpp
+    include/KitchenInterface.hpp
+)
+
+set(CORE_HEADERS
+    include/core/ConfigurationManager.hpp
+    include/core/RestaurantPOSApp.hpp
+)
+
+set(SERVICE_HEADERS
+    include/services/POSService.hpp
+    include/services/ThemeService.hpp
+    include/services/NotificationService.hpp
+)
+
+set(EVENT_HEADERS
+    include/events/EventManager.hpp
+    include/events/POSEvents.hpp
+)
+
+set(UI_COMPONENT_HEADERS
+    include/ui/components/OrderEntryPanel.hpp
+    include/ui/components/OrderStatusPanel.hpp
+    include/ui/components/MenuDisplay.hpp
+    include/ui/components/CurrentOrderDisplay.hpp
+    include/ui/components/ActiveOrdersDisplay.hpp
+    include/ui/components/KitchenStatusDisplay.hpp
+    include/ui/components/ThemeSelector.hpp
+)
+
+set(UI_DIALOG_HEADERS
+    include/ui/dialogs/PaymentDialog.hpp
+    include/ui/dialogs/CategoryPopover.hpp
+    include/ui/dialogs/ThemeSelectionDialog.hpp
+)
+
+set(UI_FACTORY_HEADERS
+    include/ui/factories/UIComponentFactory.hpp
+)
+
+set(UTIL_HEADERS
+    include/utils/UIHelpers.hpp
+    include/utils/FormatUtils.hpp
+)
+
+set(ALL_HEADERS
+    ${BUSINESS_LOGIC_HEADERS}
+    ${CORE_HEADERS}
+    ${SERVICE_HEADERS}
+    ${EVENT_HEADERS}
+    ${UI_COMPONENT_HEADERS}
+    ${UI_DIALOG_HEADERS}
+    ${UI_FACTORY_HEADERS}
+    ${UTIL_HEADERS}
+)
+
+# ==============================================================================
+# Static Libraries (for modular development)
+# ==============================================================================
+
+# Business Logic Library
+add_library(pos_business_logic STATIC ${BUSINESS_LOGIC_SOURCES})
+target_include_directories(pos_business_logic PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_business_logic PUBLIC wt wthttp)
+
+# Core Library
+add_library(pos_core STATIC ${CORE_SOURCES})
+target_include_directories(pos_core PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_core PUBLIC pos_business_logic)
+
+# Services Library
+add_library(pos_services STATIC ${SERVICE_SOURCES})
+target_include_directories(pos_services PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_services PUBLIC pos_core pos_events)
+
+# Event System Library
+add_library(pos_events STATIC ${EVENT_SOURCES})
+target_include_directories(pos_events PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_events PUBLIC pos_business_logic)
+
+# UI Components Library
+add_library(pos_ui_components STATIC ${UI_COMPONENT_SOURCES})
+target_include_directories(pos_ui_components PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_ui_components PUBLIC pos_services pos_utils)
+
+# UI Dialogs Library
+add_library(pos_ui_dialogs STATIC ${UI_DIALOG_SOURCES})
+target_include_directories(pos_ui_dialogs PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_ui_dialogs PUBLIC pos_services pos_utils)
+
+# UI Factory Library
+add_library(pos_ui_factories STATIC ${UI_FACTORY_SOURCES})
+target_include_directories(pos_ui_factories PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_ui_factories PUBLIC pos_ui_components pos_ui_dialogs)
+
+# Utilities Library
+add_library(pos_utils STATIC ${UTIL_SOURCES})
+target_include_directories(pos_utils PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(pos_utils PUBLIC wt wthttp)
+
+# ==============================================================================
+# Main Executable
+# ==============================================================================
+
+add_executable(restaurant_pos ${APP_SOURCES} ${ALL_HEADERS})
+
+# Link all libraries
+target_link_libraries(restaurant_pos
+    pos_business_logic
+    pos_core
+    pos_services
+    pos_events
+    pos_ui_components
+    pos_ui_dialogs
+    pos_ui_factories
+    pos_utils
+    wt
+    wthttp
+    Threads::Threads
+)
+
+target_include_directories(restaurant_pos PRIVATE ${INCLUDE_DIRS})
+
+# ==============================================================================
+# Compiler-specific optimizations
+# ==============================================================================
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(restaurant_pos PRIVATE
+        -fno-omit-frame-pointer
+        -fstack-protector-strong
+    )
+    
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(restaurant_pos PRIVATE
+            -flto
+            -ffunction-sections
+            -fdata-sections
+        )
+        target_link_options(restaurant_pos PRIVATE
+            -flto
+            -Wl,--gc-sections
+        )
+    endif()
+endif()
+
+# ==============================================================================
+# Installation and Deployment
+# ==============================================================================
+
+# Set output directories
+set_target_properties(restaurant_pos PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+)
+
+# Create necessary directories
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/themes)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/config)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/logs)
+
+# Copy theme files
+file(COPY ${CMAKE_SOURCE_DIR}/themes/ DESTINATION ${CMAKE_BINARY_DIR}/themes/)
+
+# Copy configuration files
+file(COPY ${CMAKE_SOURCE_DIR}/wt_config.xml DESTINATION ${CMAKE_BINARY_DIR}/)
+file(COPY ${CMAKE_SOURCE_DIR}/pos_config.xml DESTINATION ${CMAKE_BINARY_DIR}/config/)
+
+# Installation rules
+install(TARGETS restaurant_pos DESTINATION bin)
+install(DIRECTORY themes/ DESTINATION themes)
+install(FILES wt_config.xml DESTINATION .)
+install(FILES pos_config.xml DESTINATION config)
+
+# ==============================================================================
+# Development Tools
+# ==============================================================================
+
+# Code formatting target
+find_program(CLANG_FORMAT_EXECUTABLE clang-format)
+if(CLANG_FORMAT_EXECUTABLE)
+    add_custom_target(format
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i -style=Google ${ALL_SOURCES} ${ALL_HEADERS}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Formatting code with clang-format"
+    )
+endif()
+
+# Static analysis target
+find_program(CLANG_TIDY_EXECUTABLE clang-tidy)
+if(CLANG_TIDY_EXECUTABLE)
+    add_custom_target(analyze
+        COMMAND ${CLANG_TIDY_EXECUTABLE} ${ALL_SOURCES} -- -I${CMAKE_SOURCE_DIR}/include
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running static analysis with clang-tidy"
+    )
+endif()
+
+# Documentation target
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    configure_file(${CMAKE_SOURCE_DIR}/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile @ONLY)
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating documentation with Doxygen"
+    )
+endif()
+
+# ==============================================================================
+# Testing Framework
+# ==============================================================================
+
+option(BUILD_TESTS "Build unit tests" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+    
+    # Find test framework (e.g., Google Test)
+    find_package(GTest QUIET)
+    
+    if(GTest_FOUND)
+        # Unit tests for business logic
+        add_executable(test_business_logic
+            tests/test_business_logic.cpp
+            tests/test_menu_item.cpp
+            tests/test_order.cpp
+            tests/test_order_manager.cpp
+            tests/test_payment_processor.cpp
+            tests/test_kitchen_interface.cpp
+        )
+        target_link_libraries(test_business_logic pos_business_logic GTest::GTest GTest::Main)
+        add_test(NAME BusinessLogicTests COMMAND test_business_logic)
+        
+        # Unit tests for services
+        add_executable(test_services
+            tests/test_services.cpp
+            tests/test_pos_service.cpp
+            tests/test_theme_service.cpp
+            tests/test_configuration_manager.cpp
+        )
+        target_link_libraries(test_services pos_services GTest::GTest GTest::Main)
+        add_test(NAME ServiceTests COMMAND test_services)
+        
+        # Unit tests for event system
+        add_executable(test_events
+            tests/test_events.cpp
+            tests/test_event_manager.cpp
+            tests/test_pos_events.cpp
+        )
+        target_link_libraries(test_events pos_events GTest::GTest GTest::Main)
+        add_test(NAME EventTests COMMAND test_events)
+        
+        message(STATUS "Unit tests enabled - run with 'make test'")
+    else()
+        message(WARNING "Google Test not found - unit tests disabled")
+    endif()
+endif()
+
+# ==============================================================================
+# Performance Profiling
+# ==============================================================================
+
+option(ENABLE_PROFILING "Enable performance profiling" OFF)
+
+if(ENABLE_PROFILING)
+    target_compile_options(restaurant_pos PRIVATE -pg)
+    target_link_options(restaurant_pos PRIVATE -pg)
+    message(STATUS "Performance profiling enabled")
+endif()
+
+# ==============================================================================
+# Sanitizers (for development)
+# ==============================================================================
+
+option(ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
+
+if(ENABLE_SANITIZERS AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(restaurant_pos PRIVATE
+        -fsanitize=address
+        -fsanitize=undefined
+        -fno-sanitize-recover=all
+    )
+    target_link_options(restaurant_pos PRIVATE
+        -fsanitize=address
+        -fsanitize=undefined
+    )
+    message(STATUS "Sanitizers enabled for debugging")
+endif()
+
+# ==============================================================================
+# Build Information
+# ==============================================================================
+
+message(STATUS "")
+message(STATUS "Restaurant POS System v${PROJECT_VERSION} - Modular Architecture")
+message(STATUS "==============================================================")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "")
+message(STATUS "Modular Libraries:")
+message(STATUS "  • pos_business_logic: Core business models")
+message(STATUS "  • pos_core: Configuration and application core")
+message(STATUS "  • pos_services: Business logic services")
+message(STATUS "  • pos_events: Event management system")
+message(STATUS "  • pos_ui_components: UI component library")
+message(STATUS "  • pos_ui_dialogs: Dialog component library")
+message(STATUS "  • pos_ui_factories: UI factory library")
+message(STATUS "  • pos_utils: Utility functions")
+message(STATUS "")
+message(STATUS "Development Tools:")
+if(CLANG_FORMAT_EXECUTABLE)
+    message(STATUS "  • Code formatting: make format")
+endif()
+if(CLANG_TIDY_EXECUTABLE)
+    message(STATUS "  • Static analysis: make analyze")
+endif()
+if(DOXYGEN_FOUND)
+    message(STATUS "  • Documentation: make docs")
+endif()
+if(BUILD_TESTS AND GTest_FOUND)
+    message(STATUS "  • Unit testing: make test")
+endif()
+message(STATUS "==============================================================")
+message(STATUS "")

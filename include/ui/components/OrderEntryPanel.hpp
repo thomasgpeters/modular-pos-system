@@ -3,6 +3,7 @@
 
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../events/POSEvents.hpp"
 #include "MenuDisplay.hpp"
 #include "CurrentOrderDisplay.hpp"
 

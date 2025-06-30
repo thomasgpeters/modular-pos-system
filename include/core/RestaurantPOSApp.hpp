@@ -141,7 +141,6 @@ std::unique_ptr<Wt::WApplication> createApplication(const Wt::WEnvironment& env)
 // IMPLEMENTATION FILE: RestaurantPOSApp.cpp
 //=============================================================================
 
-#include "RestaurantPOSApp.hpp"
 #include "../events/POSEvents.hpp"
 
 #include <Wt/WBootstrapTheme.h>

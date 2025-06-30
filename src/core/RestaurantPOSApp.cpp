@@ -1,4 +1,4 @@
-#include "../include/RestaurantPOSApp.hpp"
+#include "../../include/core/RestaurantPOSApp.hpp"
 
 #include <Wt/WBootstrapTheme.h>
 #include <Wt/WCssTheme.h>

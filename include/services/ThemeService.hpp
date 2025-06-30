@@ -3,6 +3,8 @@
 #define THEMESERVICE_H
 
 #include "../events/EventManager.hpp"
+#include "../events/POSEvents.hpp"
+
 #include <Wt/WApplication.h>
 #include <Wt/WLink.h>
 
