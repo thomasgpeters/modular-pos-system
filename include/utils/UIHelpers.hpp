@@ -1,6 +1,8 @@
 #ifndef UIHELPERS_H
 #define UIHELPERS_H
 
+#include "../ui/factories/UIComponentFactory.hpp"
+
 #include <Wt/WContainerWidget.h>
 #include <Wt/WTable.h>
 #include <Wt/WText.h>

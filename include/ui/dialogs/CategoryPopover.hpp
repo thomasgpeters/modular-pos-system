@@ -5,6 +5,7 @@
 
 #include "../../MenuItem.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../events/POSEvents.hpp"
 
 #include <Wt/WPopupWidget.h>
 #include <Wt/WContainerWidget.h>

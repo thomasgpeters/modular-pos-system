@@ -2,7 +2,7 @@
 // IMPLEMENTATION FILE: ConfigurationManager.cpp
 //=============================================================================
 
-#include "ConfigurationManager.hpp"
+#include "../../include/core/ConfigurationManager.hpp"
 
 #include <iostream>
 #include <fstream>

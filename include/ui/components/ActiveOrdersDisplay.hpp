@@ -1,14 +1,10 @@
-// =============================================================================
-// COMPLETE FIXED ActiveOrdersDisplay EXAMPLE
-// =============================================================================
-
 #ifndef ACTIVEORDERSDISPLAY_H
 #define ACTIVEORDERSDISPLAY_H
 
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
-#include "../../utils/UIHelpers.hpp"
-#include "../../utils/FormatUtils.hpp"
+#include "../../events/POSEvents.hpp"
+#include "../../Order.hpp"
 
 #include <Wt/WContainerWidget.h>
 #include <Wt/WTable.h>
@@ -16,180 +12,148 @@
 #include <Wt/WPushButton.h>
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
+#include <Wt/WMessageBox.h>
 
 #include <memory>
 #include <vector>
 
+/**
+ * @file ActiveOrdersDisplay.hpp
+ * @brief Active orders display component for the Restaurant POS System
+ * 
+ * This component displays and manages active orders in the system.
+ * 
+ * @author Restaurant POS Team
+ * @version 2.0.0
+ */
+
+/**
+ * @class ActiveOrdersDisplay
+ * @brief UI component for displaying and managing active orders
+ * 
+ * The ActiveOrdersDisplay shows all currently active orders with
+ * functionality to view details, complete orders, and cancel orders.
+ */
 class ActiveOrdersDisplay : public Wt::WContainerWidget {
 public:
+    /**
+     * @brief Constructs the active orders display
+     * @param posService Shared POS service for business operations
+     * @param eventManager Shared event manager for component communication
+     */
     ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
-                       std::shared_ptr<EventManager> eventManager)
-        : posService_(posService), eventManager_(eventManager) {
-        
-        setupUI();
-        setupEventHandlers();
-        refreshDisplay();
-    }
+                       std::shared_ptr<EventManager> eventManager);
     
-    void refresh() {
-        refreshDisplay();
-    }
+    /**
+     * @brief Virtual destructor
+     */
+    virtual ~ActiveOrdersDisplay() = default;
+    
+    /**
+     * @brief Refreshes the orders display from the service
+     */
+    void refresh();
+    
+    /**
+     * @brief Sets the maximum number of orders to display
+     * @param maxOrders Maximum orders to show (0 = no limit)
+     */
+    void setMaxOrdersToDisplay(int maxOrders);
+    
+    /**
+     * @brief Gets the maximum number of orders displayed
+     * @return Maximum orders displayed
+     */
+    int getMaxOrdersToDisplay() const;
+    
+    /**
+     * @brief Sets whether to show completed orders
+     * @param showCompleted True to show completed orders
+     */
+    void setShowCompletedOrders(bool showCompleted);
+    
+    /**
+     * @brief Gets whether completed orders are shown
+     * @return True if completed orders are shown
+     */
+    bool getShowCompletedOrders() const;
+
+protected:
+    /**
+     * @brief Initializes the UI components
+     */
+    void initializeUI();
+    
+    /**
+     * @brief Sets up event listeners
+     */
+    void setupEventListeners();
+    
+    /**
+     * @brief Creates the display header
+     * @return Container widget with header
+     */
+    std::unique_ptr<Wt::WWidget> createDisplayHeader();
+    
+    /**
+     * @brief Creates the orders table
+     */
+    void createOrdersTable();
+    
+    /**
+     * @brief Updates the orders table with current data
+     */
+    void updateOrdersTable();
+    
+    /**
+     * @brief Adds a row for an order to the table
+     * @param order Order to add
+     * @param row Row number in the table
+     */
+    void addOrderRow(std::shared_ptr<Order> order, int row);
 
 private:
-    void setupUI() {
-        addStyleClass("active-orders-display");
-        
-        // Create main layout - CORRECT WAY
-        auto layout = std::make_unique<Wt::WVBoxLayout>();
-        
-        // Header section - CORRECT PATTERN
-        auto headerContainer = std::make_unique<Wt::WContainerWidget>();
-        headerContainer->addStyleClass("orders-header");
-        
-        auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
-        
-        // Title - Method 1: Direct creation
-        headerLayout->addWidget(std::make_unique<Wt::WText>("Active Orders"));
-        
-        // Refresh button - Method 2: Create, configure, add
-        auto refreshBtn = std::make_unique<Wt::WPushButton>("Refresh");
-        refreshBtn->addStyleClass("btn btn-secondary btn-sm");
-        refreshButton_ = headerLayout->addWidget(std::move(refreshBtn));
-        
-        headerContainer->setLayout(std::move(headerLayout));
-        layout->addWidget(std::move(headerContainer));
-        
-        // Table section - CORRECT PATTERN
-        auto tableContainer = std::make_unique<Wt::WContainerWidget>();
-        tableContainer->addStyleClass("table-container");
-        
-        // Create table using UIHelpers
-        auto table = UIHelpers::createTable("table table-striped table-hover");
-        ordersTable_ = tableContainer->addWidget(std::move(table));
-        
-        layout->addWidget(std::move(tableContainer));
-        
-        // Status section - CORRECT PATTERN  
-        auto statusContainer = std::make_unique<Wt::WContainerWidget>();
-        statusContainer->addStyleClass("status-container");
-        
-        // Status text - Method 2: Store pointer for updates
-        auto statusText = std::make_unique<Wt::WText>("Ready");
-        statusText->addStyleClass("status-text");
-        statusLabel_ = statusContainer->addWidget(std::move(statusText));
-        
-        layout->addWidget(std::move(statusContainer));
-        
-        // Set the layout
-        setLayout(std::move(layout));
-    }
-    
-    void setupEventHandlers() {
-        // Event handlers - use stored pointers
-        if (refreshButton_) {
-            refreshButton_->clicked().connect([this]() {
-                refreshDisplay();
-            });
-        }
-        
-        // Subscribe to events
-        if (eventManager_) {
-            eventManager_->subscribe("ORDER_CREATED", [this](const std::any&) {
-                refreshDisplay();
-            });
-        }
-    }
-    
-    void refreshDisplay() {
-        if (!ordersTable_ || !posService_) return;
-        
-        // Clear existing data
-        UIHelpers::clearTableData(ordersTable_);
-        
-        // Add headers
-        std::vector<std::string> headers = {"Order #", "Table", "Items", "Total", "Status", "Actions"};
-        UIHelpers::addTableHeader(ordersTable_, headers);
-        
-        // Get active orders
-        auto orders = posService_->getActiveOrders();
-        
-        // Add order rows
-        int row = 1;
-        for (const auto& order : orders) {
-            // Order ID
-            UIHelpers::setTableCell(ordersTable_, row, 0, 
-                FormatUtils::formatOrderId(order->getId()));
-            
-            // Table number
-            UIHelpers::setTableCell(ordersTable_, row, 1,
-                FormatUtils::formatTableNumber(order->getTableNumber()));
-            
-            // Item count
-            UIHelpers::setTableCell(ordersTable_, row, 2,
-                std::to_string(order->getItems().size()));
-            
-            // Total
-            UIHelpers::setTableCell(ordersTable_, row, 3,
-                FormatUtils::formatCurrency(order->getTotalWithTax()));
-            
-            // Status
-            UIHelpers::setTableCell(ordersTable_, row, 4,
-                FormatUtils::formatOrderStatus(order->getStatus()));
-            
-            // Actions - CORRECT WAY to add button to table
-            auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
-            auto actionLayout = std::make_unique<Wt::WHBoxLayout>();
-            
-            auto viewBtn = std::make_unique<Wt::WPushButton>("View");
-            viewBtn->addStyleClass("btn btn-sm btn-info");
-            auto* viewBtnPtr = actionLayout->addWidget(std::move(viewBtn));
-            
-            auto completeBtn = std::make_unique<Wt::WPushButton>("Complete");
-            completeBtn->addStyleClass("btn btn-sm btn-success");
-            auto* completeBtnPtr = actionLayout->addWidget(std::move(completeBtn));
-            
-            // Set up event handlers
-            viewBtnPtr->clicked().connect([this, order]() {
-                viewOrder(order);
-            });
-            
-            completeBtnPtr->clicked().connect([this, order]() {
-                completeOrder(order->getId());
-            });
-            
-            actionsContainer->setLayout(std::move(actionLayout));
-            UIHelpers::setTableCellWidget(ordersTable_, row, 5, std::move(actionsContainer));
-            
-            row++;
-        }
-        
-        // Update status
-        if (statusLabel_) {
-            statusLabel_->setText(std::to_string(orders.size()) + " active orders");
-        }
-    }
-    
-    void viewOrder(std::shared_ptr<Order> order) {
-        // Implementation for viewing order details
-        if (eventManager_) {
-            // Could publish event to show order details dialog
-        }
-    }
-    
-    void completeOrder(int orderId) {
-        if (posService_) {
-            posService_->completeOrder(orderId);
-            refreshDisplay();
-        }
-    }
-    
-    // Member variables - store raw pointers for widgets we need to access
+    // Services and dependencies
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
     
-    Wt::WTable* ordersTable_ = nullptr;
-    Wt::WPushButton* refreshButton_ = nullptr;
-    Wt::WText* statusLabel_ = nullptr;
+    // Configuration
+    int maxOrdersToDisplay_;
+    bool showCompletedOrders_;
+    
+    // UI components (raw pointers - Wt manages lifetime)
+    Wt::WText* headerText_;
+    Wt::WText* orderCountText_;
+    Wt::WTable* ordersTable_;
+    
+    // Event subscription handles
+    std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
+    
+    // Event handlers
+    void handleOrderCreated(const std::any& eventData);
+    void handleOrderModified(const std::any& eventData);
+    void handleOrderCompleted(const std::any& eventData);
+    void handleOrderCancelled(const std::any& eventData);
+    void handleKitchenStatusChanged(const std::any& eventData);
+    
+    // UI action handlers
+    void onViewOrderClicked(int orderId);
+    void onCompleteOrderClicked(int orderId);
+    void onCancelOrderClicked(int orderId);
+    
+    // Helper methods
+    std::vector<std::shared_ptr<Order>> getDisplayOrders() const;
+    std::string formatOrderStatus(Order::Status status) const;
+    std::string formatOrderTime(const std::shared_ptr<Order>& order) const;
+    std::string formatCurrency(double amount) const;
+    std::string getStatusBadgeClass(Order::Status status) const;
+    void showEmptyOrdersMessage();
+    void hideEmptyOrdersMessage();
+    void applyTableStyling();
+    void updateOrderCount();
+    
+    // Constants
+    static constexpr int DEFAULT_MAX_ORDERS = 20;
 };
 
 #endif // ACTIVEORDERSDISPLAY_H

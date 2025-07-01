@@ -149,6 +149,9 @@ private:
     void onMenuItemSelected(std::shared_ptr<MenuItem> item);
     void onCategoryTileClicked(MenuItem::Category category);
     
+    // ADDED: Missing method declaration
+    void addMenuItemToTable(std::shared_ptr<MenuItem> item, int row);
+    
     // Helper methods
     std::vector<std::shared_ptr<MenuItem>> getFilteredMenuItems() const;
     std::map<MenuItem::Category, std::vector<std::shared_ptr<MenuItem>>> groupMenuItemsByCategory() const;

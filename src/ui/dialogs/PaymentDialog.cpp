@@ -2,8 +2,7 @@
 // PaymentDialog.cpp
 //=============================================================================
 
-#include "PaymentDialog.hpp"
-#include "../../events/POSEvents.hpp"
+#include "../../../include/ui/dialogs/PaymentDialog.hpp"
 
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
@@ -41,6 +40,13 @@ PaymentDialog::PaymentDialog(std::shared_ptr<Order> order,
     updateTotals();
 }
 
+// Add destructor implementation:
+PaymentDialog::~PaymentDialog() {
+    delete paymentMethodGroup_;
+    delete tipButtonGroup_;
+}
+
+
 void PaymentDialog::createDialogContent() {
     auto content = contents()->addNew<Wt::WContainerWidget>();
     content->addStyleClass("payment-dialog-content");
@@ -62,25 +68,30 @@ void PaymentDialog::createDialogContent() {
     content->setLayout(std::move(layout));
 }
 
+// Fix for PaymentDialog.cpp - createOrderSummary method
+
 std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createOrderSummary() {
     auto container = std::make_unique<Wt::WContainerWidget>();
     container->addStyleClass("order-summary-section");
     
-    auto groupBox = container->addNew<Wt::WGroupBox>("Order Summary");
     auto layout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // FIXED: Create group box and add directly to layout
+    auto groupBox = std::make_unique<Wt::WGroupBox>("Order Summary");
+    auto groupBoxLayout = std::make_unique<Wt::WVBoxLayout>();
     
     // Order details
     auto orderInfo = std::make_unique<Wt::WText>(
-        "Order #" + std::to_string(order_->getId()) + 
+        "Order #" + std::to_string(order_->getOrderId()) + 
         " - Table " + std::to_string(order_->getTableNumber()));
     orderInfo->addStyleClass("order-info");
-    layout->addWidget(std::move(orderInfo));
+    groupBoxLayout->addWidget(std::move(orderInfo));
     
     // Items summary
     auto itemsText = std::make_unique<Wt::WText>(
         std::to_string(order_->getItems().size()) + " items");
     itemsText->addStyleClass("items-summary");
-    layout->addWidget(std::move(itemsText));
+    groupBoxLayout->addWidget(std::move(itemsText));
     
     // Totals
     auto totalsContainer = std::make_unique<Wt::WContainerWidget>();
@@ -113,21 +124,27 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createOrderSummary() {
     totalsLayout->addWidget(std::move(finalRow));
     
     totalsContainer->setLayout(std::move(totalsLayout));
-    layout->addWidget(std::move(totalsContainer));
+    groupBoxLayout->addWidget(std::move(totalsContainer));
     
-    groupBox->setLayout(std::move(layout));
+    groupBox->setLayout(std::move(groupBoxLayout));
+    layout->addWidget(std::move(groupBox));
     
+    container->setLayout(std::move(layout));
     return container;
 }
 
+// Fix createPaymentMethodSection method:
 std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createPaymentMethodSection() {
     auto container = std::make_unique<Wt::WContainerWidget>();
     container->addStyleClass("payment-method-section");
     
-    auto groupBox = container->addNew<Wt::WGroupBox>("Payment Method");
     auto layout = std::make_unique<Wt::WVBoxLayout>();
     
-    paymentMethodGroup_ = layout->addWidget(std::make_unique<Wt::WButtonGroup>());
+    auto groupBox = std::make_unique<Wt::WGroupBox>("Payment Method");
+    auto groupBoxLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // SIMPLE: Just create the button group with no parameters
+    paymentMethodGroup_ = new Wt::WButtonGroup();
     
     for (auto method : availableMethods_) {
         auto methodContainer = std::make_unique<Wt::WContainerWidget>();
@@ -141,7 +158,7 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createPaymentMethodSection(
         methodButtons_.push_back(radioPtr);
         
         methodContainer->addWidget(std::move(radioButton));
-        layout->addWidget(std::move(methodContainer));
+        groupBoxLayout->addWidget(std::move(methodContainer));
     }
     
     // Select first method by default
@@ -150,11 +167,16 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createPaymentMethodSection(
         selectedMethod_ = availableMethods_[0];
     }
     
-    groupBox->setLayout(std::move(layout));
+    groupBox->setLayout(std::move(groupBoxLayout));
+    layout->addWidget(std::move(groupBox));
     
+    container->setLayout(std::move(layout));
     return container;
 }
 
+// Fix for PaymentDialog.cpp - createAmountSection method
+
+// Fix createAmountSection method:
 std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
     auto container = std::make_unique<Wt::WContainerWidget>();
     container->addStyleClass("amount-section");
@@ -162,7 +184,7 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
     auto layout = std::make_unique<Wt::WVBoxLayout>();
     
     // Tip section
-    auto tipGroupBox = container->addNew<Wt::WGroupBox>("Tip");
+    auto tipGroupBox = std::make_unique<Wt::WGroupBox>("Tip");
     auto tipLayout = std::make_unique<Wt::WVBoxLayout>();
     
     // Tip buttons
@@ -170,7 +192,8 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
     tipButtonsContainer->addStyleClass("tip-buttons-container");
     auto tipButtonsLayout = std::make_unique<Wt::WHBoxLayout>();
     
-    tipButtonGroup_ = tipButtonsLayout->addWidget(std::make_unique<Wt::WButtonGroup>());
+    // SIMPLE: Just create the button group with no parameters
+    tipButtonGroup_ = new Wt::WButtonGroup();
     
     for (double percentage : tipSuggestions_) {
         auto tipButton = std::make_unique<Wt::WPushButton>(std::to_string(static_cast<int>(percentage)) + "%");
@@ -178,6 +201,7 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
         
         auto* buttonPtr = tipButton.get();
         tipButtons_.push_back(buttonPtr);
+        
         tipButtonsLayout->addWidget(std::move(tipButton));
         
         buttonPtr->clicked().connect([this, percentage]() {
@@ -206,7 +230,7 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
     layout->addWidget(std::move(tipGroupBox));
     
     // Payment amount section
-    auto amountGroupBox = container->addNew<Wt::WGroupBox>("Payment Amount");
+    auto amountGroupBox = std::make_unique<Wt::WGroupBox>("Payment Amount");
     auto amountLayout = std::make_unique<Wt::WVBoxLayout>();
     
     auto amountContainer = std::make_unique<Wt::WContainerWidget>();
@@ -232,7 +256,6 @@ std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
     layout->addWidget(std::move(amountGroupBox));
     
     container->setLayout(std::move(layout));
-    
     return container;
 }
 
@@ -293,11 +316,12 @@ void PaymentDialog::setupEventHandlers() {
     }
 }
 
+// Fix 1: updateTotals method - use getTax() instead of getTaxAmount()
 void PaymentDialog::updateTotals() {
     if (!order_) return;
     
     double subtotal = order_->getSubtotal();
-    double tax = order_->getTaxAmount();
+    double tax = order_->getTax();  // FIXED: use getTax() instead of getTaxAmount()
     double total = subtotal + tax + tipAmount_;
     
     std::stringstream ss;
@@ -334,9 +358,10 @@ void PaymentDialog::onTipChanged() {
     updateTotals();
 }
 
+// Fix 2: calculateChange method - use getTax() instead of getTaxAmount()
 void PaymentDialog::calculateChange() {
     paymentAmount_ = paymentAmountInput_->value();
-    double total = order_->getSubtotal() + order_->getTaxAmount() + tipAmount_;
+    double total = order_->getSubtotal() + order_->getTax() + tipAmount_;  // FIXED: getTax()
     double change = paymentAmount_ - total;
     
     std::stringstream ss;
@@ -353,6 +378,7 @@ void PaymentDialog::calculateChange() {
     }
 }
 
+// Fix 4: processPayment method - fix PaymentResult structure
 void PaymentDialog::processPayment() {
     if (!validatePaymentInput()) {
         return;
@@ -361,11 +387,14 @@ void PaymentDialog::processPayment() {
     // Create payment result (simplified - in real implementation this would call PaymentProcessor)
     PaymentProcessor::PaymentResult result;
     result.success = true;
-    result.amount = paymentAmount_;
+    // REMOVED: result.amount = paymentAmount_;     // This field doesn't exist
     result.method = selectedMethod_;
-    result.tipAmount = tipAmount_;
+    // REMOVED: result.tipAmount = tipAmount_;     // This field doesn't exist
     result.transactionId = "TXN-" + std::to_string(std::time(nullptr));
     result.timestamp = std::chrono::system_clock::now();
+    
+    // If you need to store payment amount and tip, check what fields actually exist
+    // in PaymentProcessor::PaymentResult or create a custom structure
     
     std::cout << "Processing payment: " << getPaymentMethodName(selectedMethod_) 
               << " - $" << paymentAmount_ << " (tip: $" << tipAmount_ << ")" << std::endl;
@@ -384,8 +413,10 @@ void PaymentDialog::processPayment() {
     accept();
 }
 
+
+// Fix 3: validatePaymentInput method - use getTax() instead of getTaxAmount()
 bool PaymentDialog::validatePaymentInput() {
-    double total = order_->getSubtotal() + order_->getTaxAmount() + tipAmount_;
+    double total = order_->getSubtotal() + order_->getTax() + tipAmount_;  // FIXED: getTax()
     
     if (paymentAmount_ < total) {
         // Show error message

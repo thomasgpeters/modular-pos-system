@@ -30,26 +30,89 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
     refresh();
 }
 
+// Fix 2: Complete corrected initializeUI method
 void CurrentOrderDisplay::initializeUI() {
-    addStyleClass("current-order-display card");
+    addStyleClass("current-order-display");
     
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    // Header section
+    auto headerContainer = std::make_unique<Wt::WContainerWidget>();
+    headerContainer->addStyleClass("order-header mb-3");
     
-    // Order header
-    auto header = createOrderHeader();
-    layout->addWidget(std::move(header));
+    // Order info
+    auto orderInfo = std::make_unique<Wt::WText>("Current Order");
+    orderInfo->addStyleClass("h5");
+    headerContainer->addWidget(std::move(orderInfo));
     
-    // Order items table
+    // Table number text
+    auto tableText = std::make_unique<Wt::WText>("Table: --");
+    tableNumberText_ = tableText.get();
+    headerContainer->addWidget(std::move(tableText));
+    
+    // Order ID text  
+    auto orderText = std::make_unique<Wt::WText>("Order: New");
+    orderIdText_ = orderText.get();
+    headerContainer->addWidget(std::move(orderText));
+    
+    headerContainer_ = headerContainer.get();
+    addWidget(std::move(headerContainer));
+    
+    // Items table section
     createOrderItemsTable();
-    layout->addWidget(itemsTable_);
     
-    // Order summary
+    // Summary section
+    auto summaryContainer = std::make_unique<Wt::WContainerWidget>();
+    summaryContainer->addStyleClass("order-summary mt-3 p-3 border");
+    
+    auto summaryTitle = std::make_unique<Wt::WText>("Order Total");
+    summaryTitle->addStyleClass("h6");
+    summaryContainer->addWidget(std::move(summaryTitle));
+    
+    // Subtotal
+    auto subtotalText = std::make_unique<Wt::WText>("Subtotal: $0.00");
+    subtotalText_ = subtotalText.get();
+    summaryContainer->addWidget(std::move(subtotalText));
+    
+    // Tax
+    auto taxText = std::make_unique<Wt::WText>("Tax: $0.00");  
+    taxText_ = taxText.get();
+    summaryContainer->addWidget(std::move(taxText));
+    
+    // Total
+    auto totalText = std::make_unique<Wt::WText>("Total: $0.00");
+    totalText->addStyleClass("fw-bold");
+    totalText_ = totalText.get();
+    summaryContainer->addWidget(std::move(totalText));
+    
+    // Item count
+    auto itemCountText = std::make_unique<Wt::WText>("0 items");
+    itemCountText_ = itemCountText.get();
+    summaryContainer->addWidget(std::move(itemCountText));
+    
+    summaryContainer_ = summaryContainer.get();
+    addWidget(std::move(summaryContainer));
+}
+
+// Fix 5: Alternative simple approach - add directly to container
+void CurrentOrderDisplay::initializeUI_Simple() {
+    addStyleClass("current-order-display");
+    
+    // Create header directly in container
+    auto header = createOrderHeader();
+    addWidget(std::move(header));
+    
+    // Create table directly in container
+    auto table = std::make_unique<Wt::WTable>();
+    table->addStyleClass("table table-striped order-items-table");
+    itemsTable_ = table.get();
+    addWidget(std::move(table));
+    
+    // Create summary directly in container
     auto summary = createOrderSummary();
-    layout->addWidget(std::move(summary));
+    addWidget(std::move(summary));
     
-    setLayout(std::move(layout));
-    
-    std::cout << "✓ CurrentOrderDisplay UI initialized" << std::endl;
+    // Apply styling
+    applyTableStyling();
+    applySummaryStyling();
 }
 
 void CurrentOrderDisplay::setupEventListeners() {
@@ -78,138 +141,107 @@ void CurrentOrderDisplay::setupEventListeners() {
     std::cout << "✓ CurrentOrderDisplay event listeners setup complete" << std::endl;
 }
 
+// Fix 3: Correct createOrderHeader implementation
 std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderHeader() {
-    auto header = std::make_unique<Wt::WContainerWidget>();
-    header->addStyleClass("card-header order-header");
-    headerContainer_ = header.get();
-    
-    auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
-    
-    // Order title
-    auto titleContainer = std::make_unique<Wt::WContainerWidget>();
-    auto titleLayout = std::make_unique<Wt::WVBoxLayout>();
+    auto container = std::make_unique<Wt::WContainerWidget>();
+    container->addStyleClass("order-header");
     
     auto title = std::make_unique<Wt::WText>("Current Order");
-    title->addStyleClass("h5 mb-1");
-    titleLayout->addWidget(std::move(title));
+    title->addStyleClass("h4");
+    container->addWidget(std::move(title));
     
-    // Order details container
-    auto detailsContainer = std::make_unique<Wt::WContainerWidget>();
-    auto detailsLayout = std::make_unique<Wt::WHBoxLayout>();
-    
-    // Table number
-    auto tableLabel = std::make_unique<Wt::WText>("Table: ");
-    tableLabel->addStyleClass("text-muted small");
-    detailsLayout->addWidget(std::move(tableLabel));
-    
-    tableNumberText_ = detailsContainer->addWidget(std::make_unique<Wt::WText>("--"));
-    tableNumberText_->addStyleClass("font-weight-bold small");
-    detailsLayout->addWidget(tableNumberText_);
-    
-    // Separator
-    auto separator = std::make_unique<Wt::WText>(" | ");
-    separator->addStyleClass("text-muted small");
-    detailsLayout->addWidget(std::move(separator));
-    
-    // Order ID
-    auto orderLabel = std::make_unique<Wt::WText>("Order #");
-    orderLabel->addStyleClass("text-muted small");
-    detailsLayout->addWidget(std::move(orderLabel));
-    
-    orderIdText_ = detailsContainer->addWidget(std::make_unique<Wt::WText>("--"));
-    orderIdText_->addStyleClass("font-weight-bold small");
-    detailsLayout->addWidget(orderIdText_);
-    
-    detailsContainer->setLayout(std::move(detailsLayout));
-    titleLayout->addWidget(std::move(detailsContainer));
-    
-    titleContainer->setLayout(std::move(titleLayout));
-    headerLayout->addWidget(std::move(titleContainer), 1);
-    
-    // Item count (right side)
-    itemCountText_ = header->addWidget(std::make_unique<Wt::WText>("0 items"));
-    itemCountText_->addStyleClass("badge badge-secondary");
-    headerLayout->addWidget(itemCountText_);
-    
-    header->setLayout(std::move(headerLayout));
-    return std::move(header);
+    return container;
 }
 
+
+// CORRECT way - Option A: Create widget and store pointer
 void CurrentOrderDisplay::createOrderItemsTable() {
-    itemsTable_ = addWidget(std::make_unique<Wt::WTable>());
-    itemsTable_->addStyleClass("table table-sm order-items-table");
-    itemsTable_->setHeaderCount(1);
+    // Create table container
+    auto tableContainer = std::make_unique<Wt::WContainerWidget>();
+    tableContainer->addStyleClass("table-container");
     
-    // Set up table headers
-    itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
-    itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Qty"));
-    itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Price"));
-    itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
+    // Create table
+    auto table = std::make_unique<Wt::WTable>();
+    table->addStyleClass("table table-striped");
     
+    // Add header row
+    table->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
+    table->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Quantity"));
+    table->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Price"));
+    table->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
     if (editable_) {
-        itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
+        table->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
     }
     
-    applyTableStyling();
+    // Store pointer for later access
+    itemsTable_ = table.get();
     
-    std::cout << "✓ Order items table created" << std::endl;
+    // Add table to container
+    tableContainer->addWidget(std::move(table));
+    
+    // Add container to this widget
+    addWidget(std::move(tableContainer));
 }
 
+// Fix 4: Correct createOrderSummary implementation
 std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderSummary() {
-    auto summary = std::make_unique<Wt::WContainerWidget>();
-    summary->addStyleClass("card-footer order-summary");
-    summaryContainer_ = summary.get();
+    auto container = std::make_unique<Wt::WContainerWidget>();
+    container->addStyleClass("order-summary mt-3 p-3 border rounded");
     
-    auto summaryLayout = std::make_unique<Wt::WVBoxLayout>();
+    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Summary title
+    auto titleText = std::make_unique<Wt::WText>("Order Summary");
+    titleText->addStyleClass("h6 mb-2");
+    layout->addWidget(std::move(titleText));
     
     // Subtotal row
-    auto subtotalRow = std::make_unique<Wt::WContainerWidget>();
+    auto subtotalContainer = std::make_unique<Wt::WContainerWidget>();
     auto subtotalLayout = std::make_unique<Wt::WHBoxLayout>();
     
-    auto subtotalLabel = std::make_unique<Wt::WText>("Subtotal:");
-    subtotalLabel->addStyleClass("text-muted");
-    subtotalLayout->addWidget(std::move(subtotalLabel), 1);
+    subtotalLayout->addWidget(std::make_unique<Wt::WText>("Subtotal:"));
     
-    subtotalText_ = subtotalRow->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    subtotalText_->addStyleClass("font-weight-bold");
-    subtotalLayout->addWidget(subtotalText_);
+    auto subtotalText = std::make_unique<Wt::WText>("$0.00");
+    subtotalText->addStyleClass("text-end");
+    subtotalText_ = subtotalText.get();
+    subtotalLayout->addWidget(std::move(subtotalText));
     
-    subtotalRow->setLayout(std::move(subtotalLayout));
-    summaryLayout->addWidget(std::move(subtotalRow));
+    subtotalContainer->setLayout(std::move(subtotalLayout));
+    layout->addWidget(std::move(subtotalContainer));
     
     // Tax row
-    auto taxRow = std::make_unique<Wt::WContainerWidget>();
+    auto taxContainer = std::make_unique<Wt::WContainerWidget>();
     auto taxLayout = std::make_unique<Wt::WHBoxLayout>();
     
-    auto taxLabel = std::make_unique<Wt::WText>("Tax:");
-    taxLabel->addStyleClass("text-muted");
-    taxLayout->addWidget(std::move(taxLabel), 1);
+    taxLayout->addWidget(std::make_unique<Wt::WText>("Tax:"));
     
-    taxText_ = taxRow->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    taxText_->addStyleClass("font-weight-bold");
-    taxLayout->addWidget(taxText_);
+    auto taxText = std::make_unique<Wt::WText>("$0.00");
+    taxText->addStyleClass("text-end");
+    taxText_ = taxText.get();
+    taxLayout->addWidget(std::move(taxText));
     
-    taxRow->setLayout(std::move(taxLayout));
-    summaryLayout->addWidget(std::move(taxRow));
+    taxContainer->setLayout(std::move(taxLayout));
+    layout->addWidget(std::move(taxContainer));
     
     // Total row
-    auto totalRow = std::make_unique<Wt::WContainerWidget>();
-    totalRow->addStyleClass("border-top pt-2 mt-2");
+    auto totalContainer = std::make_unique<Wt::WContainerWidget>();
+    totalContainer->addStyleClass("border-top pt-2 mt-2");
     auto totalLayout = std::make_unique<Wt::WHBoxLayout>();
     
     auto totalLabel = std::make_unique<Wt::WText>("Total:");
-    totalLabel->addStyleClass("h6 mb-0");
-    totalLayout->addWidget(std::move(totalLabel), 1);
+    totalLabel->addStyleClass("fw-bold");
+    totalLayout->addWidget(std::move(totalLabel));
     
-    totalText_ = totalRow->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    totalText_->addStyleClass("h5 text-primary font-weight-bold mb-0");
-    totalLayout->addWidget(totalText_);
+    auto totalText = std::make_unique<Wt::WText>("$0.00");
+    totalText->addStyleClass("text-end fw-bold h5");
+    totalText_ = totalText.get();
+    totalLayout->addWidget(std::move(totalText));
     
-    totalRow->setLayout(std::move(totalLayout));
-    summaryLayout->addWidget(std::move(totalRow));
+    totalContainer->setLayout(std::move(totalLayout));
+    layout->addWidget(std::move(totalContainer));
     
-    summary->setLayout(std::move(summaryLayout));
-    return std::move(summary);
+    container->setLayout(std::move(layout));
+    return container;
 }
 
 void CurrentOrderDisplay::refresh() {
@@ -223,9 +255,9 @@ void CurrentOrderDisplay::refresh() {
     
     auto currentOrder = getCurrentOrder();
     if (currentOrder) {
-        // Update header information
+        // Update header information - FIXED: use getOrderId() instead of getId()
         tableNumberText_->setText(std::to_string(currentOrder->getTableNumber()));
-        orderIdText_->setText(std::to_string(currentOrder->getId()));
+        orderIdText_->setText(std::to_string(currentOrder->getOrderId()));
         
         hideEmptyOrderMessage();
     } else {
@@ -246,7 +278,7 @@ void CurrentOrderDisplay::updateOrderItemsTable() {
     
     // Clear existing rows (except header)
     while (itemsTable_->rowCount() > 1) {
-        itemsTable_->deleteRow(1);
+        itemsTable_->removeRow(1);
     }
     
     auto currentOrder = getCurrentOrder();
@@ -266,19 +298,22 @@ void CurrentOrderDisplay::updateOrderItemsTable() {
     std::cout << "Order items table updated with " << items.size() << " items" << std::endl;
 }
 
-void CurrentOrderDisplay::addOrderItemRow(const Order::OrderItem& item, size_t index) {
+// FIXED: Changed Order::OrderItem to OrderItem and used getter methods
+void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
     int row = itemsTable_->rowCount();
     
     // Item name and description
     auto itemContainer = std::make_unique<Wt::WContainerWidget>();
     auto itemLayout = std::make_unique<Wt::WVBoxLayout>();
     
-    auto nameText = std::make_unique<Wt::WText>(item.menuItem->getName());
+    // FIXED: Use getMenuItem().getName() instead of menuItem->getName()
+    auto nameText = std::make_unique<Wt::WText>(item.getMenuItem().getName());
     nameText->addStyleClass("font-weight-bold");
     itemLayout->addWidget(std::move(nameText));
     
-    if (!item.specialInstructions.empty()) {
-        auto instructionsText = std::make_unique<Wt::WText>("Note: " + item.specialInstructions);
+    // FIXED: Use getSpecialInstructions() instead of specialInstructions
+    if (!item.getSpecialInstructions().empty()) {
+        auto instructionsText = std::make_unique<Wt::WText>("Note: " + item.getSpecialInstructions());
         instructionsText->addStyleClass("text-muted small font-italic");
         itemLayout->addWidget(std::move(instructionsText));
     }
@@ -290,24 +325,28 @@ void CurrentOrderDisplay::addOrderItemRow(const Order::OrderItem& item, size_t i
     if (editable_) {
         auto quantitySpinBox = std::make_unique<Wt::WSpinBox>();
         quantitySpinBox->setRange(1, 99);
-        quantitySpinBox->setValue(item.quantity);
+        // FIXED: Use getQuantity() instead of quantity
+        quantitySpinBox->setValue(item.getQuantity());
         quantitySpinBox->addStyleClass("form-control-sm");
         quantitySpinBox->valueChanged().connect([this, index](int newQuantity) {
             onQuantityChanged(index, newQuantity);
         });
         itemsTable_->elementAt(row, 1)->addWidget(std::move(quantitySpinBox));
     } else {
-        auto quantityText = std::make_unique<Wt::WText>(std::to_string(item.quantity));
+        // FIXED: Use getQuantity() instead of quantity
+        auto quantityText = std::make_unique<Wt::WText>(std::to_string(item.getQuantity()));
         quantityText->addStyleClass("text-center");
         itemsTable_->elementAt(row, 1)->addWidget(std::move(quantityText));
     }
     
     // Unit price
-    auto priceText = std::make_unique<Wt::WText>(formatCurrency(item.menuItem->getPrice()));
+    // FIXED: Use getMenuItem().getPrice() instead of menuItem->getPrice()
+    auto priceText = std::make_unique<Wt::WText>(formatCurrency(item.getMenuItem().getPrice()));
     itemsTable_->elementAt(row, 2)->addWidget(std::move(priceText));
     
     // Line total
-    double lineTotal = item.menuItem->getPrice() * item.quantity;
+    // FIXED: Use getter methods instead of direct member access
+    double lineTotal = item.getMenuItem().getPrice() * item.getQuantity();
     auto totalText = std::make_unique<Wt::WText>(formatCurrency(lineTotal));
     totalText->addStyleClass("font-weight-bold");
     itemsTable_->elementAt(row, 3)->addWidget(std::move(totalText));
@@ -455,12 +494,14 @@ std::string CurrentOrderDisplay::formatCurrency(double amount) const {
     return oss.str();
 }
 
-std::string CurrentOrderDisplay::formatItemName(const Order::OrderItem& item) const {
-    return item.menuItem->getName();
+// FIXED: Changed Order::OrderItem to OrderItem and used getter methods
+std::string CurrentOrderDisplay::formatItemName(const OrderItem& item) const {
+    return item.getMenuItem().getName();
 }
 
-std::string CurrentOrderDisplay::formatItemPrice(const Order::OrderItem& item) const {
-    return formatCurrency(item.menuItem->getPrice());
+// FIXED: Changed Order::OrderItem to OrderItem and used getter methods
+std::string CurrentOrderDisplay::formatItemPrice(const OrderItem& item) const {
+    return formatCurrency(item.getMenuItem().getPrice());
 }
 
 void CurrentOrderDisplay::showEmptyOrderMessage() {
@@ -500,7 +541,8 @@ void CurrentOrderDisplay::validateOrderDisplay() {
         }
         
         if (orderIdText_->text().toUTF8() == "--") {
-            orderIdText_->setText(std::to_string(currentOrder->getId()));
+            // FIXED: Use getOrderId() instead of getId()
+            orderIdText_->setText(std::to_string(currentOrder->getOrderId()));
         }
     }
 }

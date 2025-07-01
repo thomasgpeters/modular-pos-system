@@ -2,8 +2,7 @@
 // IMPLEMENTATION FILE: ThemeService.cpp
 //=============================================================================
 
-#include "ThemeService.hpp"
-#include "../events/POSEvents.hpp"
+#include "../../include/services/ThemeService.hpp"
 
 #include <Wt/WBootstrapTheme.h>
 #include <Wt/WApplication.h>

@@ -2,21 +2,29 @@
 #define FORMATUTILS_H
 
 #include "../Order.hpp"
-#include "../MenuItem.hpp"
-#include "../PaymentProcessor.hpp"
-#include "../KitchenInterface.hpp"
+#include "../ui/factories/UIComponentFactory.hpp"
+#include "../ui/components/OrderEntryPanel.hpp"
+#include "../ui/components/OrderStatusPanel.hpp"
+#include "../ui/components/MenuDisplay.hpp"
+#include "../ui/components/CurrentOrderDisplay.hpp"
+#include "../ui/components/ActiveOrdersDisplay.hpp"
+#include "../ui/components/KitchenStatusDisplay.hpp"
+#include "../ui/components/ThemeSelector.hpp"
+
+#include "../services/POSService.hpp"
+#include "../events/EventManager.hpp"
+#include "../core/ConfigurationManager.hpp"
 
 #include <string>
-#include <chrono>
-#include <vector>
+#include <sstream>
+#include <iomanip>
 
 /**
  * @file FormatUtils.hpp
- * @brief Utility functions for formatting data for display
+ * @brief Utility functions for formatting display values
  * 
- * This header provides comprehensive formatting utilities for all
- * data types used in the POS system, ensuring consistent presentation
- * throughout the user interface.
+ * This header provides utility functions for formatting various
+ * data types for display in the UI consistently.
  * 
  * @author Restaurant POS Team
  * @version 2.0.0
@@ -24,357 +32,169 @@
 
 /**
  * @namespace FormatUtils
- * @brief Contains utility functions for data formatting
+ * @brief Contains utility functions for formatting display values
  */
 namespace FormatUtils {
-    
-    // =================================================================
-    // Currency and Number Formatting
-    // =================================================================
-    
-    /**
-     * @brief Formats a monetary amount as currency
-     * @param amount Amount to format
-     * @param currencySymbol Currency symbol (default: $)
-     * @param showCents Whether to show cents
-     * @return Formatted currency string
-     */
-    std::string formatCurrency(double amount, const std::string& currencySymbol = "$", bool showCents = true);
-    
-    /**
-     * @brief Formats a percentage
-     * @param value Percentage value (0.0 - 1.0 or 0 - 100)
-     * @param isDecimal Whether value is decimal (0.15) or percentage (15)
-     * @param decimals Number of decimal places
-     * @return Formatted percentage string
-     */
-    std::string formatPercentage(double value, bool isDecimal = true, int decimals = 1);
-    
-    /**
-     * @brief Formats a number with thousand separators
-     * @param value Number to format
-     * @param decimals Number of decimal places
-     * @return Formatted number string
-     */
-    std::string formatNumber(double value, int decimals = 2);
-    
-    /**
-     * @brief Formats an integer with thousand separators
-     * @param value Integer to format
-     * @return Formatted number string
-     */
-    std::string formatInteger(int value);
-    
-    // =================================================================
-    // Date and Time Formatting
-    // =================================================================
-    
-    /**
-     * @brief Formats a time point as date string
-     * @param timePoint Time point to format
-     * @param format Date format string
-     * @return Formatted date string
-     */
-    std::string formatDate(const std::chrono::system_clock::time_point& timePoint, const std::string& format = "%Y-%m-%d");
-    
-    /**
-     * @brief Formats a time point as time string
-     * @param timePoint Time point to format
-     * @param format Time format string
-     * @param use24Hour Use 24-hour format
-     * @return Formatted time string
-     */
-    std::string formatTime(const std::chrono::system_clock::time_point& timePoint, const std::string& format = "", bool use24Hour = false);
-    
-    /**
-     * @brief Formats a time point as date and time string
-     * @param timePoint Time point to format
-     * @param dateFormat Date format string
-     * @param timeFormat Time format string
-     * @return Formatted date-time string
-     */
-    std::string formatDateTime(const std::chrono::system_clock::time_point& timePoint, 
-                              const std::string& dateFormat = "%Y-%m-%d", 
-                              const std::string& timeFormat = "%H:%M:%S");
-    
-    /**
-     * @brief Formats a duration in human-readable form
-     * @param duration Duration to format
-     * @param showSeconds Whether to include seconds
-     * @return Formatted duration string
-     */
-    std::string formatDuration(const std::chrono::duration<double>& duration, bool showSeconds = true);
-    
-    /**
-     * @brief Formats elapsed time since a time point
-     * @param timePoint Starting time point
-     * @param showSeconds Whether to include seconds
-     * @return Formatted elapsed time string
-     */
-    std::string formatElapsedTime(const std::chrono::system_clock::time_point& timePoint, bool showSeconds = true);
-    
-    /**
-     * @brief Formats a relative time (e.g., "2 minutes ago")
-     * @param timePoint Time point to format
-     * @return Formatted relative time string
-     */
-    std::string formatRelativeTime(const std::chrono::system_clock::time_point& timePoint);
-    
-    // =================================================================
-    // Order Formatting
-    // =================================================================
-    
-    /**
-     * @brief Formats an order summary
-     * @param order Order to format
-     * @param includeItems Whether to include item details
-     * @return Formatted order summary
-     */
-    std::string formatOrderSummary(const Order& order, bool includeItems = false);
-    
-    /**
-     * @brief Formats an order status
-     * @param status Order status to format
-     * @return Human-readable status string
-     */
-    std::string formatOrderStatus(Order::Status status);
     
     /**
      * @brief Formats an order ID for display
      * @param orderId Order ID to format
-     * @param prefix ID prefix (default: "Order #")
-     * @return Formatted order ID
+     * @return Formatted order ID string
      */
-    std::string formatOrderId(int orderId, const std::string& prefix = "Order #");
+    inline std::string formatOrderId(int orderId) {
+        std::stringstream ss;
+        ss << "#" << std::setfill('0') << std::setw(4) << orderId;
+        return ss.str();
+    }
     
     /**
-     * @brief Formats a table number
+     * @brief Formats a table number for display
      * @param tableNumber Table number to format
-     * @param prefix Table prefix (default: "Table ")
-     * @return Formatted table number
+     * @return Formatted table number string
      */
-    std::string formatTableNumber(int tableNumber, const std::string& prefix = "Table ");
+    inline std::string formatTableNumber(int tableNumber) {
+        return "Table " + std::to_string(tableNumber);
+    }
     
     /**
-     * @brief Formats order totals breakdown
-     * @param order Order to format totals for
-     * @param showBreakdown Whether to show detailed breakdown
-     * @return Formatted totals string
+     * @brief Formats a currency amount for display
+     * @param amount Amount to format
+     * @return Formatted currency string
      */
-    std::string formatOrderTotals(const Order& order, bool showBreakdown = true);
-    
-    // =================================================================
-    // Menu Item Formatting
-    // =================================================================
+    inline std::string formatCurrency(double amount) {
+        std::stringstream ss;
+        ss << "$" << std::fixed << std::setprecision(2) << amount;
+        return ss.str();
+    }
     
     /**
-     * @brief Formats a menu item for display
-     * @param item Menu item to format
-     * @param includeDescription Whether to include description
-     * @param includePrice Whether to include price
-     * @return Formatted menu item string
+     * @brief Formats an order status for display
+     * @param status Order status to format
+     * @return Formatted status string
      */
-    std::string formatMenuItem(const MenuItem& item, bool includeDescription = false, bool includePrice = true);
+    inline std::string formatOrderStatus(Order::Status status) {
+        switch (status) {
+            case Order::PENDING:         return "Pending";
+            case Order::SENT_TO_KITCHEN: return "In Kitchen";
+            case Order::PREPARING:       return "Preparing";
+            case Order::READY:           return "Ready";
+            case Order::SERVED:          return "Served";
+            case Order::CANCELLED:       return "Cancelled";
+            default:                     return "Unknown";
+        }
+    }
     
     /**
-     * @brief Formats a menu category
-     * @param category Category to format
-     * @return Human-readable category string
+     * @brief Formats a quantity for display
+     * @param quantity Quantity to format
+     * @return Formatted quantity string
      */
-    std::string formatMenuCategory(MenuItem::Category category);
+    inline std::string formatQuantity(int quantity) {
+        return std::to_string(quantity) + "x";
+    }
     
     /**
-     * @brief Formats menu item availability
-     * @param available Whether item is available
-     * @return Formatted availability string
+     * @brief Formats a percentage for display
+     * @param percentage Percentage to format (0-1 range)
+     * @return Formatted percentage string
      */
-    std::string formatAvailability(bool available);
-    
-    // =================================================================
-    // Payment Formatting
-    // =================================================================
+    inline std::string formatPercentage(double percentage) {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1) << (percentage * 100) << "%";
+        return ss.str();
+    }
     
     /**
-     * @brief Formats a payment method
-     * @param method Payment method to format
-     * @return Human-readable payment method string
+     * @brief Formats a time duration in minutes
+     * @param minutes Duration in minutes
+     * @return Formatted duration string
      */
-    std::string formatPaymentMethod(PaymentProcessor::PaymentMethod method);
+    inline std::string formatDuration(int minutes) {
+        if (minutes < 60) {
+            return std::to_string(minutes) + " min";
+        } else {
+            int hours = minutes / 60;
+            int remainingMinutes = minutes % 60;
+            return std::to_string(hours) + "h " + std::to_string(remainingMinutes) + "m";
+        }
+    }
     
     /**
-     * @brief Formats a payment result
-     * @param result Payment result to format
-     * @param includeDetails Whether to include transaction details
-     * @return Formatted payment result string
+     * @brief Formats a date/time for display
+     * @param timestamp Timestamp to format
+     * @return Formatted date/time string
      */
-    std::string formatPaymentResult(const PaymentProcessor::PaymentResult& result, bool includeDetails = false);
+    inline std::string formatDateTime(const std::chrono::system_clock::time_point& timestamp) {
+        auto time_t = std::chrono::system_clock::to_time_t(timestamp);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M");
+        return ss.str();
+    }
     
     /**
-     * @brief Formats a transaction ID
-     * @param transactionId Transaction ID to format
-     * @param prefix ID prefix (default: "TXN-")
-     * @return Formatted transaction ID
+     * @brief Formats a time for display (time only)
+     * @param timestamp Timestamp to format
+     * @return Formatted time string
      */
-    std::string formatTransactionId(const std::string& transactionId, const std::string& prefix = "");
-    
-    // =================================================================
-    // Kitchen Formatting
-    // =================================================================
+    inline std::string formatTime(const std::chrono::system_clock::time_point& timestamp) {
+        auto time_t = std::chrono::system_clock::to_time_t(timestamp);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&time_t), "%H:%M");
+        return ss.str();
+    }
     
     /**
-     * @brief Formats kitchen status
-     * @param status Kitchen status to format
-     * @return Human-readable status string
-     */
-    std::string formatKitchenStatus(KitchenInterface::KitchenStatus status);
-    
-    /**
-     * @brief Formats a kitchen ticket summary
-     * @param ticket Kitchen ticket to format
-     * @return Formatted ticket summary
-     */
-    std::string formatKitchenTicket(const KitchenInterface::KitchenTicket& ticket);
-    
-    /**
-     * @brief Formats estimated wait time
-     * @param minutes Wait time in minutes
-     * @return Formatted wait time string
-     */
-    std::string formatWaitTime(int minutes);
-    
-    // =================================================================
-    // List and Collection Formatting
-    // =================================================================
-    
-    /**
-     * @brief Formats a list of strings with separators
-     * @param items List of items to format
-     * @param separator Separator between items
-     * @param lastSeparator Separator before last item
-     * @return Formatted list string
-     */
-    std::string formatList(const std::vector<std::string>& items, 
-                          const std::string& separator = ", ", 
-                          const std::string& lastSeparator = " and ");
-    
-    /**
-     * @brief Formats a count with singular/plural
-     * @param count Count value
-     * @param singular Singular form
-     * @param plural Plural form (if empty, adds 's' to singular)
-     * @return Formatted count string
-     */
-    std::string formatCount(int count, const std::string& singular, const std::string& plural = "");
-    
-    // =================================================================
-    // Address and Contact Formatting
-    // =================================================================
-    
-    /**
-     * @brief Formats a phone number
+     * @brief Formats a phone number for display
      * @param phoneNumber Phone number to format
-     * @param format Phone format (US, international, etc.)
-     * @return Formatted phone number
+     * @return Formatted phone number string
      */
-    std::string formatPhoneNumber(const std::string& phoneNumber, const std::string& format = "US");
+    inline std::string formatPhoneNumber(const std::string& phoneNumber) {
+        // Simple formatting for US phone numbers
+        if (phoneNumber.length() == 10) {
+            return "(" + phoneNumber.substr(0, 3) + ") " + 
+                   phoneNumber.substr(3, 3) + "-" + 
+                   phoneNumber.substr(6, 4);
+        }
+        return phoneNumber; // Return as-is if not standard format
+    }
     
     /**
-     * @brief Formats an address
-     * @param street Street address
-     * @param city City
-     * @param state State or province
-     * @param zipCode ZIP or postal code
-     * @param country Country (optional)
-     * @return Formatted address
-     */
-    std::string formatAddress(const std::string& street, const std::string& city, 
-                             const std::string& state, const std::string& zipCode, 
-                             const std::string& country = "");
-    
-    // =================================================================
-    // Text Formatting Utilities
-    // =================================================================
-    
-    /**
-     * @brief Converts string to title case
-     * @param text Text to convert
-     * @return Title case string
-     */
-    std::string toTitleCase(const std::string& text);
-    
-    /**
-     * @brief Converts string to upper case
-     * @param text Text to convert
-     * @return Upper case string
-     */
-    std::string toUpperCase(const std::string& text);
-    
-    /**
-     * @brief Converts string to lower case
-     * @param text Text to convert
-     * @return Lower case string
-     */
-    std::string toLowerCase(const std::string& text);
-    
-    /**
-     * @brief Truncates text to a maximum length
+     * @brief Truncates text to a maximum length with ellipsis
      * @param text Text to truncate
-     * @param maxLength Maximum length
-     * @param ellipsis Ellipsis string to append
-     * @return Truncated text
+     * @param maxLength Maximum length before truncation
+     * @return Truncated text with ellipsis if needed
      */
-    std::string truncateText(const std::string& text, size_t maxLength, const std::string& ellipsis = "...");
+    inline std::string truncateText(const std::string& text, size_t maxLength) {
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substr(0, maxLength - 3) + "...";
+    }
     
     /**
-     * @brief Pads text to a specific width
-     * @param text Text to pad
-     * @param width Target width
-     * @param padChar Padding character
-     * @param alignLeft Align text to left (true) or right (false)
-     * @return Padded text
+     * @brief Capitalizes the first letter of each word
+     * @param text Text to capitalize
+     * @return Capitalized text
      */
-    std::string padText(const std::string& text, size_t width, char padChar = ' ', bool alignLeft = true);
-    
-    /**
-     * @brief Wraps text to fit within a specific width
-     * @param text Text to wrap
-     * @param width Maximum line width
-     * @return Vector of wrapped lines
-     */
-    std::vector<std::string> wrapText(const std::string& text, size_t width);
-    
-    // =================================================================
-    // Validation and Sanitization
-    // =================================================================
-    
-    /**
-     * @brief Sanitizes text for HTML display
-     * @param text Text to sanitize
-     * @return Sanitized text
-     */
-    std::string sanitizeHtml(const std::string& text);
-    
-    /**
-     * @brief Escapes special characters for CSV
-     * @param text Text to escape
-     * @return Escaped text
-     */
-    std::string escapeCsv(const std::string& text);
-    
-    /**
-     * @brief Removes non-printable characters
-     * @param text Text to clean
-     * @return Cleaned text
-     */
-    std::string removeNonPrintable(const std::string& text);
-    
-    /**
-     * @brief Trims whitespace from both ends
-     * @param text Text to trim
-     * @return Trimmed text
-     */
-    std::string trim(const std::string& text);
+    inline std::string capitalizeWords(const std::string& text) {
+        std::string result = text;
+        bool capitalizeNext = true;
+        
+        for (char& c : result) {
+            if (std::isalpha(c)) {
+                if (capitalizeNext) {
+                    c = std::toupper(c);
+                    capitalizeNext = false;
+                } else {
+                    c = std::tolower(c);
+                }
+            } else {
+                capitalizeNext = true;
+            }
+        }
+        
+        return result;
+    }
 }
 
 #endif // FORMATUTILS_H
-

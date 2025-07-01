@@ -71,6 +71,8 @@ void KitchenStatusDisplay::setupEventListeners() {
     std::cout << "✓ KitchenStatusDisplay event listeners setup complete" << std::endl;
 }
 
+
+// Also fix the createStatusHeader method if it has similar issues:
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createStatusHeader() {
     auto header = std::make_unique<Wt::WContainerWidget>();
     header->addStyleClass("card-header kitchen-status-header");
@@ -85,24 +87,27 @@ std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createStatusHeader() {
     iconText->addStyleClass("kitchen-status-icon me-2");
     titleLayout->addWidget(std::move(iconText));
     
-    statusHeaderText_ = titleContainer->addWidget(std::make_unique<Wt::WText>("Kitchen Status"));
+    // FIXED: Create and add status header text properly
+    statusHeaderText_ = titleLayout->addWidget(std::make_unique<Wt::WText>("Kitchen Status"));
     statusHeaderText_->addStyleClass("h6 mb-0");
-    titleLayout->addWidget(statusHeaderText_);
     
     titleContainer->setLayout(std::move(titleLayout));
     layout->addWidget(std::move(titleContainer), 1);
     
-    // Kitchen load indicator
-    kitchenLoadBar_ = header->addWidget(std::make_unique<Wt::WProgressBar>());
-    kitchenLoadBar_->setRange(0, 100);
-    kitchenLoadBar_->setValue(0);
-    kitchenLoadBar_->setWidth(80);
-    kitchenLoadBar_->addStyleClass("kitchen-load-bar");
-    layout->addWidget(kitchenLoadBar_);
+    // Kitchen load indicator - FIXED: Create properly
+    auto progressBar = std::make_unique<Wt::WProgressBar>();
+    progressBar->setRange(0, 100);
+    progressBar->setValue(0);
+    progressBar->setWidth(80);
+    progressBar->addStyleClass("kitchen-load-bar");
+    kitchenLoadBar_ = progressBar.get();  // Store pointer before moving
+    layout->addWidget(std::move(progressBar));
     
     header->setLayout(std::move(layout));
     return std::move(header);
 }
+
+// Fix for KitchenStatusDisplay.cpp - createKitchenMetrics method
 
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createKitchenMetrics() {
     auto metrics = std::make_unique<Wt::WContainerWidget>();
@@ -116,27 +121,33 @@ std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createKitchenMetrics() {
     queueSizeLabel->addStyleClass("metric-label small text-muted");
     layout->addWidget(std::move(queueSizeLabel), 0, 0);
     
-    queueSizeText_ = metrics->addWidget(std::make_unique<Wt::WText>("0"));
-    queueSizeText_->addStyleClass("metric-value font-weight-bold");
-    layout->addWidget(queueSizeText_, 0, 1);
+    // FIXED: Create and add queue size text directly to layout
+    auto queueSizeWidget = std::make_unique<Wt::WText>("0");
+    queueSizeWidget->addStyleClass("metric-value font-weight-bold");
+    queueSizeText_ = queueSizeWidget.get();  // Store pointer before moving
+    layout->addWidget(std::move(queueSizeWidget), 0, 1);
     
     // Estimated wait time metric
     auto waitTimeLabel = std::make_unique<Wt::WText>("Est. Wait:");
     waitTimeLabel->addStyleClass("metric-label small text-muted");
     layout->addWidget(std::move(waitTimeLabel), 1, 0);
     
-    estimatedWaitText_ = metrics->addWidget(std::make_unique<Wt::WText>("0 min"));
-    estimatedWaitText_->addStyleClass("metric-value font-weight-bold");
-    layout->addWidget(estimatedWaitText_, 1, 1);
+    // FIXED: Create and add estimated wait text directly to layout
+    auto estimatedWaitWidget = std::make_unique<Wt::WText>("0 min");
+    estimatedWaitWidget->addStyleClass("metric-value font-weight-bold");
+    estimatedWaitText_ = estimatedWaitWidget.get();  // Store pointer before moving
+    layout->addWidget(std::move(estimatedWaitWidget), 1, 1);
     
     // Kitchen load metric
     auto loadLabel = std::make_unique<Wt::WText>("Load:");
     loadLabel->addStyleClass("metric-label small text-muted");
     layout->addWidget(std::move(loadLabel), 2, 0);
     
-    kitchenLoadText_ = metrics->addWidget(std::make_unique<Wt::WText>("Normal"));
-    kitchenLoadText_->addStyleClass("metric-value font-weight-bold");
-    layout->addWidget(kitchenLoadText_, 2, 1);
+    // FIXED: Create and add kitchen load text directly to layout
+    auto kitchenLoadWidget = std::make_unique<Wt::WText>("Normal");
+    kitchenLoadWidget->addStyleClass("metric-value font-weight-bold");
+    kitchenLoadText_ = kitchenLoadWidget.get();  // Store pointer before moving
+    layout->addWidget(std::move(kitchenLoadWidget), 2, 1);
     
     // Set column stretches
     layout->setColumnStretch(0, 1);
@@ -443,12 +454,14 @@ int KitchenStatusDisplay::getAveragePreparationTime() const {
     return 15; // 15 minutes average
 }
 
+// Fix for KitchenStatusDisplay.cpp - formatKitchenTicketStatus method
+
 std::string KitchenStatusDisplay::formatKitchenTicketStatus(KitchenInterface::KitchenStatus status) const {
     switch (status) {
-        case KitchenInterface::ORDER_RECEIVED:  return "Received";
-        case KitchenInterface::IN_PREPARATION:  return "Preparing";
-        case KitchenInterface::READY_TO_SERVE:  return "Ready";
-        case KitchenInterface::SERVED:          return "Served";
-        default:                                return "Unknown";
+        case KitchenInterface::ORDER_RECEIVED:    return "Received";
+        case KitchenInterface::PREP_STARTED:      return "Preparing";      // FIXED: was IN_PREPARATION
+        case KitchenInterface::READY_FOR_PICKUP:  return "Ready";          // FIXED: was READY_TO_SERVE
+        case KitchenInterface::SERVED:            return "Served";
+        default:                                  return "Unknown";
     }
 }

@@ -86,6 +86,11 @@ protected:
     void setupEventListeners();
     
     /**
+     * @brief Sets up event listeners
+     */
+    void setupEventHandlers();
+    
+    /**
      * @brief Creates the table selection section
      * @return Container widget with table selection controls
      */
@@ -108,9 +113,9 @@ private:
     Wt::WPushButton* sendToKitchenButton_;
     Wt::WPushButton* processPaymentButton_;
     
-    // Child components
-    std::unique_ptr<MenuDisplay> menuDisplay_;
-    std::unique_ptr<CurrentOrderDisplay> currentOrderDisplay_;
+    // Child components (raw pointers - Wt manages lifetime)
+    MenuDisplay* menuDisplay_;
+    CurrentOrderDisplay* currentOrderDisplay_;
     
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
@@ -126,12 +131,29 @@ private:
     void onProcessPaymentClicked();
     void onTableNumberChanged();
     
+    // Business logic methods (ADDED)
+    /**
+     * @brief Creates a new order for the specified table
+     * @param tableNumber Table number for the new order
+     */
+    void createNewOrder(int tableNumber);
+    
+    /**
+     * @brief Sends the current order to the kitchen
+     */
+    void sendCurrentOrderToKitchen();
+    
     // Helper methods
     void updateOrderActionButtons();
-    void validateCurrentOrder();
+    
+    /**
+     * @brief Validates the current order state
+     * @return True if current order is valid, false otherwise
+     */
+    bool validateCurrentOrder();  // CHANGED: now returns bool instead of void
+    
     bool hasCurrentOrder() const;
     void showOrderValidationError(const std::string& message);
 };
 
 #endif // ORDERENTRYPANEL_H
-

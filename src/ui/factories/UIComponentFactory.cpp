@@ -1,4 +1,4 @@
-#include "UIComponentFactory.hpp"
+#include "../../include/ui/factories/UIComponentFactory.hpp"
 
 #include <iostream>
 

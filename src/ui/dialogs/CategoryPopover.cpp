@@ -1,436 +1,226 @@
 //=============================================================================
-// PaymentDialog.cpp
+// CategoryPopover.cpp
 //=============================================================================
 
-#include "PaymentDialog.hpp"
-#include "../../events/POSEvents.hpp"
+#include "../../../include/ui/dialogs/CategoryPopover.hpp"
 
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
-#include <Wt/WGroupBox.h>
 #include <Wt/WBreak.h>
-
-#include <iostream>
+#include <Wt/WImage.h>
 #include <iomanip>
 #include <sstream>
 
-PaymentDialog::PaymentDialog(std::shared_ptr<Order> order,
-                           std::shared_ptr<EventManager> eventManager,
-                           PaymentCallback callback)
-    : WDialog("Process Payment"), order_(order), eventManager_(eventManager),
-      paymentCallback_(callback), splitPaymentEnabled_(false),
-      selectedMethod_(PaymentProcessor::CASH), tipAmount_(0.0), paymentAmount_(0.0) {
+CategoryPopover::CategoryPopover(MenuItem::Category category,
+                               const std::vector<std::shared_ptr<MenuItem>>& items,
+                               std::shared_ptr<EventManager> eventManager,
+                               ItemSelectionCallback callback)
+    : WPopupWidget(std::make_unique<Wt::WContainerWidget>()),
+      category_(category), menuItems_(items), eventManager_(eventManager),
+      selectionCallback_(callback), maxColumns_(3), showDescriptions_(true) {
     
-    // Set dialog properties
-    setModal(true);
-    setResizable(false);
-    resize(500, 600);
+    // Get the implementation container
+    contentContainer_ = static_cast<Wt::WContainerWidget*>(implementation());
     
-    // Set default payment methods
-    availableMethods_ = {
-        PaymentProcessor::CASH,
-        PaymentProcessor::CREDIT_CARD,
-        PaymentProcessor::DEBIT_CARD
-    };
-    
-    // Set default tip suggestions
-    tipSuggestions_ = {15.0, 18.0, 20.0, 25.0};
-    
-    createDialogContent();
-    setupEventHandlers();
-    updateTotals();
+    createPopoverContent();
+    setupStyling();
 }
 
-void PaymentDialog::createDialogContent() {
-    auto content = contents()->addNew<Wt::WContainerWidget>();
-    content->addStyleClass("payment-dialog-content");
+void CategoryPopover::createPopoverContent() {
+    contentContainer_->clear();
+    contentContainer_->addStyleClass("category-popover-content");
     
     auto layout = std::make_unique<Wt::WVBoxLayout>();
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->setSpacing(10);
     
-    // Order summary
-    layout->addWidget(createOrderSummary());
+    // Add header
+    auto header = createHeader();
+    layout->addWidget(std::move(header));
     
-    // Payment method selection
-    layout->addWidget(createPaymentMethodSection());
+    // Add menu items grid
+    auto itemsGrid = createMenuItemsGrid();
+    layout->addWidget(std::move(itemsGrid));
     
-    // Amount and tip section
-    layout->addWidget(createAmountSection());
-    
-    // Action buttons
-    layout->addWidget(createActionButtons());
-    
-    content->setLayout(std::move(layout));
+    contentContainer_->setLayout(std::move(layout));
 }
 
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createOrderSummary() {
+std::unique_ptr<Wt::WContainerWidget> CategoryPopover::createHeader() {
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->addStyleClass("popover-header");
+    
+    auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    // Category icon and title
+    auto titleContainer = std::make_unique<Wt::WContainerWidget>();
+    auto titleLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    auto iconText = std::make_unique<Wt::WText>(getCategoryIcon(category_));
+    iconText->addStyleClass("category-tile-icon");
+    titleLayout->addWidget(std::move(iconText));
+    
+    headerText_ = titleLayout->addWidget(std::make_unique<Wt::WText>(getCategoryDisplayName(category_)));
+    headerText_->addStyleClass("popover-title");
+    
+    titleContainer->setLayout(std::move(titleLayout));
+    headerLayout->addWidget(std::move(titleContainer), 1);
+    
+    // Close button
+    closeButton_ = headerLayout->addWidget(std::make_unique<Wt::WPushButton>("×"));
+    closeButton_->addStyleClass("btn btn-close");
+    closeButton_->clicked().connect([this]() {
+        hide();
+    });
+    
+    header->setLayout(std::move(headerLayout));
+    
+    return header;
+}
+
+std::unique_ptr<Wt::WContainerWidget> CategoryPopover::createMenuItemsGrid() {
     auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("order-summary-section");
+    container->addStyleClass("popover-content");
     
-    auto groupBox = container->addNew<Wt::WGroupBox>("Order Summary");
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    itemsContainer_ = container.get();
     
-    // Order details
-    auto orderInfo = std::make_unique<Wt::WText>(
-        "Order #" + std::to_string(order_->getId()) + 
-        " - Table " + std::to_string(order_->getTableNumber()));
-    orderInfo->addStyleClass("order-info");
-    layout->addWidget(std::move(orderInfo));
-    
-    // Items summary
-    auto itemsText = std::make_unique<Wt::WText>(
-        std::to_string(order_->getItems().size()) + " items");
-    itemsText->addStyleClass("items-summary");
-    layout->addWidget(std::move(itemsText));
-    
-    // Totals
-    auto totalsContainer = std::make_unique<Wt::WContainerWidget>();
-    totalsContainer->addStyleClass("totals-container");
-    
-    auto totalsLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto subtotalRow = std::make_unique<Wt::WContainerWidget>();
-    subtotalRow->addStyleClass("total-row");
-    auto subtotalLayout = std::make_unique<Wt::WHBoxLayout>();
-    subtotalLayout->addWidget(std::make_unique<Wt::WText>("Subtotal:"), 1);
-    orderTotalText_ = subtotalLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    subtotalRow->setLayout(std::move(subtotalLayout));
-    totalsLayout->addWidget(std::move(subtotalRow));
-    
-    auto taxRow = std::make_unique<Wt::WContainerWidget>();
-    taxRow->addStyleClass("total-row");
-    auto taxLayout = std::make_unique<Wt::WHBoxLayout>();
-    taxLayout->addWidget(std::make_unique<Wt::WText>("Tax:"), 1);
-    taxAmountText_ = taxLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    taxRow->setLayout(std::move(taxLayout));
-    totalsLayout->addWidget(std::move(taxRow));
-    
-    auto finalRow = std::make_unique<Wt::WContainerWidget>();
-    finalRow->addStyleClass("total-row final-total");
-    auto finalLayout = std::make_unique<Wt::WHBoxLayout>();
-    finalLayout->addWidget(std::make_unique<Wt::WText>("Total:"), 1);
-    finalTotalText_ = finalLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    finalRow->setLayout(std::move(finalLayout));
-    totalsLayout->addWidget(std::move(finalRow));
-    
-    totalsContainer->setLayout(std::move(totalsLayout));
-    layout->addWidget(std::move(totalsContainer));
-    
-    groupBox->setLayout(std::move(layout));
+    refreshItemsDisplay();
     
     return container;
 }
 
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createPaymentMethodSection() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("payment-method-section");
+void CategoryPopover::refreshItemsDisplay() {
+    if (!itemsContainer_) return;
     
-    auto groupBox = container->addNew<Wt::WGroupBox>("Payment Method");
+    itemsContainer_->clear();
+    
+    // Create a vertical layout for menu items (no grid, just stacked items as per CSS)
     auto layout = std::make_unique<Wt::WVBoxLayout>();
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
     
-    paymentMethodGroup_ = layout->addWidget(std::make_unique<Wt::WButtonGroup>());
-    
-    for (auto method : availableMethods_) {
-        auto methodContainer = std::make_unique<Wt::WContainerWidget>();
-        methodContainer->addStyleClass("payment-method-option");
+    for (const auto& item : menuItems_) {
+        if (!item || !item->isAvailable()) continue;
         
-        auto radioButton = std::make_unique<Wt::WRadioButton>(getPaymentMethodName(method));
-        radioButton->addStyleClass("payment-method-radio");
-        
-        auto* radioPtr = radioButton.get();
-        paymentMethodGroup_->addButton(radioButton.get(), static_cast<int>(method));
-        methodButtons_.push_back(radioPtr);
-        
-        methodContainer->addWidget(std::move(radioButton));
-        layout->addWidget(std::move(methodContainer));
+        auto itemCard = createMenuItemCard(item);
+        layout->addWidget(std::move(itemCard));
     }
     
-    // Select first method by default
-    if (!methodButtons_.empty()) {
-        methodButtons_[0]->setChecked(true);
-        selectedMethod_ = availableMethods_[0];
-    }
-    
-    groupBox->setLayout(std::move(layout));
-    
-    return container;
+    itemsContainer_->setLayout(std::move(layout));
 }
 
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("amount-section");
+std::unique_ptr<Wt::WContainerWidget> CategoryPopover::createMenuItemCard(std::shared_ptr<MenuItem> item) {
+    auto card = std::make_unique<Wt::WContainerWidget>();
+    card->addStyleClass("menu-item-card");
     
     auto layout = std::make_unique<Wt::WVBoxLayout>();
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
     
-    // Tip section
-    auto tipGroupBox = container->addNew<Wt::WGroupBox>("Tip");
-    auto tipLayout = std::make_unique<Wt::WVBoxLayout>();
+    // Create header with name and price
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->addStyleClass("menu-item-header");
+    auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
     
-    // Tip buttons
-    auto tipButtonsContainer = std::make_unique<Wt::WContainerWidget>();
-    tipButtonsContainer->addStyleClass("tip-buttons-container");
-    auto tipButtonsLayout = std::make_unique<Wt::WHBoxLayout>();
+    // Item name
+    auto nameText = std::make_unique<Wt::WText>(item->getName());
+    nameText->addStyleClass("menu-item-name");
+    headerLayout->addWidget(std::move(nameText), 1); // flex: 1
     
-    tipButtonGroup_ = tipButtonsLayout->addWidget(std::make_unique<Wt::WButtonGroup>());
+    // Item price
+    std::stringstream priceStream;
+    priceStream << std::fixed << std::setprecision(2) << "$" << item->getPrice();
+    auto priceText = std::make_unique<Wt::WText>(priceStream.str());
+    priceText->addStyleClass("menu-item-price");
+    headerLayout->addWidget(std::move(priceText));
     
-    for (double percentage : tipSuggestions_) {
-        auto tipButton = std::make_unique<Wt::WPushButton>(std::to_string(static_cast<int>(percentage)) + "%");
-        tipButton->addStyleClass("btn btn-outline-secondary tip-button");
-        
-        auto* buttonPtr = tipButton.get();
-        tipButtons_.push_back(buttonPtr);
-        tipButtonsLayout->addWidget(std::move(tipButton));
-        
-        buttonPtr->clicked().connect([this, percentage]() {
-            tipAmount_ = order_->getSubtotal() * (percentage / 100.0);
-            customTipInput_->setValue(tipAmount_);
-            updateTotals();
-        });
+    header->setLayout(std::move(headerLayout));
+    layout->addWidget(std::move(header));
+    
+    // Add description if available and enabled
+    // Note: MenuItem doesn't have getDescription() method yet
+    // If you add it later, uncomment the following:
+    /*
+    if (showDescriptions_ && !item->getDescription().empty()) {
+        auto descText = std::make_unique<Wt::WText>(item->getDescription());
+        descText->addStyleClass("menu-item-description");
+        layout->addWidget(std::move(descText));
     }
+    */
     
-    tipButtonsContainer->setLayout(std::move(tipButtonsLayout));
-    tipLayout->addWidget(std::move(tipButtonsContainer));
+    card->setLayout(std::move(layout));
     
-    // Custom tip input
-    auto customTipContainer = std::make_unique<Wt::WContainerWidget>();
-    auto customTipLayout = std::make_unique<Wt::WHBoxLayout>();
-    customTipLayout->addWidget(std::make_unique<Wt::WText>("Custom tip: $"));
-    customTipInput_ = customTipLayout->addWidget(std::make_unique<Wt::WDoubleSpinBox>());
-    customTipInput_->setMinimum(0.0);
-    customTipInput_->setMaximum(999.99);
-    customTipInput_->setDecimals(2);
-    customTipInput_->setValue(0.0);
-    customTipContainer->setLayout(std::move(customTipLayout));
-    tipLayout->addWidget(std::move(customTipContainer));
-    
-    tipGroupBox->setLayout(std::move(tipLayout));
-    layout->addWidget(std::move(tipGroupBox));
-    
-    // Payment amount section
-    auto amountGroupBox = container->addNew<Wt::WGroupBox>("Payment Amount");
-    auto amountLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto amountContainer = std::make_unique<Wt::WContainerWidget>();
-    auto amountRowLayout = std::make_unique<Wt::WHBoxLayout>();
-    amountRowLayout->addWidget(std::make_unique<Wt::WText>("Amount: $"));
-    paymentAmountInput_ = amountRowLayout->addWidget(std::make_unique<Wt::WDoubleSpinBox>());
-    paymentAmountInput_->setMinimum(0.01);
-    paymentAmountInput_->setMaximum(9999.99);
-    paymentAmountInput_->setDecimals(2);
-    amountContainer->setLayout(std::move(amountRowLayout));
-    amountLayout->addWidget(std::move(amountContainer));
-    
-    // Change display
-    auto changeContainer = std::make_unique<Wt::WContainerWidget>();
-    auto changeLayout = std::make_unique<Wt::WHBoxLayout>();
-    changeLayout->addWidget(std::make_unique<Wt::WText>("Change: "), 1);
-    changeAmountText_ = changeLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    changeAmountText_->addStyleClass("change-amount");
-    changeContainer->setLayout(std::move(changeLayout));
-    amountLayout->addWidget(std::move(changeContainer));
-    
-    amountGroupBox->setLayout(std::move(amountLayout));
-    layout->addWidget(std::move(amountGroupBox));
-    
-    container->setLayout(std::move(layout));
-    
-    return container;
-}
-
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createActionButtons() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("action-buttons-section");
-    
-    auto layout = std::make_unique<Wt::WHBoxLayout>();
-    
-    if (splitPaymentEnabled_) {
-        splitPaymentButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Split Payment"));
-        splitPaymentButton_->addStyleClass("btn btn-info");
-    }
-    
-    layout->addStretch(1);
-    
-    cancelButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
-    cancelButton_->addStyleClass("btn btn-secondary");
-    
-    processButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Process Payment"));
-    processButton_->addStyleClass("btn btn-success");
-    
-    container->setLayout(std::move(layout));
-    
-    return container;
-}
-
-void PaymentDialog::setupEventHandlers() {
-    // Payment method change
-    paymentMethodGroup_->checkedChanged().connect([this]() {
-        onPaymentMethodChanged();
+    // Make card clickable
+    card->clicked().connect([this, item]() {
+        onItemSelected(item);
     });
     
-    // Tip input change
-    customTipInput_->valueChanged().connect([this]() {
-        onTipChanged();
-    });
-    
-    // Payment amount change
-    paymentAmountInput_->valueChanged().connect([this]() {
-        calculateChange();
-    });
-    
-    // Button clicks
-    processButton_->clicked().connect([this]() {
-        processPayment();
-    });
-    
-    cancelButton_->clicked().connect([this]() {
-        reject();
-    });
-    
-    if (splitPaymentButton_) {
-        splitPaymentButton_->clicked().connect([this]() {
-            // TODO: Implement split payment dialog
-            std::cout << "Split payment not yet implemented" << std::endl;
-        });
-    }
+    return card;
 }
 
-void PaymentDialog::updateTotals() {
-    if (!order_) return;
-    
-    double subtotal = order_->getSubtotal();
-    double tax = order_->getTaxAmount();
-    double total = subtotal + tax + tipAmount_;
-    
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(2);
-    
-    ss.str("");
-    ss << "$" << subtotal;
-    orderTotalText_->setText(ss.str());
-    
-    ss.str("");
-    ss << "$" << tax;
-    taxAmountText_->setText(ss.str());
-    
-    ss.str("");
-    ss << "$" << total;
-    finalTotalText_->setText(ss.str());
-    
-    // Set payment amount to total by default
-    if (paymentAmountInput_->value() == 0.0) {
-        paymentAmountInput_->setValue(total);
-        paymentAmount_ = total;
+void CategoryPopover::onItemSelected(std::shared_ptr<MenuItem> item) {
+    if (selectionCallback_) {
+        selectionCallback_(item);
     }
     
-    calculateChange();
-}
-
-void PaymentDialog::onPaymentMethodChanged() {
-    selectedMethod_ = getSelectedPaymentMethod();
-    std::cout << "Payment method changed to: " << getPaymentMethodName(selectedMethod_) << std::endl;
-}
-
-void PaymentDialog::onTipChanged() {
-    tipAmount_ = customTipInput_->value();
-    updateTotals();
-}
-
-void PaymentDialog::calculateChange() {
-    paymentAmount_ = paymentAmountInput_->value();
-    double total = order_->getSubtotal() + order_->getTaxAmount() + tipAmount_;
-    double change = paymentAmount_ - total;
-    
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(2) << "$" << std::max(0.0, change);
-    changeAmountText_->setText(ss.str());
-    
-    // Update change text color
-    if (change < 0) {
-        changeAmountText_->addStyleClass("text-danger");
-        changeAmountText_->removeStyleClass("text-success");
-    } else {
-        changeAmountText_->addStyleClass("text-success");
-        changeAmountText_->removeStyleClass("text-danger");
-    }
-}
-
-void PaymentDialog::processPayment() {
-    if (!validatePaymentInput()) {
-        return;
-    }
-    
-    // Create payment result (simplified - in real implementation this would call PaymentProcessor)
-    PaymentProcessor::PaymentResult result;
-    result.success = true;
-    result.amount = paymentAmount_;
-    result.method = selectedMethod_;
-    result.tipAmount = tipAmount_;
-    result.transactionId = "TXN-" + std::to_string(std::time(nullptr));
-    result.timestamp = std::chrono::system_clock::now();
-    
-    std::cout << "Processing payment: " << getPaymentMethodName(selectedMethod_) 
-              << " - $" << paymentAmount_ << " (tip: $" << tipAmount_ << ")" << std::endl;
-    
-    // Publish payment event
+    // Publish event
     if (eventManager_) {
-        eventManager_->publish(POSEvents::PAYMENT_COMPLETED,
-            POSEvents::createPaymentCompletedEvent(result, order_));
+        eventManager_->publish("MENU_ITEM_SELECTED", item);
     }
     
-    // Call callback
-    if (paymentCallback_) {
-        paymentCallback_(result);
-    }
+    // Hide popover after selection
+    hide();
+}
+
+void CategoryPopover::showPopover(Wt::WWidget* anchor) {
+    if (!anchor) return;
     
-    accept();
-}
-
-bool PaymentDialog::validatePaymentInput() {
-    double total = order_->getSubtotal() + order_->getTaxAmount() + tipAmount_;
-    
-    if (paymentAmount_ < total) {
-        // Show error message
-        std::cerr << "Payment amount insufficient" << std::endl;
-        return false;
-    }
-    
-    return true;
-}
-
-PaymentProcessor::PaymentMethod PaymentDialog::getSelectedPaymentMethod() const {
-    int selectedIndex = paymentMethodGroup_->checkedId();
-    if (selectedIndex >= 0 && selectedIndex < static_cast<int>(availableMethods_.size())) {
-        return availableMethods_[selectedIndex];
-    }
-    return PaymentProcessor::CASH;
-}
-
-std::string PaymentDialog::getPaymentMethodName(PaymentProcessor::PaymentMethod method) const {
-    switch (method) {
-        case PaymentProcessor::CASH: return "Cash";
-        case PaymentProcessor::CREDIT_CARD: return "Credit Card";
-        case PaymentProcessor::DEBIT_CARD: return "Debit Card";
-        case PaymentProcessor::MOBILE_PAY: return "Mobile Pay";
-        case PaymentProcessor::GIFT_CARD: return "Gift Card";
-        default: return "Unknown";
-    }
-}
-
-void PaymentDialog::showDialog() {
-    updateTotals();
+    // Show popover - positioning will be handled by Wt's popup system
+    // Position can be set using setPositionScheme if needed
     show();
 }
 
-void PaymentDialog::setAvailablePaymentMethods(const std::vector<PaymentProcessor::PaymentMethod>& methods) {
-    availableMethods_ = methods;
-    // Would need to recreate payment method section in a full implementation
+void CategoryPopover::updateMenuItems(const std::vector<std::shared_ptr<MenuItem>>& items) {
+    menuItems_ = items;
+    refreshItemsDisplay();
 }
 
-void PaymentDialog::setTipSuggestions(const std::vector<double>& suggestions) {
-    tipSuggestions_ = suggestions;
-    // Would need to recreate tip section in a full implementation
+void CategoryPopover::setMaxColumns(int columns) {
+    // Note: This method is kept for API compatibility but doesn't affect layout
+    // since the popover now uses a vertical list layout as per CSS design
+    maxColumns_ = std::max(1, columns);
+    // No need to refresh display as layout is now vertical
 }
 
-void PaymentDialog::setSplitPaymentEnabled(bool enabled) {
-    splitPaymentEnabled_ = enabled;
-    // Would need to show/hide split payment button in a full implementation
+void CategoryPopover::setShowDescriptions(bool enabled) {
+    showDescriptions_ = enabled;
+    refreshItemsDisplay();
+}
+
+std::string CategoryPopover::getCategoryDisplayName(MenuItem::Category category) const {
+    switch (category) {
+        case MenuItem::APPETIZER: return "Appetizers";
+        case MenuItem::MAIN_COURSE: return "Main Courses";
+        case MenuItem::DESSERT: return "Desserts";
+        case MenuItem::BEVERAGE: return "Beverages";
+        case MenuItem::SPECIAL: return "Daily Specials";
+        default: return "Menu Items";
+    }
+}
+
+std::string CategoryPopover::getCategoryIcon(MenuItem::Category category) const {
+    switch (category) {
+        case MenuItem::APPETIZER: return "🥗";
+        case MenuItem::MAIN_COURSE: return "🍽️";
+        case MenuItem::DESSERT: return "🍰";
+        case MenuItem::BEVERAGE: return "🥤";
+        case MenuItem::SPECIAL: return "⭐";
+        default: return "🍴";
+    }
+}
+
+void CategoryPopover::setupStyling() {
+    // Apply CSS classes that are defined in the theme system
+    contentContainer_->addStyleClass("category-popover");
+    
+    // Dimensions are controlled by CSS - no need to set programmatically
 }

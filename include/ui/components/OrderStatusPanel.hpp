@@ -114,15 +114,15 @@ private:
     int autoRefreshInterval_;
     bool autoRefreshEnabled_;
     
-    // UI components
+    // UI components (FIXED: Use raw pointers for Wt widgets)
     Wt::WText* statusTitleText_;
     Wt::WText* lastUpdateText_;
     Wt::WContainerWidget* statusSummaryContainer_;
-    std::unique_ptr<ActiveOrdersDisplay> activeOrdersDisplay_;
-    std::unique_ptr<KitchenStatusDisplay> kitchenStatusDisplay_;
+    ActiveOrdersDisplay* activeOrdersDisplay_;       // CHANGED from unique_ptr
+    KitchenStatusDisplay* kitchenStatusDisplay_;     // CHANGED from unique_ptr
     
-    // Auto-refresh timer
-    Wt::WTimer* refreshTimer_;
+    // Auto-refresh timer (FIXED: Use unique_ptr for non-widget objects)
+    std::unique_ptr<Wt::WTimer> refreshTimer_;
     
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;

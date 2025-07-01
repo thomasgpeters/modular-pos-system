@@ -59,6 +59,8 @@ void ThemeSelector::setupEventListeners() {
     std::cout << "✓ ThemeSelector event listeners setup complete" << std::endl;
 }
 
+// Fix for ThemeSelector.cpp - buildCompactMode method
+
 void ThemeSelector::buildCompactMode() {
     auto layout = std::make_unique<Wt::WHBoxLayout>();
     
@@ -68,16 +70,16 @@ void ThemeSelector::buildCompactMode() {
     layout->addWidget(std::move(label));
     
     // Theme dropdown
-    themeComboBox_ = addWidget(std::make_unique<Wt::WComboBox>());
+    themeComboBox_ = layout->addWidget(std::make_unique<Wt::WComboBox>());
     themeComboBox_->addStyleClass("theme-selector-combo form-control-sm");
     themeComboBox_->changed().connect([this]() {
         onThemeSelectionChanged();
     });
-    layout->addWidget(themeComboBox_);
-    
     setLayout(std::move(layout));
 }
 
+
+// Also fix buildDetailedMode if it has similar issues:
 void ThemeSelector::buildDetailedMode() {
     auto layout = std::make_unique<Wt::WVBoxLayout>();
     
@@ -89,39 +91,39 @@ void ThemeSelector::buildDetailedMode() {
     label->addStyleClass("theme-selector-label me-2");
     headerLayout->addWidget(std::move(label));
     
-    themeComboBox_ = headerContainer->addWidget(std::make_unique<Wt::WComboBox>());
+    // FIXED: Create combo box directly in layout
+    themeComboBox_ = headerLayout->addWidget(std::make_unique<Wt::WComboBox>(), 1);
     themeComboBox_->addStyleClass("theme-selector-combo form-control-sm");
     themeComboBox_->changed().connect([this]() {
         onThemeSelectionChanged();
     });
-    headerLayout->addWidget(themeComboBox_, 1);
     
     headerContainer->setLayout(std::move(headerLayout));
     layout->addWidget(std::move(headerContainer));
     
-    // Theme description
-    themeDescriptionText_ = addWidget(std::make_unique<Wt::WText>());
+    // Theme description - FIXED: Create directly in layout
+    themeDescriptionText_ = layout->addWidget(std::make_unique<Wt::WText>());
     themeDescriptionText_->addStyleClass("theme-description text-muted small mt-1");
-    layout->addWidget(themeDescriptionText_);
+
     
-    // Theme preview
-    themePreviewContainer_ = addWidget(std::make_unique<Wt::WContainerWidget>());
+    // Theme preview - FIXED: Create directly in layout
+    themePreviewContainer_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     themePreviewContainer_->addStyleClass("theme-preview mt-2");
-    layout->addWidget(themePreviewContainer_);
-    
+
     setLayout(std::move(layout));
 }
 
+// Fix buildButtonOnlyMode if needed:
 void ThemeSelector::buildButtonOnlyMode() {
     auto layout = std::make_unique<Wt::WHBoxLayout>();
     
-    themeButton_ = addWidget(std::make_unique<Wt::WPushButton>("⚙️ Themes"));
+    // FIXED: Create button directly in layout
+    themeButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("⚙️ Themes"));
     themeButton_->addStyleClass("btn btn-outline-secondary btn-sm");
     themeButton_->setToolTip("Select application theme");
     themeButton_->clicked().connect([this]() {
         onThemeButtonClicked();
     });
-    layout->addWidget(themeButton_);
     
     setLayout(std::move(layout));
 }

@@ -16,7 +16,7 @@
  * @date 2025
  */
 
-#include "../include/RestaurantPOSApp.hpp"
+#include "../include/core/RestaurantPOSApp.hpp"
 #include <Wt/WServer.h>
 #include <iostream>
 #include <exception>

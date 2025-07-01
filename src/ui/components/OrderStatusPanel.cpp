@@ -19,7 +19,9 @@ OrderStatusPanel::OrderStatusPanel(std::shared_ptr<POSService> posService,
     , statusTitleText_(nullptr)
     , lastUpdateText_(nullptr)
     , statusSummaryContainer_(nullptr)
-    , refreshTimer_(nullptr) {
+    , activeOrdersDisplay_(nullptr)      // FIXED: Initialize to nullptr
+    , kitchenStatusDisplay_(nullptr)     // FIXED: Initialize to nullptr
+    , refreshTimer_(nullptr) {           // FIXED: Initialize unique_ptr to nullptr
     
     initializeUI();
     setupEventListeners();
@@ -40,13 +42,13 @@ void OrderStatusPanel::initializeUI() {
     auto summary = createStatusSummary();
     layout->addWidget(std::move(summary));
     
-    // Active orders display
-    activeOrdersDisplay_ = std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_);
-    layout->addWidget(std::move(activeOrdersDisplay_), 1);
+    // FIXED: Active orders display - proper Wt pattern
+    activeOrdersDisplay_ = layout->addWidget(
+        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_), 1);
     
-    // Kitchen status display
-    kitchenStatusDisplay_ = std::make_unique<KitchenStatusDisplay>(posService_, eventManager_);
-    layout->addWidget(std::move(kitchenStatusDisplay_));
+    // FIXED: Kitchen status display - proper Wt pattern
+    kitchenStatusDisplay_ = layout->addWidget(
+        std::make_unique<KitchenStatusDisplay>(posService_, eventManager_));
     
     setLayout(std::move(layout));
     
@@ -90,7 +92,8 @@ void OrderStatusPanel::setupAutoRefresh() {
         return;
     }
     
-    refreshTimer_ = addWidget(std::make_unique<Wt::WTimer>());
+    // FIXED: Create timer as a standalone object using unique_ptr
+    refreshTimer_ = std::make_unique<Wt::WTimer>();
     refreshTimer_->setInterval(std::chrono::seconds(autoRefreshInterval_));
     refreshTimer_->timeout().connect([this] { onAutoRefreshTimer(); });
     
@@ -111,13 +114,13 @@ std::unique_ptr<Wt::WWidget> OrderStatusPanel::createPanelHeader() {
     auto titleContainer = std::make_unique<Wt::WContainerWidget>();
     auto titleLayout = std::make_unique<Wt::WVBoxLayout>();
     
-    statusTitleText_ = titleContainer->addWidget(std::make_unique<Wt::WText>("Order Status"));
+    // FIXED: Create and add title text properly
+    statusTitleText_ = titleLayout->addWidget(std::make_unique<Wt::WText>("Order Status"));
     statusTitleText_->addStyleClass("h4 mb-1 text-white");
-    titleLayout->addWidget(statusTitleText_);
     
-    lastUpdateText_ = titleContainer->addWidget(std::make_unique<Wt::WText>(""));
+    // FIXED: Create and add last update text properly
+    lastUpdateText_ = titleLayout->addWidget(std::make_unique<Wt::WText>(""));
     lastUpdateText_->addStyleClass("small text-light");
-    titleLayout->addWidget(lastUpdateText_);
     
     titleContainer->setLayout(std::move(titleLayout));
     layout->addWidget(std::move(titleContainer), 1);

@@ -82,6 +82,12 @@ protected:
      * @brief Initializes the UI components
      */
     void initializeUI();
+
+    /**
+     * @brief Initializes the UI simple components
+     */
+    void initializeUI_Simple();
+
     
     /**
      * @brief Sets up event listeners

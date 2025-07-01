@@ -1,436 +1,355 @@
 //=============================================================================
-// PaymentDialog.cpp
+// ThemeSelectionDialog.cpp
 //=============================================================================
 
-#include "PaymentDialog.hpp"
-#include "../../events/POSEvents.hpp"
+#include "../../../include/ui/dialogs/ThemeSelectionDialog.hpp"
 
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
+#include <Wt/WGridLayout.h>
 #include <Wt/WGroupBox.h>
 #include <Wt/WBreak.h>
+#include <Wt/WButtonGroup.h>
+#include <Wt/WRadioButton.h>
 
 #include <iostream>
-#include <iomanip>
-#include <sstream>
 
-PaymentDialog::PaymentDialog(std::shared_ptr<Order> order,
-                           std::shared_ptr<EventManager> eventManager,
-                           PaymentCallback callback)
-    : WDialog("Process Payment"), order_(order), eventManager_(eventManager),
-      paymentCallback_(callback), splitPaymentEnabled_(false),
-      selectedMethod_(PaymentProcessor::CASH), tipAmount_(0.0), paymentAmount_(0.0) {
+ThemeSelectionDialog::ThemeSelectionDialog(std::shared_ptr<ThemeService> themeService,
+                                           std::shared_ptr<EventManager> eventManager,
+                                           ThemeSelectionCallback callback)
+    : WDialog("Theme Selection"), themeService_(themeService), eventManager_(eventManager),
+      selectionCallback_(callback), showPreviews_(true), themesContainer_(nullptr),
+      themeButtonGroup_(nullptr), applyButton_(nullptr), cancelButton_(nullptr),
+      previewButton_(nullptr) {
     
     // Set dialog properties
     setModal(true);
-    setResizable(false);
-    resize(500, 600);
+    setResizable(true);
+    resize(700, 500);
     
-    // Set default payment methods
-    availableMethods_ = {
-        PaymentProcessor::CASH,
-        PaymentProcessor::CREDIT_CARD,
-        PaymentProcessor::DEBIT_CARD
-    };
+    // Store original theme
+    if (themeService_) {
+        originalThemeId_ = themeService_->getCurrentThemeId();
+        selectedThemeId_ = originalThemeId_;
+    }
     
-    // Set default tip suggestions
-    tipSuggestions_ = {15.0, 18.0, 20.0, 25.0};
+    // Load available themes
+    refreshThemes();
     
+    // Create dialog content
     createDialogContent();
     setupEventHandlers();
-    updateTotals();
 }
 
-void PaymentDialog::createDialogContent() {
+void ThemeSelectionDialog::createDialogContent() {
     auto content = contents()->addNew<Wt::WContainerWidget>();
-    content->addStyleClass("payment-dialog-content");
+    content->addStyleClass("preferences-dialog");
     
     auto layout = std::make_unique<Wt::WVBoxLayout>();
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(15);
     
-    // Order summary
-    layout->addWidget(createOrderSummary());
+    // Title and description
+    auto titleText = std::make_unique<Wt::WText>("Choose Your Theme");
+    titleText->addStyleClass("h4 mb-3");
+    layout->addWidget(std::move(titleText));
     
-    // Payment method selection
-    layout->addWidget(createPaymentMethodSection());
+    auto descText = std::make_unique<Wt::WText>("Select a theme to customize the appearance of your POS system:");
+    descText->addStyleClass("text-muted mb-4");
+    layout->addWidget(std::move(descText));
     
-    // Amount and tip section
-    layout->addWidget(createAmountSection());
+    // Themes grid
+    auto themesGrid = createThemesGrid();
+    layout->addWidget(std::move(themesGrid));
     
     // Action buttons
-    layout->addWidget(createActionButtons());
+    auto actionButtons = createActionButtons();
+    layout->addWidget(std::move(actionButtons));
     
     content->setLayout(std::move(layout));
 }
 
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createOrderSummary() {
+std::unique_ptr<Wt::WContainerWidget> ThemeSelectionDialog::createThemesGrid() {
     auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("order-summary-section");
+    container->addStyleClass("themes-selection-container");
     
-    auto groupBox = container->addNew<Wt::WGroupBox>("Order Summary");
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
-    
-    // Order details
-    auto orderInfo = std::make_unique<Wt::WText>(
-        "Order #" + std::to_string(order_->getId()) + 
-        " - Table " + std::to_string(order_->getTableNumber()));
-    orderInfo->addStyleClass("order-info");
-    layout->addWidget(std::move(orderInfo));
-    
-    // Items summary
-    auto itemsText = std::make_unique<Wt::WText>(
-        std::to_string(order_->getItems().size()) + " items");
-    itemsText->addStyleClass("items-summary");
-    layout->addWidget(std::move(itemsText));
-    
-    // Totals
-    auto totalsContainer = std::make_unique<Wt::WContainerWidget>();
-    totalsContainer->addStyleClass("totals-container");
-    
-    auto totalsLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto subtotalRow = std::make_unique<Wt::WContainerWidget>();
-    subtotalRow->addStyleClass("total-row");
-    auto subtotalLayout = std::make_unique<Wt::WHBoxLayout>();
-    subtotalLayout->addWidget(std::make_unique<Wt::WText>("Subtotal:"), 1);
-    orderTotalText_ = subtotalLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    subtotalRow->setLayout(std::move(subtotalLayout));
-    totalsLayout->addWidget(std::move(subtotalRow));
-    
-    auto taxRow = std::make_unique<Wt::WContainerWidget>();
-    taxRow->addStyleClass("total-row");
-    auto taxLayout = std::make_unique<Wt::WHBoxLayout>();
-    taxLayout->addWidget(std::make_unique<Wt::WText>("Tax:"), 1);
-    taxAmountText_ = taxLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    taxRow->setLayout(std::move(taxLayout));
-    totalsLayout->addWidget(std::move(taxRow));
-    
-    auto finalRow = std::make_unique<Wt::WContainerWidget>();
-    finalRow->addStyleClass("total-row final-total");
-    auto finalLayout = std::make_unique<Wt::WHBoxLayout>();
-    finalLayout->addWidget(std::make_unique<Wt::WText>("Total:"), 1);
-    finalTotalText_ = finalLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    finalRow->setLayout(std::move(finalLayout));
-    totalsLayout->addWidget(std::move(finalRow));
-    
-    totalsContainer->setLayout(std::move(totalsLayout));
-    layout->addWidget(std::move(totalsContainer));
-    
-    groupBox->setLayout(std::move(layout));
-    
-    return container;
-}
-
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createPaymentMethodSection() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("payment-method-section");
-    
-    auto groupBox = container->addNew<Wt::WGroupBox>("Payment Method");
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
-    
-    paymentMethodGroup_ = layout->addWidget(std::make_unique<Wt::WButtonGroup>());
-    
-    for (auto method : availableMethods_) {
-        auto methodContainer = std::make_unique<Wt::WContainerWidget>();
-        methodContainer->addStyleClass("payment-method-option");
-        
-        auto radioButton = std::make_unique<Wt::WRadioButton>(getPaymentMethodName(method));
-        radioButton->addStyleClass("payment-method-radio");
-        
-        auto* radioPtr = radioButton.get();
-        paymentMethodGroup_->addButton(radioButton.get(), static_cast<int>(method));
-        methodButtons_.push_back(radioPtr);
-        
-        methodContainer->addWidget(std::move(radioButton));
-        layout->addWidget(std::move(methodContainer));
-    }
-    
-    // Select first method by default
-    if (!methodButtons_.empty()) {
-        methodButtons_[0]->setChecked(true);
-        selectedMethod_ = availableMethods_[0];
-    }
-    
-    groupBox->setLayout(std::move(layout));
-    
-    return container;
-}
-
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createAmountSection() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("amount-section");
+    themesContainer_ = container.get();
     
     auto layout = std::make_unique<Wt::WVBoxLayout>();
+    layout->setSpacing(10);
     
-    // Tip section
-    auto tipGroupBox = container->addNew<Wt::WGroupBox>("Tip");
-    auto tipLayout = std::make_unique<Wt::WVBoxLayout>();
+    themeButtonGroup_ = std::make_unique<Wt::WButtonGroup>();
     
-    // Tip buttons
-    auto tipButtonsContainer = std::make_unique<Wt::WContainerWidget>();
-    tipButtonsContainer->addStyleClass("tip-buttons-container");
-    auto tipButtonsLayout = std::make_unique<Wt::WHBoxLayout>();
+    // Create theme cards
+    auto gridLayout = std::make_unique<Wt::WGridLayout>();
+    gridLayout->setHorizontalSpacing(15);
+    gridLayout->setVerticalSpacing(15);
     
-    tipButtonGroup_ = tipButtonsLayout->addWidget(std::make_unique<Wt::WButtonGroup>());
+    int row = 0;
+    int col = 0;
+    const int maxCols = 2;
     
-    for (double percentage : tipSuggestions_) {
-        auto tipButton = std::make_unique<Wt::WPushButton>(std::to_string(static_cast<int>(percentage)) + "%");
-        tipButton->addStyleClass("btn btn-outline-secondary tip-button");
+    for (const auto& theme : availableThemes_) {
+        auto themeCard = createThemeCard(theme);
+        gridLayout->addWidget(std::move(themeCard), row, col);
         
-        auto* buttonPtr = tipButton.get();
-        tipButtons_.push_back(buttonPtr);
-        tipButtonsLayout->addWidget(std::move(tipButton));
-        
-        buttonPtr->clicked().connect([this, percentage]() {
-            tipAmount_ = order_->getSubtotal() * (percentage / 100.0);
-            customTipInput_->setValue(tipAmount_);
-            updateTotals();
-        });
+        col++;
+        if (col >= maxCols) {
+            col = 0;
+            row++;
+        }
     }
     
-    tipButtonsContainer->setLayout(std::move(tipButtonsLayout));
-    tipLayout->addWidget(std::move(tipButtonsContainer));
-    
-    // Custom tip input
-    auto customTipContainer = std::make_unique<Wt::WContainerWidget>();
-    auto customTipLayout = std::make_unique<Wt::WHBoxLayout>();
-    customTipLayout->addWidget(std::make_unique<Wt::WText>("Custom tip: $"));
-    customTipInput_ = customTipLayout->addWidget(std::make_unique<Wt::WDoubleSpinBox>());
-    customTipInput_->setMinimum(0.0);
-    customTipInput_->setMaximum(999.99);
-    customTipInput_->setDecimals(2);
-    customTipInput_->setValue(0.0);
-    customTipContainer->setLayout(std::move(customTipLayout));
-    tipLayout->addWidget(std::move(customTipContainer));
-    
-    tipGroupBox->setLayout(std::move(tipLayout));
-    layout->addWidget(std::move(tipGroupBox));
-    
-    // Payment amount section
-    auto amountGroupBox = container->addNew<Wt::WGroupBox>("Payment Amount");
-    auto amountLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto amountContainer = std::make_unique<Wt::WContainerWidget>();
-    auto amountRowLayout = std::make_unique<Wt::WHBoxLayout>();
-    amountRowLayout->addWidget(std::make_unique<Wt::WText>("Amount: $"));
-    paymentAmountInput_ = amountRowLayout->addWidget(std::make_unique<Wt::WDoubleSpinBox>());
-    paymentAmountInput_->setMinimum(0.01);
-    paymentAmountInput_->setMaximum(9999.99);
-    paymentAmountInput_->setDecimals(2);
-    amountContainer->setLayout(std::move(amountRowLayout));
-    amountLayout->addWidget(std::move(amountContainer));
-    
-    // Change display
-    auto changeContainer = std::make_unique<Wt::WContainerWidget>();
-    auto changeLayout = std::make_unique<Wt::WHBoxLayout>();
-    changeLayout->addWidget(std::make_unique<Wt::WText>("Change: "), 1);
-    changeAmountText_ = changeLayout->addWidget(std::make_unique<Wt::WText>("$0.00"));
-    changeAmountText_->addStyleClass("change-amount");
-    changeContainer->setLayout(std::move(changeLayout));
-    amountLayout->addWidget(std::move(changeContainer));
-    
-    amountGroupBox->setLayout(std::move(amountLayout));
-    layout->addWidget(std::move(amountGroupBox));
+    auto gridContainer = std::make_unique<Wt::WContainerWidget>();
+    gridContainer->setLayout(std::move(gridLayout));
+    layout->addWidget(std::move(gridContainer));
     
     container->setLayout(std::move(layout));
     
     return container;
 }
 
-std::unique_ptr<Wt::WContainerWidget> PaymentDialog::createActionButtons() {
+std::unique_ptr<Wt::WContainerWidget> ThemeSelectionDialog::createThemeCard(const ThemeService::ThemeInfo& theme) {
+    auto card = std::make_unique<Wt::WContainerWidget>();
+    card->addStyleClass("theme-card");
+    
+    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    layout->setContentsMargins(15, 15, 15, 15);
+    layout->setSpacing(10);
+    
+    // Radio button for selection
+    auto radioButton = std::make_unique<Wt::WRadioButton>(theme.name);
+    radioButton->addStyleClass("theme-radio");
+    
+    auto* radioPtr = radioButton.get();
+    themeButtonGroup_->addButton(radioButton.get());
+    themeButtons_.push_back(radioPtr);
+    
+    // Set checked if current theme
+    if (theme.id == selectedThemeId_) {
+        radioButton->setChecked(true);
+    }
+    
+    layout->addWidget(std::move(radioButton));
+    
+    // Theme preview (if enabled)
+    if (showPreviews_) {
+        auto preview = createColorPreview(theme);
+        layout->addWidget(std::move(preview));
+    }
+    
+    // Theme description
+    auto description = std::make_unique<Wt::WText>(theme.description);
+    description->addStyleClass("theme-description text-muted small");
+    layout->addWidget(std::move(description));
+    
+    card->setLayout(std::move(layout));
+    
+    // Make card clickable to select theme
+    card->clicked().connect([this, radioPtr, theme]() {
+        radioPtr->setChecked(true);
+        selectedThemeId_ = theme.id;
+        updateApplyButton();
+    });
+    
+    return card;
+}
+
+std::unique_ptr<Wt::WContainerWidget> ThemeSelectionDialog::createColorPreview(const ThemeService::ThemeInfo& theme) {
+    auto preview = std::make_unique<Wt::WContainerWidget>();
+    preview->addStyleClass("theme-preview " + theme.id);
+    preview->setHeight(60);
+    
+    // Create color preview based on theme
+    std::string style;
+    if (theme.id == "bootstrap") {
+        style = "background: linear-gradient(45deg, #007bff, #0056b3);";
+    } else if (theme.id == "classic") {
+        style = "background: linear-gradient(45deg, #f8f9fa, #e9ecef);";
+    } else if (theme.id == "professional") {
+        style = "background: linear-gradient(45deg, #2c3e50, #3498db);";
+    } else if (theme.id == "colorful") {
+        style = "background: linear-gradient(45deg, #667eea, #764ba2);";
+    } else {
+        style = "background: linear-gradient(45deg, #6c757d, #495057);";
+    }
+    
+    preview->setAttributeValue("style", style + " border-radius: 8px; border: 2px solid #dee2e6;");
+    
+    return preview;
+}
+
+std::unique_ptr<Wt::WContainerWidget> ThemeSelectionDialog::createActionButtons() {
     auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("action-buttons-section");
+    container->addStyleClass("modal-footer");
     
     auto layout = std::make_unique<Wt::WHBoxLayout>();
     
-    if (splitPaymentEnabled_) {
-        splitPaymentButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Split Payment"));
-        splitPaymentButton_->addStyleClass("btn btn-info");
-    }
+    // Preview button
+    previewButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Preview"));
+    previewButton_->addStyleClass("btn btn-info");
     
     layout->addStretch(1);
     
+    // Cancel button
     cancelButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
     cancelButton_->addStyleClass("btn btn-secondary");
     
-    processButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Process Payment"));
-    processButton_->addStyleClass("btn btn-success");
+    // Apply button
+    applyButton_ = layout->addWidget(std::make_unique<Wt::WPushButton>("Apply"));
+    applyButton_->addStyleClass("btn btn-success");
     
     container->setLayout(std::move(layout));
+    
+    // Initial state
+    updateApplyButton();
     
     return container;
 }
 
-void PaymentDialog::setupEventHandlers() {
-    // Payment method change
-    paymentMethodGroup_->checkedChanged().connect([this]() {
-        onPaymentMethodChanged();
+void ThemeSelectionDialog::setupEventHandlers() {
+    // Theme selection change
+    themeButtonGroup_->checkedChanged().connect([this]() {
+        onThemeSelectionChanged();
     });
     
-    // Tip input change
-    customTipInput_->valueChanged().connect([this]() {
-        onTipChanged();
+    // Preview button
+    previewButton_->clicked().connect([this]() {
+        previewTheme();
     });
     
-    // Payment amount change
-    paymentAmountInput_->valueChanged().connect([this]() {
-        calculateChange();
-    });
-    
-    // Button clicks
-    processButton_->clicked().connect([this]() {
-        processPayment();
-    });
-    
+    // Cancel button
     cancelButton_->clicked().connect([this]() {
+        restoreOriginalTheme();
         reject();
     });
     
-    if (splitPaymentButton_) {
-        splitPaymentButton_->clicked().connect([this]() {
-            // TODO: Implement split payment dialog
-            std::cout << "Split payment not yet implemented" << std::endl;
-        });
-    }
+    // Apply button
+    applyButton_->clicked().connect([this]() {
+        applySelectedTheme();
+    });
 }
 
-void PaymentDialog::updateTotals() {
-    if (!order_) return;
-    
-    double subtotal = order_->getSubtotal();
-    double tax = order_->getTaxAmount();
-    double total = subtotal + tax + tipAmount_;
-    
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(2);
-    
-    ss.str("");
-    ss << "$" << subtotal;
-    orderTotalText_->setText(ss.str());
-    
-    ss.str("");
-    ss << "$" << tax;
-    taxAmountText_->setText(ss.str());
-    
-    ss.str("");
-    ss << "$" << total;
-    finalTotalText_->setText(ss.str());
-    
-    // Set payment amount to total by default
-    if (paymentAmountInput_->value() == 0.0) {
-        paymentAmountInput_->setValue(total);
-        paymentAmount_ = total;
-    }
-    
-    calculateChange();
+void ThemeSelectionDialog::onThemeSelectionChanged() {
+    selectedThemeId_ = getSelectedThemeId();
+    updateApplyButton();
 }
 
-void PaymentDialog::onPaymentMethodChanged() {
-    selectedMethod_ = getSelectedPaymentMethod();
-    std::cout << "Payment method changed to: " << getPaymentMethodName(selectedMethod_) << std::endl;
-}
-
-void PaymentDialog::onTipChanged() {
-    tipAmount_ = customTipInput_->value();
-    updateTotals();
-}
-
-void PaymentDialog::calculateChange() {
-    paymentAmount_ = paymentAmountInput_->value();
-    double total = order_->getSubtotal() + order_->getTaxAmount() + tipAmount_;
-    double change = paymentAmount_ - total;
-    
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(2) << "$" << std::max(0.0, change);
-    changeAmountText_->setText(ss.str());
-    
-    // Update change text color
-    if (change < 0) {
-        changeAmountText_->addStyleClass("text-danger");
-        changeAmountText_->removeStyleClass("text-success");
-    } else {
-        changeAmountText_->addStyleClass("text-success");
-        changeAmountText_->removeStyleClass("text-danger");
-    }
-}
-
-void PaymentDialog::processPayment() {
-    if (!validatePaymentInput()) {
+void ThemeSelectionDialog::applySelectedTheme() {
+    if (selectedThemeId_.empty() || !themeService_) {
         return;
     }
     
-    // Create payment result (simplified - in real implementation this would call PaymentProcessor)
-    PaymentProcessor::PaymentResult result;
-    result.success = true;
-    result.amount = paymentAmount_;
-    result.method = selectedMethod_;
-    result.tipAmount = tipAmount_;
-    result.transactionId = "TXN-" + std::to_string(std::time(nullptr));
-    result.timestamp = std::chrono::system_clock::now();
-    
-    std::cout << "Processing payment: " << getPaymentMethodName(selectedMethod_) 
-              << " - $" << paymentAmount_ << " (tip: $" << tipAmount_ << ")" << std::endl;
-    
-    // Publish payment event
-    if (eventManager_) {
-        eventManager_->publish(POSEvents::PAYMENT_COMPLETED,
-            POSEvents::createPaymentCompletedEvent(result, order_));
-    }
-    
-    // Call callback
-    if (paymentCallback_) {
-        paymentCallback_(result);
-    }
-    
-    accept();
-}
-
-bool PaymentDialog::validatePaymentInput() {
-    double total = order_->getSubtotal() + order_->getTaxAmount() + tipAmount_;
-    
-    if (paymentAmount_ < total) {
-        // Show error message
-        std::cerr << "Payment amount insufficient" << std::endl;
-        return false;
-    }
-    
-    return true;
-}
-
-PaymentProcessor::PaymentMethod PaymentDialog::getSelectedPaymentMethod() const {
-    int selectedIndex = paymentMethodGroup_->checkedId();
-    if (selectedIndex >= 0 && selectedIndex < static_cast<int>(availableMethods_.size())) {
-        return availableMethods_[selectedIndex];
-    }
-    return PaymentProcessor::CASH;
-}
-
-std::string PaymentDialog::getPaymentMethodName(PaymentProcessor::PaymentMethod method) const {
-    switch (method) {
-        case PaymentProcessor::CASH: return "Cash";
-        case PaymentProcessor::CREDIT_CARD: return "Credit Card";
-        case PaymentProcessor::DEBIT_CARD: return "Debit Card";
-        case PaymentProcessor::MOBILE_PAY: return "Mobile Pay";
-        case PaymentProcessor::GIFT_CARD: return "Gift Card";
-        default: return "Unknown";
+    // Apply the theme through the service
+    if (themeService_->setCurrentTheme(selectedThemeId_)) {
+        std::cout << "Applied theme: " << selectedThemeId_ << std::endl;
+        
+        // Publish theme change event
+        if (eventManager_) {
+            eventManager_->publish(POSEvents::THEME_CHANGED, selectedThemeId_);
+        }
+        
+        // Call selection callback
+        if (selectionCallback_) {
+            selectionCallback_(selectedThemeId_);
+        }
+        
+        accept();
+    } else {
+        std::cerr << "Failed to apply theme: " << selectedThemeId_ << std::endl;
     }
 }
 
-void PaymentDialog::showDialog() {
-    updateTotals();
+std::string ThemeSelectionDialog::getSelectedThemeId() const {
+    if (!themeButtonGroup_) {
+        return "";
+    }
+    
+    auto* checkedButton = themeButtonGroup_->checkedButton();
+    if (!checkedButton) {
+        return "";
+    }
+    
+    // Find the theme ID for the checked button
+    for (size_t i = 0; i < themeButtons_.size() && i < availableThemes_.size(); ++i) {
+        if (themeButtons_[i] == checkedButton) {
+            return availableThemes_[i].id;
+        }
+    }
+    
+    return "";
+}
+
+void ThemeSelectionDialog::updateApplyButton() {
+    if (!applyButton_) {
+        return;
+    }
+    
+    bool hasSelection = !selectedThemeId_.empty();
+    bool isChanged = selectedThemeId_ != originalThemeId_;
+    
+    applyButton_->setEnabled(hasSelection && isChanged);
+    
+    if (isChanged) {
+        applyButton_->setText("Apply Theme");
+    } else {
+        applyButton_->setText("No Changes");
+    }
+}
+
+void ThemeSelectionDialog::previewTheme() {
+    if (selectedThemeId_.empty() || !themeService_) {
+        return;
+    }
+    
+    // Temporarily apply the theme for preview
+    themeService_->setCurrentTheme(selectedThemeId_);
+    
+    // Update button text
+    previewButton_->setText("Previewing...");
+    previewButton_->setEnabled(false);
+    
+    // Re-enable after a short delay (simulated preview)
+    // In a real implementation, you might want to add a "Stop Preview" functionality
+}
+
+void ThemeSelectionDialog::restoreOriginalTheme() {
+    if (!originalThemeId_.empty() && themeService_) {
+        themeService_->setCurrentTheme(originalThemeId_);
+    }
+}
+
+void ThemeSelectionDialog::showDialog() {
+    refreshThemes();
     show();
 }
 
-void PaymentDialog::setAvailablePaymentMethods(const std::vector<PaymentProcessor::PaymentMethod>& methods) {
-    availableMethods_ = methods;
-    // Would need to recreate payment method section in a full implementation
+void ThemeSelectionDialog::refreshThemes() {
+    if (!themeService_) {
+        return;
+    }
+    
+    availableThemes_ = themeService_->getAvailableThemes();
+    selectedThemeId_ = themeService_->getCurrentThemeId();
+    
+    // If dialog is already created, rebuild the themes grid
+    if (themesContainer_) {
+        // Clear existing content and rebuild
+        themesContainer_->clear();
+        themeButtons_.clear();
+        themeButtonGroup_ = std::make_unique<Wt::WButtonGroup>();
+        
+        auto newGrid = createThemesGrid();
+        // Note: In a real implementation, you'd need to properly replace the content
+        // This is a simplified approach
+    }
 }
 
-void PaymentDialog::setTipSuggestions(const std::vector<double>& suggestions) {
-    tipSuggestions_ = suggestions;
-    // Would need to recreate tip section in a full implementation
-}
-
-void PaymentDialog::setSplitPaymentEnabled(bool enabled) {
-    splitPaymentEnabled_ = enabled;
-    // Would need to show/hide split payment button in a full implementation
+void ThemeSelectionDialog::setShowPreviews(bool enabled) {
+    showPreviews_ = enabled;
+    
+    // If dialog is already created, refresh to show/hide previews
+    if (themesContainer_) {
+        refreshThemes();
+    }
 }

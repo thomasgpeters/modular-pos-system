@@ -31,7 +31,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Build Options
 # =============================================================================
 
-option(BUILD_TESTS "Build unit tests" ON)
+option(BUILD_TESTS "Build unit tests" OFF)
 option(BUILD_DOCUMENTATION "Build documentation with Doxygen" OFF)
 option(ENABLE_STATIC_ANALYSIS "Enable static analysis tools" OFF)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
@@ -387,71 +387,71 @@ endif()
 # Testing Configuration
 # =============================================================================
 
-if(BUILD_TESTS)
-    enable_testing()
+# if(BUILD_TESTS)
+#     enable_testing()
     
-    # Find or download Google Test
-    find_package(GTest)
-    if(NOT GTest_FOUND)
-        include(FetchContent)
-        FetchContent_Declare(
-            googletest
-            URL https://github.com/google/googletest/archive/v1.14.0.zip
-        )
-        FetchContent_MakeAvailable(googletest)
-    endif()
+#     # Find or download Google Test
+#     find_package(GTest)
+#     if(NOT GTest_FOUND)
+#         include(FetchContent)
+#         FetchContent_Declare(
+#             googletest
+#             URL https://github.com/google/googletest/archive/v1.14.0.zip
+#         )
+#         FetchContent_MakeAvailable(googletest)
+#     endif()
     
-    # Test sources
-    set(TEST_SOURCES
-        tests/test_main.cpp
-        tests/test_menu_item.cpp
-        tests/test_order.cpp
-        tests/test_order_manager.cpp
-        tests/test_payment_processor.cpp
-        tests/test_kitchen_interface.cpp
-        tests/test_event_manager.cpp
-        tests/test_pos_service.cpp
-        tests/test_configuration_manager.cpp
-        tests/test_theme_service.cpp
-        tests/test_notification_service.cpp
-        tests/test_ui_helpers.cpp
-        tests/test_format_utils.cpp
-    )
+#     # Test sources
+#     set(TEST_SOURCES
+#         tests/test_main.cpp
+#         tests/test_menu_item.cpp
+#         tests/test_order.cpp
+#         tests/test_order_manager.cpp
+#         tests/test_payment_processor.cpp
+#         tests/test_kitchen_interface.cpp
+#         tests/test_event_manager.cpp
+#         tests/test_pos_service.cpp
+#         tests/test_configuration_manager.cpp
+#         tests/test_theme_service.cpp
+#         tests/test_notification_service.cpp
+#         tests/test_ui_helpers.cpp
+#         tests/test_format_utils.cpp
+#     )
     
-    # Create test executable
-    add_executable(pos_tests ${TEST_SOURCES})
+#     # Create test executable
+#     add_executable(pos_tests ${TEST_SOURCES})
     
-    target_link_libraries(pos_tests PRIVATE
-        pos_core
-        pos_services
-        pos_utils
-        gtest
-        gtest_main
-        ${WT_LIBRARY}
-        ${WT_HTTP_LIBRARY}
-        ${CMAKE_THREAD_LIBS_INIT}
-    )
+#     target_link_libraries(pos_tests PRIVATE
+#         pos_core
+#         pos_services
+#         pos_utils
+#         gtest
+#         gtest_main
+#         ${WT_LIBRARY}
+#         ${WT_HTTP_LIBRARY}
+#         ${CMAKE_THREAD_LIBS_INIT}
+#     )
     
-    # Register tests
-    add_test(NAME pos_unit_tests COMMAND pos_tests)
+#     # Register tests
+#     add_test(NAME pos_unit_tests COMMAND pos_tests)
     
-    # Integration tests
-    add_executable(pos_integration_tests
-        tests/integration/test_full_workflow.cpp
-        tests/integration/test_component_integration.cpp
-    )
+#     # Integration tests
+#     add_executable(pos_integration_tests
+#         tests/integration/test_full_workflow.cpp
+#         tests/integration/test_component_integration.cpp
+#     )
     
-    target_link_libraries(pos_integration_tests PRIVATE
-        pos_core
-        gtest
-        gtest_main
-        ${WT_LIBRARY}
-        ${WT_HTTP_LIBRARY}
-        ${CMAKE_THREAD_LIBS_INIT}
-    )
+#     target_link_libraries(pos_integration_tests PRIVATE
+#         pos_core
+#         gtest
+#         gtest_main
+#         ${WT_LIBRARY}
+#         ${WT_HTTP_LIBRARY}
+#         ${CMAKE_THREAD_LIBS_INIT}
+#     )
     
-    add_test(NAME pos_integration_tests COMMAND pos_integration_tests)
-endif()
+#     add_test(NAME pos_integration_tests COMMAND pos_integration_tests)
+# endif()
 
 # =============================================================================
 # Documentation

@@ -1,0 +1,157 @@
+// Usage Examples for NotificationService
+
+// 1. Basic setup in your main application
+class POSApplication : public Wt::WApplication {
+public:
+    POSApplication(const Wt::WEnvironment& env) : Wt::WApplication(env) {
+        // Initialize event manager
+        eventManager_ = std::make_shared<EventManager>();
+        
+        // Create notification service
+        notificationService_ = std::make_unique<NotificationService>(eventManager_);
+        notificationService_->initialize();
+        
+        // Configure notifications
+        NotificationService::NotificationConfig config;
+        config.position = NotificationService::TOP_RIGHT;
+        config.defaultDuration = 4000; // 4 seconds
+        config.maxNotifications = 5;
+        config.enableAnimations = true;
+        notificationService_->setConfiguration(config);
+    }
+    
+private:
+    std::shared_ptr<EventManager> eventManager_;
+    std::unique_ptr<NotificationService> notificationService_;
+};
+
+// 2. Show different types of notifications
+void showExampleNotifications(NotificationService* service) {
+    // Simple info notification
+    service->showInfo("Order #1234 created for Table 5");
+    
+    // Success with custom duration
+    service->showSuccess("Payment of $45.67 processed successfully", 5000);
+    
+    // Warning notification
+    service->showWarning("Kitchen queue is getting busy - estimated wait time: 25 minutes");
+    
+    // Error notification (stays until dismissed)
+    service->showError("Connection to payment processor failed", 0);
+}
+
+// 3. Action notifications
+void showActionNotifications(NotificationService* service) {
+    // Notification with retry action
+    service->showNotificationWithAction(
+        "Failed to send order to kitchen",
+        NotificationService::ERROR,
+        "Retry",
+        []() {
+            std::cout << "User clicked retry!" << std::endl;
+            // Implement retry logic here
+        },
+        0 // No auto-dismiss
+    );
+    
+    // Confirmation notification
+    service->showNotificationWithAction(
+        "Order is ready for pickup",
+        NotificationService::SUCCESS,
+        "Mark as Served",
+        []() {
+            std::cout << "Order marked as served!" << std::endl;
+            // Mark order as served
+        },
+        10000 // 10 seconds
+    );
+}
+
+// 4. Manual notification events
+void triggerManualNotification(std::shared_ptr<EventManager> eventManager) {
+    // Create notification event data
+    POSEvents::NotificationEventData notification(
+        "This is a manual notification",
+        "warning",
+        3000
+    );
+    
+    // Publish the event
+    eventManager->publish(POSEvents::NOTIFICATION_REQUESTED, notification);
+}
+
+// 5. Business logic integration
+class OrderService {
+public:
+    OrderService(NotificationService* notificationService) 
+        : notificationService_(notificationService) {}
+    
+    void createOrder(int tableNumber) {
+        try {
+            // Order creation logic here...
+            
+            // Show success notification
+            notificationService_->showSuccess(
+                "Order created for Table " + std::to_string(tableNumber)
+            );
+            
+        } catch (const std::exception& e) {
+            // Show error notification
+            notificationService_->showError(
+                "Failed to create order: " + std::string(e.what())
+            );
+        }
+    }
+    
+    void processPayment(double amount) {
+        // Payment processing logic...
+        
+        if (/* payment successful */) {
+            notificationService_->showSuccess(
+                "Payment of $" + std::to_string(amount) + " processed successfully"
+            );
+        } else {
+            notificationService_->showNotificationWithAction(
+                "Payment failed - please try again",
+                NotificationService::ERROR,
+                "Retry Payment",
+                [this, amount]() { processPayment(amount); }
+            );
+        }
+    }
+    
+private:
+    NotificationService* notificationService_;
+};
+
+// 6. Notification management
+void manageNotifications(NotificationService* service) {
+    // Check how many notifications are active
+    size_t count = service->getActiveNotificationCount();
+    std::cout << "Active notifications: " << count << std::endl;
+    
+    // Dismiss all error notifications
+    service->dismissNotificationsByType(NotificationService::ERROR);
+    
+    // Dismiss all notifications (useful for cleanup)
+    service->dismissAllNotifications();
+}
+
+// 7. Custom configuration
+void customizeNotifications(NotificationService* service) {
+    auto config = service->getConfiguration();
+    
+    // Change position to bottom-left
+    config.position = NotificationService::BOTTOM_LEFT;
+    
+    // Increase default duration
+    config.defaultDuration = 6000;
+    
+    // Allow more notifications
+    config.maxNotifications = 10;
+    
+    // Disable animations for performance
+    config.enableAnimations = false;
+    
+    service->setConfiguration(config);
+}

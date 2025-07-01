@@ -1,0 +1,184 @@
+// FIXES for CurrentOrderDisplay.cpp addWidget errors
+
+// Fix 1: Correct widget creation and layout addition pattern
+// WRONG way (what's causing the error):
+// layout->addWidget(itemsTable_);  // itemsTable_ is a raw pointer
+
+// CORRECT way - Option A: Create widget and store pointer
+void CurrentOrderDisplay::createOrderItemsTable() {
+    // Create the table widget
+    auto table = std::make_unique<Wt::WTable>();
+    table->addStyleClass("table table-striped order-items-table");
+    
+    // Store the raw pointer for later access
+    itemsTable_ = table.get();
+    
+    // Add to container (assuming you have a container, not layout)
+    // If adding to a container:
+    addWidget(std::move(table));
+    
+    // OR if adding to a layout:
+    // layout->addWidget(std::move(table));
+}
+
+// Fix 2: Complete corrected initializeUI method
+void CurrentOrderDisplay::initializeUI() {
+    addStyleClass("current-order-display");
+    
+    // Create main layout
+    auto mainLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Create and add header
+    auto header = createOrderHeader();
+    headerContainer_ = header.get();
+    mainLayout->addWidget(std::move(header));
+    
+    // Create and add items table
+    auto tableContainer = std::make_unique<Wt::WContainerWidget>();
+    tableContainer->addStyleClass("order-items-container");
+    
+    auto table = std::make_unique<Wt::WTable>();
+    table->addStyleClass("table table-striped order-items-table");
+    itemsTable_ = table.get();
+    tableContainer->addWidget(std::move(table));
+    
+    mainLayout->addWidget(std::move(tableContainer));
+    
+    // Create and add summary
+    auto summary = createOrderSummary();
+    summaryContainer_ = summary.get();
+    mainLayout->addWidget(std::move(summary));
+    
+    // Set the layout
+    setLayout(std::move(mainLayout));
+    
+    // Apply initial styling
+    applyTableStyling();
+    applySummaryStyling();
+}
+
+// Fix 3: Correct createOrderHeader implementation
+std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderHeader() {
+    auto container = std::make_unique<Wt::WContainerWidget>();
+    container->addStyleClass("order-header mb-3");
+    
+    auto layout = std::make_unique<Wt::WHBoxLayout>();
+    
+    // Order info section
+    auto orderInfoContainer = std::make_unique<Wt::WContainerWidget>();
+    orderInfoContainer->addStyleClass("order-info");
+    
+    // Order ID
+    auto orderIdLabel = std::make_unique<Wt::WText>("Order: ");
+    orderIdLabel->addStyleClass("fw-bold");
+    orderInfoContainer->addWidget(std::move(orderIdLabel));
+    
+    auto orderIdText = std::make_unique<Wt::WText>("New Order");
+    orderIdText->addStyleClass("order-id");
+    orderIdText_ = orderIdText.get();
+    orderInfoContainer->addWidget(std::move(orderIdText));
+    
+    // Table number
+    auto tableLabel = std::make_unique<Wt::WText>(" | Table: ");
+    orderInfoContainer->addWidget(std::move(tableLabel));
+    
+    auto tableNumberText = std::make_unique<Wt::WText>("--");
+    tableNumberText->addStyleClass("table-number");
+    tableNumberText_ = tableNumberText.get();
+    orderInfoContainer->addWidget(std::move(tableNumberText));
+    
+    layout->addWidget(std::move(orderInfoContainer));
+    
+    // Item count section
+    auto itemCountText = std::make_unique<Wt::WText>("0 items");
+    itemCountText->addStyleClass("item-count text-muted");
+    itemCountText_ = itemCountText.get();
+    layout->addWidget(std::move(itemCountText));
+    
+    container->setLayout(std::move(layout));
+    return container;
+}
+
+// Fix 4: Correct createOrderSummary implementation
+std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderSummary() {
+    auto container = std::make_unique<Wt::WContainerWidget>();
+    container->addStyleClass("order-summary mt-3 p-3 border rounded");
+    
+    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // Summary title
+    auto titleText = std::make_unique<Wt::WText>("Order Summary");
+    titleText->addStyleClass("h6 mb-2");
+    layout->addWidget(std::move(titleText));
+    
+    // Subtotal row
+    auto subtotalContainer = std::make_unique<Wt::WContainerWidget>();
+    auto subtotalLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    subtotalLayout->addWidget(std::make_unique<Wt::WText>("Subtotal:"));
+    
+    auto subtotalText = std::make_unique<Wt::WText>("$0.00");
+    subtotalText->addStyleClass("text-end");
+    subtotalText_ = subtotalText.get();
+    subtotalLayout->addWidget(std::move(subtotalText));
+    
+    subtotalContainer->setLayout(std::move(subtotalLayout));
+    layout->addWidget(std::move(subtotalContainer));
+    
+    // Tax row
+    auto taxContainer = std::make_unique<Wt::WContainerWidget>();
+    auto taxLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    taxLayout->addWidget(std::make_unique<Wt::WText>("Tax:"));
+    
+    auto taxText = std::make_unique<Wt::WText>("$0.00");
+    taxText->addStyleClass("text-end");
+    taxText_ = taxText.get();
+    taxLayout->addWidget(std::move(taxText));
+    
+    taxContainer->setLayout(std::move(taxLayout));
+    layout->addWidget(std::move(taxContainer));
+    
+    // Total row
+    auto totalContainer = std::make_unique<Wt::WContainerWidget>();
+    totalContainer->addStyleClass("border-top pt-2 mt-2");
+    auto totalLayout = std::make_unique<Wt::WHBoxLayout>();
+    
+    auto totalLabel = std::make_unique<Wt::WText>("Total:");
+    totalLabel->addStyleClass("fw-bold");
+    totalLayout->addWidget(std::move(totalLabel));
+    
+    auto totalText = std::make_unique<Wt::WText>("$0.00");
+    totalText->addStyleClass("text-end fw-bold h5");
+    totalText_ = totalText.get();
+    totalLayout->addWidget(std::move(totalText));
+    
+    totalContainer->setLayout(std::move(totalLayout));
+    layout->addWidget(std::move(totalContainer));
+    
+    container->setLayout(std::move(layout));
+    return container;
+}
+
+// Fix 5: Alternative simple approach - add directly to container
+void CurrentOrderDisplay::initializeUI_Simple() {
+    addStyleClass("current-order-display");
+    
+    // Create header directly in container
+    auto header = createOrderHeader();
+    addWidget(std::move(header));
+    
+    // Create table directly in container
+    auto table = std::make_unique<Wt::WTable>();
+    table->addStyleClass("table table-striped order-items-table");
+    itemsTable_ = table.get();
+    addWidget(std::move(table));
+    
+    // Create summary directly in container
+    auto summary = createOrderSummary();
+    addWidget(std::move(summary));
+    
+    // Apply styling
+    applyTableStyling();
+    applySummaryStyling();
+}

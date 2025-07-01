@@ -139,6 +139,7 @@ private:
     int calculateKitchenLoad() const;
     std::string formatWaitTime(int minutes) const;
     std::string formatKitchenMetrics() const;
+    std::string formatKitchenTicketStatus(KitchenInterface::KitchenStatus status) const; // ADDED: Missing method declaration
     void updateStatusColors();
     
     // Status calculation methods

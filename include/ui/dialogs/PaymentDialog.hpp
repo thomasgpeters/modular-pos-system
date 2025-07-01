@@ -4,6 +4,8 @@
 #include "../../PaymentProcessor.hpp"
 #include "../../Order.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../events/POSEvents.hpp"
+
 
 #include <Wt/WDialog.h>
 #include <Wt/WContainerWidget.h>
@@ -59,7 +61,7 @@ public:
     /**
      * @brief Virtual destructor
      */
-    virtual ~PaymentDialog() = default;
+    virtual ~PaymentDialog();
     
     /**
      * @brief Shows the payment dialog
@@ -163,11 +165,11 @@ private:
     Wt::WText* taxAmountText_;
     Wt::WText* finalTotalText_;
     
-    Wt::WButtonGroup* paymentMethodGroup_;
+    Wt::WButtonGroup* paymentMethodGroup_;        // RAW POINTER
     std::vector<Wt::WRadioButton*> methodButtons_;
     
     Wt::WDoubleSpinBox* customTipInput_;
-    Wt::WButtonGroup* tipButtonGroup_;
+    Wt::WButtonGroup* tipButtonGroup_;            // RAW POINTER  
     std::vector<Wt::WPushButton*> tipButtons_;
     
     Wt::WDoubleSpinBox* paymentAmountInput_;

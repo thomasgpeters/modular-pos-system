@@ -308,6 +308,13 @@ public:
      */
     void onPaymentProcessed(PaymentEventCallback callback);
 
+    /**
+     * @brief Gets the kitchen status of an order
+     * @param orderId Order ID to check status for
+     * @return Current kitchen status of the order
+     */
+    KitchenInterface::KitchenStatus getKitchenStatus(int orderId) const;
+
 protected:
     /**
      * @brief Initializes the core components

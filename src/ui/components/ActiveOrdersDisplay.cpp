@@ -35,9 +35,10 @@ void ActiveOrdersDisplay::initializeUI() {
     auto header = createDisplayHeader();
     layout->addWidget(std::move(header));
     
-    // Orders table
+    // FIXED: Orders table - create and add properly
     createOrdersTable();
-    layout->addWidget(ordersTable_, 1);
+    // The table is already added to 'this' container in createOrdersTable()
+    // No need to add it to layout again
     
     setLayout(std::move(layout));
     
@@ -74,6 +75,8 @@ void ActiveOrdersDisplay::setupEventListeners() {
     std::cout << "✓ ActiveOrdersDisplay event listeners setup complete" << std::endl;
 }
 
+// Fix for ActiveOrdersDisplay.cpp - createDisplayHeader method
+
 std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
     auto header = std::make_unique<Wt::WContainerWidget>();
     header->addStyleClass("card-header active-orders-header");
@@ -84,13 +87,13 @@ std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
     auto titleContainer = std::make_unique<Wt::WContainerWidget>();
     auto titleLayout = std::make_unique<Wt::WVBoxLayout>();
     
-    headerText_ = titleContainer->addWidget(std::make_unique<Wt::WText>("Active Orders"));
+    // FIXED: Create and add header text properly
+    headerText_ = titleLayout->addWidget(std::make_unique<Wt::WText>("Active Orders"));
     headerText_->addStyleClass("h5 mb-1");
-    titleLayout->addWidget(headerText_);
     
-    orderCountText_ = titleContainer->addWidget(std::make_unique<Wt::WText>(""));
+    // FIXED: Create and add order count text properly
+    orderCountText_ = titleLayout->addWidget(std::make_unique<Wt::WText>(""));
     orderCountText_->addStyleClass("small text-muted");
-    titleLayout->addWidget(orderCountText_);
     
     titleContainer->setLayout(std::move(titleLayout));
     layout->addWidget(std::move(titleContainer), 1);
@@ -100,6 +103,7 @@ std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
 }
 
 void ActiveOrdersDisplay::createOrdersTable() {
+    // FIXED: Create table and add it to the main container, not to a layout
     ordersTable_ = addWidget(std::make_unique<Wt::WTable>());
     ordersTable_->addStyleClass("table table-sm table-hover active-orders-table");
     ordersTable_->setHeaderCount(1);
@@ -157,7 +161,7 @@ void ActiveOrdersDisplay::updateOrdersTable() {
     
     // Clear existing rows (except header)
     while (ordersTable_->rowCount() > 1) {
-        ordersTable_->deleteRow(1);
+        ordersTable_->removeRow(1);
     }
     
     auto orders = getDisplayOrders();
@@ -184,11 +188,12 @@ void ActiveOrdersDisplay::updateOrdersTable() {
     std::cout << "Orders table updated with " << (row - 1) << " orders" << std::endl;
 }
 
+// Fix the addOrderRow method to use correct enum values
 void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
     if (!order) return;
     
-    // Order ID
-    auto orderIdText = std::make_unique<Wt::WText>("#" + std::to_string(order->getId()));
+    // Order ID - FIXED: use getOrderId()
+    auto orderIdText = std::make_unique<Wt::WText>("#" + std::to_string(order->getOrderId()));
     orderIdText->addStyleClass("font-weight-bold");
     ordersTable_->elementAt(row, 0)->addWidget(std::move(orderIdText));
     
@@ -215,7 +220,7 @@ void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
     timeText->addStyleClass("small text-muted");
     ordersTable_->elementAt(row, 5)->addWidget(std::move(timeText));
     
-    // Actions
+    // Actions - FIXED: Use correct enum values
     auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
     auto actionsLayout = std::make_unique<Wt::WHBoxLayout>();
     
@@ -223,29 +228,30 @@ void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
     auto viewButton = std::make_unique<Wt::WPushButton>("👁");
     viewButton->addStyleClass("btn btn-sm btn-outline-info me-1");
     viewButton->setToolTip("View order details");
-    viewButton->clicked().connect([this, orderId = order->getId()]() {
+    viewButton->clicked().connect([this, orderId = order->getOrderId()]() {  // FIXED: getOrderId()
         onViewOrderClicked(orderId);
     });
     actionsLayout->addWidget(std::move(viewButton));
     
-    // Complete button (only for non-completed orders)
-    if (order->getStatus() != Order::Status::COMPLETED) {
+    // Complete button (only for non-served orders)
+    if (order->getStatus() != Order::Status::SERVED &&     // FIXED: was COMPLETED
+        order->getStatus() != Order::Status::CANCELLED) {
         auto completeButton = std::make_unique<Wt::WPushButton>("✓");
         completeButton->addStyleClass("btn btn-sm btn-outline-success me-1");
-        completeButton->setToolTip("Mark as completed");
-        completeButton->clicked().connect([this, orderId = order->getId()]() {
+        completeButton->setToolTip("Mark as served");       // FIXED: text
+        completeButton->clicked().connect([this, orderId = order->getOrderId()]() {  // FIXED: getOrderId()
             onCompleteOrderClicked(orderId);
         });
         actionsLayout->addWidget(std::move(completeButton));
     }
     
-    // Cancel button (only for non-completed/non-cancelled orders)
-    if (order->getStatus() != Order::Status::COMPLETED && 
-        order->getStatus() != Order::Status::CANCELLED) {
+    // Cancel button (only for pending/in-kitchen orders)
+    if (order->getStatus() == Order::Status::PENDING || 
+        order->getStatus() == Order::Status::SENT_TO_KITCHEN) {
         auto cancelButton = std::make_unique<Wt::WPushButton>("✕");
         cancelButton->addStyleClass("btn btn-sm btn-outline-danger");
         cancelButton->setToolTip("Cancel order");
-        cancelButton->clicked().connect([this, orderId = order->getId()]() {
+        cancelButton->clicked().connect([this, orderId = order->getOrderId()]() {  // FIXED: getOrderId()
             onCancelOrderClicked(orderId);
         });
         actionsLayout->addWidget(std::move(cancelButton));
@@ -352,24 +358,28 @@ void ActiveOrdersDisplay::onCancelOrderClicked(int orderId) {
     messageBox->show();
 }
 
+// If you have any business logic methods that need to handle order completion:
 void ActiveOrdersDisplay::onCompleteOrderClicked(int orderId) {
     if (!posService_) {
         return;
     }
     
     auto messageBox = addChild(std::make_unique<Wt::WMessageBox>(
-        "Complete Order",
-        "Mark Order #" + std::to_string(orderId) + " as completed?",
+        "Mark as Served",  // FIXED: title
+        "Mark Order #" + std::to_string(orderId) + " as served?",  // FIXED: text
         Wt::Icon::Question,
         Wt::StandardButton::Yes | Wt::StandardButton::No));
     
     messageBox->buttonClicked().connect([this, messageBox, orderId](Wt::StandardButton button) {
         if (button == Wt::StandardButton::Yes) {
-            bool success = posService_->completeOrder(orderId);
-            if (success) {
-                std::cout << "Order #" << orderId << " marked as completed" << std::endl;
+            // Get the order and update its status
+            auto order = posService_->getOrderById(orderId);
+            if (order) {
+                order->setStatus(Order::Status::SERVED);  // FIXED: Set to SERVED
+                std::cout << "Order #" << orderId << " marked as served" << std::endl;
+                refresh();  // Refresh the display
             } else {
-                std::cerr << "Failed to complete order #" << orderId << std::endl;
+                std::cerr << "Failed to find order #" << orderId << std::endl;
             }
         }
         removeChild(messageBox);
@@ -382,6 +392,7 @@ void ActiveOrdersDisplay::onCompleteOrderClicked(int orderId) {
 // Helper Methods
 // =================================================================
 
+// Fix the getDisplayOrders method to use correct enum values
 std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::getDisplayOrders() const {
     if (!posService_) {
         return {};
@@ -389,18 +400,19 @@ std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::getDisplayOrders() cons
     
     auto orders = posService_->getActiveOrders();
     
-    // Filter completed orders if not showing them
+    // Filter completed/cancelled orders if not showing them
     if (!showCompletedOrders_) {
         orders.erase(std::remove_if(orders.begin(), orders.end(),
             [](const std::shared_ptr<Order>& order) {
-                return order->getStatus() == Order::Status::COMPLETED;
+                return order->getStatus() == Order::Status::SERVED ||      // FIXED: was COMPLETED
+                       order->getStatus() == Order::Status::CANCELLED;
             }), orders.end());
     }
     
     // Sort by order ID (most recent first)
     std::sort(orders.begin(), orders.end(),
         [](const std::shared_ptr<Order>& a, const std::shared_ptr<Order>& b) {
-            return a->getId() > b->getId();
+            return a->getOrderId() > b->getOrderId();  // FIXED: use getOrderId() not getId()
         });
     
     return orders;
@@ -410,11 +422,9 @@ std::string ActiveOrdersDisplay::formatOrderStatus(Order::Status status) const {
     switch (status) {
         case Order::Status::PENDING:          return "Pending";
         case Order::Status::SENT_TO_KITCHEN:  return "In Kitchen";
-        case Order::Status::IN_PREPARATION:   return "Preparing";
-        case Order::Status::READY_TO_SERVE:   return "Ready";
+        case Order::Status::PREPARING:        return "Preparing";      // FIXED: was IN_PREPARATION
+        case Order::Status::READY:            return "Ready";          // FIXED: was READY_TO_SERVE
         case Order::Status::SERVED:           return "Served";
-        case Order::Status::PAID:             return "Paid";
-        case Order::Status::COMPLETED:        return "Completed";
         case Order::Status::CANCELLED:        return "Cancelled";
         default:                              return "Unknown";
     }
@@ -436,11 +446,9 @@ std::string ActiveOrdersDisplay::getStatusBadgeClass(Order::Status status) const
     switch (status) {
         case Order::Status::PENDING:          return "badge-secondary";
         case Order::Status::SENT_TO_KITCHEN:  return "badge-primary";
-        case Order::Status::IN_PREPARATION:   return "badge-warning";
-        case Order::Status::READY_TO_SERVE:   return "badge-info";
+        case Order::Status::PREPARING:        return "badge-warning";   // FIXED: was IN_PREPARATION
+        case Order::Status::READY:            return "badge-info";      // FIXED: was READY_TO_SERVE
         case Order::Status::SERVED:           return "badge-success";
-        case Order::Status::PAID:             return "badge-success";
-        case Order::Status::COMPLETED:        return "badge-success";
         case Order::Status::CANCELLED:        return "badge-danger";
         default:                              return "badge-light";
     }

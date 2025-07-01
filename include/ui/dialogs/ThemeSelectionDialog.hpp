@@ -1,10 +1,9 @@
 //=============================================================================
-
 #ifndef THEMESELECTIONDIALOG_H
 #define THEMESELECTIONDIALOG_H
 
-#include "../../services/ThemeService.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../events/POSEvents.hpp"
 
 #include <Wt/WDialog.h>
 #include <Wt/WContainerWidget.h>
@@ -12,18 +11,22 @@
 #include <Wt/WPushButton.h>
 #include <Wt/WButtonGroup.h>
 #include <Wt/WRadioButton.h>
-#include <Wt/WGridLayout.h>
+#include <Wt/WCheckBox.h>
+#include <Wt/WComboBox.h>
+#include <Wt/WSpinBox.h>
 
 #include <memory>
 #include <vector>
+#include <string>
 #include <functional>
+#include <unordered_map>
 
 /**
  * @file ThemeSelectionDialog.hpp
- * @brief Theme selection dialog for UI customization
+ * @brief Theme selection and preferences dialog for the Restaurant POS System
  * 
- * This dialog allows users to preview and select different
- * themes for the POS system interface.
+ * This dialog allows users to select themes and configure application preferences
+ * including display settings, language options, and behavior preferences.
  * 
  * @author Restaurant POS Team
  * @version 2.0.0
@@ -31,27 +34,50 @@
 
 /**
  * @class ThemeSelectionDialog
- * @brief Dialog for selecting and applying UI themes
+ * @brief Dialog for selecting themes and configuring application preferences
  * 
- * The ThemeSelectionDialog provides an interface for users to
- * browse available themes, see previews, and apply their selection.
+ * The ThemeSelectionDialog provides a comprehensive interface for users to:
+ * - Select from available themes with live preview
+ * - Configure general application settings
+ * - Adjust display preferences
+ * - Set language and regional options
  */
 class ThemeSelectionDialog : public Wt::WDialog {
 public:
     /**
-     * @brief Theme selection callback type
+     * @struct ThemeInfo
+     * @brief Information about an available theme
      */
-    using ThemeSelectionCallback = std::function<void(const std::string& themeId)>;
+    struct ThemeInfo {
+        std::string id;                     ///< Unique theme identifier
+        std::string name;                   ///< Display name
+        std::string description;            ///< Theme description
+        std::string cssFile;               ///< CSS file path
+        bool isDefault;                    ///< Whether this is the default theme
+        std::vector<std::string> previewColors; ///< Colors for preview display
+        
+        ThemeInfo() : isDefault(false) {}
+        
+        ThemeInfo(const std::string& id_, const std::string& name_, 
+                 const std::string& desc_, const std::string& css_, 
+                 bool default_ = false, 
+                 const std::vector<std::string>& colors_ = {})
+            : id(id_), name(name_), description(desc_), cssFile(css_), 
+              isDefault(default_), previewColors(colors_) {}
+    };
+    
+    /**
+     * @brief Theme change callback type
+     */
+    using ThemeChangeCallback = std::function<void(const ThemeInfo& theme)>;
     
     /**
      * @brief Constructs a theme selection dialog
-     * @param themeService Theme service for theme management
      * @param eventManager Event manager for notifications
-     * @param callback Callback function for theme selection
+     * @param callback Callback function for theme changes
      */
-    ThemeSelectionDialog(std::shared_ptr<ThemeService> themeService,
-                        std::shared_ptr<EventManager> eventManager,
-                        ThemeSelectionCallback callback = nullptr);
+    ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
+                        ThemeChangeCallback callback = nullptr);
     
     /**
      * @brief Virtual destructor
@@ -59,97 +85,186 @@ public:
     virtual ~ThemeSelectionDialog() = default;
     
     /**
+     * @brief Gets the currently selected theme ID
+     * @return Selected theme ID
+     */
+    const std::string& getSelectedThemeId() const { return selectedThemeId_; }
+    
+    /**
+     * @brief Sets the current theme
+     * @param themeId Theme ID to set as current
+     */
+    void setCurrentTheme(const std::string& themeId);
+    
+    /**
+     * @brief Gets information about a specific theme
+     * @param themeId Theme ID to get info for
+     * @return Theme information
+     */
+    ThemeInfo getThemeInfo(const std::string& themeId) const;
+    
+    /**
+     * @brief Gets all available themes
+     * @return Vector of available themes
+     */
+    const std::vector<ThemeInfo>& getAvailableThemes() const { return availableThemes_; }
+    
+    /**
      * @brief Shows the theme selection dialog
      */
-    void showDialog();
-    
-    /**
-     * @brief Refreshes the available themes list
-     */
-    void refreshThemes();
-    
-    /**
-     * @brief Sets whether to show theme previews
-     * @param enabled True to show color previews
-     */
-    void setShowPreviews(bool enabled);
+    void showDialog() { show(); }
 
 protected:
     /**
-     * @brief Creates the dialog content
+     * @brief Creates the main dialog content
      */
     void createDialogContent();
     
     /**
-     * @brief Creates the themes grid
-     * @return Container widget with theme selection
+     * @brief Creates the theme selection panel
      */
-    std::unique_ptr<Wt::WContainerWidget> createThemesGrid();
+    void createThemePanel();
     
     /**
-     * @brief Creates a theme card
+     * @brief Creates the general preferences panel
+     */
+    void createGeneralPanel();
+    
+    /**
+     * @brief Creates the display preferences panel
+     */
+    void createDisplayPanel();
+    
+    /**
+     * @brief Creates a theme selection card
      * @param theme Theme information
-     * @return Container widget representing the theme
+     * @return Container widget for the theme card
      */
-    std::unique_ptr<Wt::WContainerWidget> createThemeCard(const ThemeService::ThemeInfo& theme);
+    std::unique_ptr<Wt::WContainerWidget> createThemeCard(const ThemeInfo& theme);
     
     /**
-     * @brief Creates color preview for a theme
-     * @param theme Theme information
-     * @return Container widget with color swatches
-     */
-    std::unique_ptr<Wt::WContainerWidget> createColorPreview(const ThemeService::ThemeInfo& theme);
-    
-    /**
-     * @brief Creates the action buttons section
+     * @brief Creates the action buttons container
      * @return Container widget with action buttons
      */
     std::unique_ptr<Wt::WContainerWidget> createActionButtons();
     
     /**
-     * @brief Handles theme selection changes
+     * @brief Sets up event handlers for UI interactions
+     */
+    void setupEventHandlers();
+    
+    /**
+     * @brief Shows the theme selection panel
+     */
+    void showThemePanel();
+    
+    /**
+     * @brief Shows the general preferences panel
+     */
+    void showGeneralPanel();
+    
+    /**
+     * @brief Shows the display preferences panel
+     */
+    void showDisplayPanel();
+    
+    /**
+     * @brief Handles theme selection change
      */
     void onThemeSelectionChanged();
     
     /**
-     * @brief Applies the selected theme
+     * @brief Handles specific theme selection
+     * @param themeId Selected theme ID
      */
-    void applySelectedTheme();
+    void onThemeSelected(const std::string& themeId);
     
     /**
-     * @brief Gets the currently selected theme ID
-     * @return Selected theme ID, or empty string if none
+     * @brief Toggles preview mode on/off
      */
-    std::string getSelectedThemeId() const;
+    void togglePreviewMode();
+    
+    /**
+     * @brief Resets all settings to defaults
+     */
+    void resetToDefaults();
+    
+    /**
+     * @brief Applies all changes and closes dialog
+     */
+    void applyChanges();
+    
+    /**
+     * @brief Applies a specific theme
+     * @param themeId Theme ID to apply
+     */
+    void applyTheme(const std::string& themeId);
+    
+    /**
+     * @brief Loads theme configuration from JSON file
+     */
+    void loadThemeConfiguration();
+    
+    /**
+     * @brief Loads default themes if config file unavailable
+     */
+    void loadDefaultThemes();
+    
+    /**
+     * @brief Loads current theme from preferences
+     */
+    void loadCurrentTheme();
+    
+    /**
+     * @brief Saves preferences to persistent storage
+     */
+    void savePreferences();
 
 private:
-    // Dependencies
-    std::shared_ptr<ThemeService> themeService_;
+    // Core components
     std::shared_ptr<EventManager> eventManager_;
-    ThemeSelectionCallback selectionCallback_;
+    ThemeChangeCallback themeChangeCallback_;
     
-    // Configuration
-    bool showPreviews_;
-    
-    // UI components
-    Wt::WContainerWidget* themesContainer_;
-    Wt::WButtonGroup* themeButtonGroup_;
-    std::vector<Wt::WRadioButton*> themeButtons_;
-    
-    Wt::WPushButton* applyButton_;
-    Wt::WPushButton* cancelButton_;
-    Wt::WPushButton* previewButton_;
-    
-    // Theme data
-    std::vector<ThemeService::ThemeInfo> availableThemes_;
-    std::string originalThemeId_;
+    // Theme management
+    std::vector<ThemeInfo> availableThemes_;
+    std::string currentThemeId_;
     std::string selectedThemeId_;
+    std::string originalThemeId_;
+    bool previewMode_;
     
-    // Helper methods
-    void setupEventHandlers();
-    void updateApplyButton();
-    void previewTheme();
-    void restoreOriginalTheme();
+    // UI Components - Tab Navigation
+    Wt::WContainerWidget* tabContent_;
+    Wt::WPushButton* themeTab_;
+    Wt::WPushButton* generalTab_;
+    Wt::WPushButton* displayTab_;
+    
+    // UI Components - Theme Panel
+    std::unique_ptr<Wt::WContainerWidget> themePanel_;
+    std::unique_ptr<Wt::WButtonGroup> themeButtonGroup_;
+    std::unordered_map<std::string, Wt::WRadioButton*> themeRadioButtons_;
+    Wt::WText* currentThemeText_;
+    
+    // UI Components - General Panel
+    std::unique_ptr<Wt::WContainerWidget> generalPanel_;
+    Wt::WCheckBox* autoSaveCheckbox_;
+    Wt::WCheckBox* notificationsCheckbox_;
+    Wt::WCheckBox* soundCheckbox_;
+    Wt::WComboBox* languageCombo_;
+    
+    // UI Components - Display Panel
+    std::unique_ptr<Wt::WContainerWidget> displayPanel_;
+    Wt::WSpinBox* fontSizeSpinBox_;
+    Wt::WCheckBox* showDescriptionsCheckbox_;
+    Wt::WCheckBox* compactModeCheckbox_;
+    Wt::WCheckBox* animationsCheckbox_;
+    Wt::WSpinBox* rowsPerPageSpinBox_;
+    Wt::WCheckBox* stripedRowsCheckbox_;
+    
+    // UI Components - Action Buttons
+    Wt::WPushButton* previewButton_;
+    Wt::WPushButton* resetButton_;
+    Wt::WPushButton* cancelButton_;
+    Wt::WPushButton* applyButton_;
 };
 
 #endif // THEMESELECTIONDIALOG_H

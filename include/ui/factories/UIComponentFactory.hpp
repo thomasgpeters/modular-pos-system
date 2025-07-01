@@ -135,7 +135,7 @@ public:
      * @return Unique pointer to the created dialog
      */
     std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
-        ThemeSelectionDialog::ThemeSelectionCallback callback = nullptr);
+        std::function<void(const std::string&)> callback = nullptr);
     
     // =================================================================
     // Service Registration

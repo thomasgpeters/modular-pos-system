@@ -138,83 +138,77 @@ void MenuDisplay::buildTableView() {
     std::cout << "✓ Table view built" << std::endl;
 }
 
+// Method 1: updateMenuTable() - Fix removeRow call
 void MenuDisplay::updateMenuTable() {
-    if (!menuTable_) {
+    if (!menuTable_) return;
+    
+    // Clear existing rows (keep header)
+    while (menuTable_->rowCount() > 1) {
+        menuTable_->removeRow(1); // FIXED: was deleteRow(1)
+    }
+    
+    // Get filtered menu items
+    auto items = getFilteredMenuItems();
+    
+    if (items.empty()) {
+        // Show "no items" message
+        auto noItemsText = std::make_unique<Wt::WText>("No menu items found");
+        noItemsText->addStyleClass("text-muted text-center");
+        menuTable_->elementAt(1, 0)->addWidget(std::move(noItemsText));
+        menuTable_->elementAt(1, 0)->setColumnSpan(6);
         return;
     }
     
-    // Clear existing rows (except header)
-    while (menuTable_->rowCount() > 1) {
-        menuTable_->deleteRow(1);
-    }
-    
-    auto menuItems = getFilteredMenuItems();
-    
-    // Group by category if no filter is applied
-    if (!hasFilter_) {
-        auto categorizedItems = groupMenuItemsByCategory();
+    // Add menu items to table
+    int row = 1;
+    for (const auto& item : items) {
+        if (hasFilter_ && item->getCategory() != categoryFilter_) {
+            continue;
+        }
         
-        int row = 1;
-        for (const auto& categoryPair : categorizedItems) {
-            auto category = categoryPair.first;
-            const auto& items = categoryPair.second;
-            
-            // Add category header row
-            menuTable_->elementAt(row, 0)->addWidget(
-                std::make_unique<Wt::WText>(getCategoryDisplayName(category)));
-            menuTable_->elementAt(row, 0)->setColumnSpan(5);
-            menuTable_->elementAt(row, 0)->addStyleClass("table-category-header");
-            row++;
-            
-            // Add items in this category
-            for (const auto& item : items) {
-                addMenuItemToTable(item, row);
-                row++;
-            }
-        }
-    } else {
-        // Add filtered items directly
-        int row = 1;
-        for (const auto& item : menuItems) {
-            addMenuItemToTable(item, row);
-            row++;
-        }
+        addMenuItemToTable(item, row); // This method is now declared in header
+        row++;
     }
 }
 
+// Method 2: addMenuItemToTable() - Complete corrected implementation
 void MenuDisplay::addMenuItemToTable(std::shared_ptr<MenuItem> item, int row) {
+    if (!menuTable_ || !item) return;
+    
     // Item name
     auto nameText = std::make_unique<Wt::WText>(item->getName());
-    nameText->addStyleClass("menu-item-name");
+    nameText->addStyleClass("fw-bold");
     menuTable_->elementAt(row, 0)->addWidget(std::move(nameText));
     
-    // Description
-    auto descText = std::make_unique<Wt::WText>(item->getDescription());
-    descText->addStyleClass("menu-item-description text-muted");
-    menuTable_->elementAt(row, 1)->addWidget(std::move(descText));
+    // Category (instead of description since MenuItem has no description)
+    auto categoryText = std::make_unique<Wt::WText>(getCategoryDisplayName(item->getCategory()));
+    categoryText->addStyleClass("text-muted small");
+    menuTable_->elementAt(row, 1)->addWidget(std::move(categoryText));
     
     // Price
     auto priceText = std::make_unique<Wt::WText>(formatCurrency(item->getPrice()));
-    priceText->addStyleClass("menu-item-price font-weight-bold");
+    priceText->addStyleClass("fw-bold text-success");
     menuTable_->elementAt(row, 2)->addWidget(std::move(priceText));
     
-    // Category
-    auto categoryText = std::make_unique<Wt::WText>(getCategoryDisplayName(item->getCategory()));
-    categoryText->addStyleClass("menu-item-category");
-    menuTable_->elementAt(row, 3)->addWidget(std::move(categoryText));
+    // Availability
+    auto availText = std::make_unique<Wt::WText>(item->isAvailable() ? "Available" : "Unavailable");
+    availText->addStyleClass(item->isAvailable() ? "badge bg-success" : "badge bg-danger");
+    menuTable_->elementAt(row, 3)->addWidget(std::move(availText));
     
-    // Action button
-    auto addButton = std::make_unique<Wt::WPushButton>("Add to Order");
-    addButton->addStyleClass("btn btn-primary btn-sm");
-    addButton->clicked().connect([this, item]() {
+    // Add button
+    auto addBtn = std::make_unique<Wt::WPushButton>("Add to Order");
+    addBtn->addStyleClass("btn btn-primary btn-sm");
+    addBtn->setEnabled(item->isAvailable());
+    
+    if (!item->isAvailable()) {
+        addBtn->addStyleClass("disabled");
+    }
+    
+    addBtn->clicked().connect([this, item]() {
         onMenuItemSelected(item);
     });
-    menuTable_->elementAt(row, 4)->addWidget(std::move(addButton));
     
-    // Style the row
-    for (int col = 0; col < 5; ++col) {
-        menuTable_->elementAt(row, col)->addStyleClass("menu-item-cell");
-    }
+    menuTable_->elementAt(row, 4)->addWidget(std::move(addBtn));
 }
 
 void MenuDisplay::buildCategoryTilesView() {
@@ -310,85 +304,53 @@ std::unique_ptr<Wt::WWidget> MenuDisplay::createCategoryTile(MenuItem::Category 
     return std::move(tile);
 }
 
+// Method 3: showCategoryPopover() - Fix getDescription() call
 void MenuDisplay::showCategoryPopover(MenuItem::Category category, 
                                      const std::vector<std::shared_ptr<MenuItem>>& items) {
+    if (items.empty()) return;
     
-    auto dialog = addChild(std::make_unique<Wt::WDialog>(getCategoryDisplayName(category)));
-    dialog->setModal(true);
-    dialog->setResizable(true);
-    dialog->resize(600, 400);
-    dialog->addStyleClass("category-popover");
+    // Create popover container
+    auto popoverContainer = std::make_unique<Wt::WContainerWidget>();
+    popoverContainer->addStyleClass("menu-category-popover");
     
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("category-popover-content");
+    // Add title
+    auto titleText = std::make_unique<Wt::WText>(getCategoryDisplayName(category));
+    titleText->addStyleClass("h5 mb-3");
+    popoverContainer->addWidget(std::move(titleText));
     
-    // Create items grid
-    auto itemsLayout = std::make_unique<Wt::WVBoxLayout>();
-    
+    // Add items
     for (const auto& item : items) {
         auto itemContainer = std::make_unique<Wt::WContainerWidget>();
-        itemContainer->addStyleClass("popover-item d-flex justify-content-between align-items-center p-2 border-bottom");
+        itemContainer->addStyleClass("menu-item-card mb-2 p-2 border rounded");
         
-        auto itemLayout = std::make_unique<Wt::WHBoxLayout>();
-        
-        // Item info
-        auto infoContainer = std::make_unique<Wt::WContainerWidget>();
-        auto infoLayout = std::make_unique<Wt::WVBoxLayout>();
-        
+        // Item name
         auto nameText = std::make_unique<Wt::WText>(item->getName());
-        nameText->addStyleClass("font-weight-bold");
-        infoLayout->addWidget(std::move(nameText));
+        nameText->addStyleClass("fw-bold");
+        itemContainer->addWidget(std::move(nameText));
         
-        auto descText = std::make_unique<Wt::WText>(item->getDescription());
-        descText->addStyleClass("text-muted small");
-        infoLayout->addWidget(std::move(descText));
+        // FIXED: Instead of getDescription(), show price and availability
+        auto detailsText = std::make_unique<Wt::WText>(
+            formatCurrency(item->getPrice()) + 
+            (item->isAvailable() ? " - Available" : " - Unavailable")
+        );
+        detailsText->addStyleClass("text-muted small");
+        itemContainer->addWidget(std::move(detailsText));
         
-        infoContainer->setLayout(std::move(infoLayout));
-        itemLayout->addWidget(std::move(infoContainer), 1);
+        // Add button
+        auto addBtn = std::make_unique<Wt::WPushButton>("Add");
+        addBtn->addStyleClass("btn btn-primary btn-sm mt-1");
+        addBtn->setEnabled(item->isAvailable());
         
-        // Price and button
-        auto actionContainer = std::make_unique<Wt::WContainerWidget>();
-        auto actionLayout = std::make_unique<Wt::WVBoxLayout>();
-        
-        auto priceText = std::make_unique<Wt::WText>(formatCurrency(item->getPrice()));
-        priceText->addStyleClass("font-weight-bold text-primary");
-        actionLayout->addWidget(std::move(priceText));
-        
-        auto addButton = std::make_unique<Wt::WPushButton>("Add");
-        addButton->addStyleClass("btn btn-sm btn-primary");
-        addButton->clicked().connect([this, item, dialog]() {
+        addBtn->clicked().connect([this, item]() {
             onMenuItemSelected(item);
-            dialog->accept();
         });
-        actionLayout->addWidget(std::move(addButton));
         
-        actionContainer->setLayout(std::move(actionLayout));
-        itemLayout->addWidget(std::move(actionContainer));
-        
-        itemContainer->setLayout(std::move(itemLayout));
-        itemsLayout->addWidget(std::move(itemContainer));
+        itemContainer->addWidget(std::move(addBtn));
+        popoverContainer->addWidget(std::move(itemContainer));
     }
     
-    container->setLayout(std::move(itemsLayout));
-    dialog->contents()->addWidget(std::move(container));
-    
-    // Add close button
-    auto footer = std::make_unique<Wt::WContainerWidget>();
-    footer->addStyleClass("dialog-footer");
-    
-    auto closeButton = std::make_unique<Wt::WPushButton>("Close");
-    closeButton->addStyleClass("btn btn-secondary");
-    closeButton->clicked().connect([dialog]() {
-        dialog->reject();
-    });
-    footer->addWidget(std::move(closeButton));
-    
-    dialog->footer()->addWidget(std::move(footer));
-    
-    dialog->show();
-    
-    std::cout << "Category popover shown for " << getCategoryDisplayName(category) 
-              << " with " << items.size() << " items" << std::endl;
+    // Show the popover (implementation depends on your popover system)
+    menuContainer_->addWidget(std::move(popoverContainer));
 }
 
 // =================================================================
@@ -466,29 +428,36 @@ std::string MenuDisplay::getCategoryIcon(MenuItem::Category category) const {
     }
 }
 
+// Helper method: getCategoryDisplayName() - if not already implemented
 std::string MenuDisplay::getCategoryDisplayName(MenuItem::Category category) const {
     switch (category) {
-        case MenuItem::APPETIZER:   return "Appetizers";
-        case MenuItem::MAIN_COURSE: return "Main Courses";
-        case MenuItem::DESSERT:     return "Desserts";
-        case MenuItem::BEVERAGE:    return "Beverages";
-        case MenuItem::SPECIAL:     return "Specials";
-        default:                    return "Other";
+        case MenuItem::APPETIZER:   return "Appetizer";
+        case MenuItem::MAIN_COURSE: return "Main Course";
+        case MenuItem::DESSERT:     return "Dessert";
+        case MenuItem::BEVERAGE:    return "Beverage";
+        case MenuItem::SPECIAL:     return "Special";
+        default:                    return "Unknown";
     }
 }
 
+// Helper method: formatCurrency() - if not already implemented
 std::string MenuDisplay::formatCurrency(double amount) const {
     std::ostringstream oss;
-    oss << "$" << std::fixed << std::setprecision(2) << amount;
+    oss << std::fixed << std::setprecision(2) << "$" << amount;
     return oss.str();
 }
 
+// Method 4: formatItemDescription() - Complete corrected implementation
 std::string MenuDisplay::formatItemDescription(const std::shared_ptr<MenuItem>& item) const {
-    std::string description = item->getDescription();
+    if (!item) return "";
     
-    // Truncate long descriptions for table view
-    if (displayMode_ == TABLE_VIEW && description.length() > 50) {
-        description = description.substr(0, 47) + "...";
+    // FIXED: Create description from available MenuItem fields
+    std::string description = item->getName();
+    description += " - " + getCategoryDisplayName(item->getCategory());
+    description += " - " + formatCurrency(item->getPrice());
+    
+    if (!item->isAvailable()) {
+        description += " (Currently Unavailable)";
     }
     
     return description;
