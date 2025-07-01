@@ -189,20 +189,3 @@ void UIComponentFactory::registerNotificationService(std::shared_ptr<Notificatio
     notificationService_ = notificationService;
     std::cout << "UIComponentFactory: NotificationService registered" << std::endl;
 }
-
-// Template specializations for component configuration
-template<typename T>
-void UIComponentFactory::configureComponent(T* component) {
-    if (!component) return;
-    
-    // Apply component-specific configuration
-    applyComponentConfiguration(component);
-    
-    std::cout << "UIComponentFactory: Component configured successfully" << std::endl;
-}
-
-template<typename T>
-void UIComponentFactory::applyComponentConfiguration(T* component) {
-    // Default implementation - individual components may need specific configuration
-    // This would be specialized for different component types in a full implementation
-}

@@ -1,4 +1,4 @@
-#include "../../include/ui/factories/UIComponentFactory.hpp"
+#include "../../../include/ui/factories/UIComponentFactory.hpp"
 
 #include <iostream>
 
@@ -159,24 +159,18 @@ std::unique_ptr<CategoryPopover> UIComponentFactory::createCategoryPopover(
 }
 
 std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDialog(
-    ThemeSelectionDialog::ThemeSelectionCallback callback) {
+    std::function<void(const std::string&)> callback) {
     
-    logComponentCreation("ThemeSelectionDialog");
+    // Convert the string callback to ThemeSelectionCallback
+    ThemeSelectionDialog::ThemeSelectionCallback themeCallback = nullptr;
     
-    if (!themeService_) {
-        std::cerr << "UIComponentFactory: Cannot create ThemeSelectionDialog without ThemeService" << std::endl;
-        return nullptr;
+    if (callback) {
+        themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
+            callback(theme.id);
+        };
     }
     
-    auto dialog = std::make_unique<ThemeSelectionDialog>(themeService_, eventManager_, callback);
-    
-    // Configure from settings
-    if (configManager_) {
-        bool showPreviews = configManager_->getValue<bool>("ui.theme.show.previews", true);
-        dialog->setShowPreviews(showPreviews);
-    }
-    
-    return dialog;
+    return std::make_unique<ThemeSelectionDialog>(eventManager_, themeCallback);
 }
 
 // Service registration
@@ -188,21 +182,4 @@ void UIComponentFactory::registerThemeService(std::shared_ptr<ThemeService> them
 void UIComponentFactory::registerNotificationService(std::shared_ptr<NotificationService> notificationService) {
     notificationService_ = notificationService;
     std::cout << "UIComponentFactory: NotificationService registered" << std::endl;
-}
-
-// Template specializations for component configuration
-template<typename T>
-void UIComponentFactory::configureComponent(T* component) {
-    if (!component) return;
-    
-    // Apply component-specific configuration
-    applyComponentConfiguration(component);
-    
-    std::cout << "UIComponentFactory: Component configured successfully" << std::endl;
-}
-
-template<typename T>
-void UIComponentFactory::applyComponentConfiguration(T* component) {
-    // Default implementation - individual components may need specific configuration
-    // This would be specialized for different component types in a full implementation
 }

@@ -1,4 +1,3 @@
-//=============================================================================
 #ifndef THEMESELECTIONDIALOG_H
 #define THEMESELECTIONDIALOG_H
 
@@ -20,6 +19,8 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include <map>
+#include <any>
 
 /**
  * @file ThemeSelectionDialog.hpp
@@ -72,13 +73,94 @@ public:
     using ThemeChangeCallback = std::function<void(const ThemeInfo& theme)>;
     
     /**
-     * @brief Constructs a theme selection dialog
+     * @brief Theme selection callback type (alias for compatibility)
+     */
+    using ThemeSelectionCallback = ThemeChangeCallback;
+    
+    /**
+     * @brief String callback type for simple theme ID callbacks
+     */
+    using StringCallback = std::function<void(const std::string&)>;
+    
+    // =================================================================
+    // CONSTRUCTORS - Multiple overloads to handle all creation patterns
+    // =================================================================
+    
+    /**
+     * @brief Default constructor
+     */
+    ThemeSelectionDialog();
+    
+    /**
+     * @brief Constructor with event manager only
+     * @param eventManager Event manager for notifications
+     */
+    explicit ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager);
+    
+    /**
+     * @brief Constructor with event manager and ThemeChangeCallback
      * @param eventManager Event manager for notifications
      * @param callback Callback function for theme changes
      */
     ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
-                        ThemeChangeCallback callback = nullptr);
+                        ThemeChangeCallback callback);
     
+        
+    /**
+     * @brief Constructor with event manager and string callback
+     * @param eventManager Event manager for notifications
+     * @param callback String callback function (theme ID only)
+     */
+    ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
+                        StringCallback callback);
+    
+    /**
+     * @brief Constructor with configuration options
+     * @param eventManager Event manager for notifications
+     * @param callback Callback function for theme changes
+     * @param showPreviews Whether to show theme previews
+     */
+    ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
+                        ThemeChangeCallback callback,
+                        bool showPreviews);
+    
+    /**
+     * @brief Constructor with full configuration
+     * @param eventManager Event manager for notifications
+     * @param callback Callback function for theme changes
+     * @param showPreviews Whether to show theme previews
+     * @param showDescriptions Whether to show descriptions
+     */
+    ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
+                        ThemeChangeCallback callback,
+                        bool showPreviews,
+                        bool showDescriptions);
+    
+    /**
+     * @brief Constructor with extended configuration
+     * @param eventManager Event manager for notifications
+     * @param callback Callback function for theme changes
+     * @param showPreviews Whether to show theme previews
+     * @param showDescriptions Whether to show descriptions
+     * @param maxThemes Maximum number of themes to display
+     */
+    ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
+                        ThemeChangeCallback callback,
+                        bool showPreviews,
+                        bool showDescriptions,
+                        int maxThemes);
+    
+    /**
+     * @brief Constructor with configuration map
+     * @param eventManager Event manager for notifications
+     * @param callback Callback function for theme changes
+     * @param config Configuration options map
+     */
+    ThemeSelectionDialog(std::shared_ptr<EventManager> eventManager,
+                        ThemeChangeCallback callback,
+                        const std::map<std::string, std::any>& config);
+    
+        
     /**
      * @brief Virtual destructor
      */
@@ -113,114 +195,156 @@ public:
      * @brief Shows the theme selection dialog
      */
     void showDialog() { show(); }
+    
+    // =================================================================
+    // Configuration Methods
+    // =================================================================
+    
+    /**
+     * @brief Sets whether to show theme previews
+     * @param showPreviews True to show previews, false to hide
+     */
+    void setShowPreviews(bool showPreviews) { showPreviews_ = showPreviews; }
+    
+    /**
+     * @brief Gets whether previews are shown
+     * @return True if previews are shown
+     */
+    bool getShowPreviews() const { return showPreviews_; }
+    
+    /**
+     * @brief Sets the dialog size
+     * @param width Dialog width
+     * @param height Dialog height
+     */
+    void setDialogSize(int width, int height) {
+        resize(Wt::WLength(width), Wt::WLength(height));
+    }
+    
+    /**
+     * @brief Sets whether the dialog is modal
+     * @param modal True for modal dialog
+     */
+    void setDialogModal(bool modal) { 
+        if (modal) {
+            setModal(true);
+        }
+    }
+    
+    /**
+     * @brief Sets whether the dialog is resizable
+     * @param resizable True to allow resizing
+     */
+    void setDialogResizable(bool resizable) { 
+        setResizable(resizable); 
+    }
+    
+    /**
+     * @brief Sets the dialog title
+     * @param title Dialog title
+     */
+    void setDialogTitle(const std::string& title) { setWindowTitle(title); }
+    
+    /**
+     * @brief Enables or disables live preview mode
+     * @param enabled True to enable live preview
+     */
+    void setLivePreviewEnabled(bool enabled) { livePreviewEnabled_ = enabled; }
+    
+    /**
+     * @brief Gets whether live preview is enabled
+     * @return True if live preview is enabled
+     */
+    bool isLivePreviewEnabled() const { return livePreviewEnabled_; }
+    
+    /**
+     * @brief Sets the maximum number of themes to display
+     * @param maxThemes Maximum number of themes
+     */
+    void setMaxThemes(int maxThemes) { maxThemes_ = maxThemes; }
+    
+    /**
+     * @brief Gets the maximum number of themes displayed
+     * @return Maximum themes
+     */
+    int getMaxThemes() const { return maxThemes_; }
+    
+    /**
+     * @brief Sets whether to show theme descriptions
+     * @param showDescriptions True to show descriptions
+     */
+    void setShowDescriptions(bool showDescriptions) { showDescriptions_ = showDescriptions; }
+    
+    /**
+     * @brief Gets whether descriptions are shown
+     * @return True if descriptions are shown
+     */
+    bool getShowDescriptions() const { return showDescriptions_; }
+    
+    /**
+     * @brief Sets the preview size
+     * @param width Preview width
+     * @param height Preview height
+     */
+    void setPreviewSize(int width, int height) {
+        previewWidth_ = width;
+        previewHeight_ = height;
+    }
+    
+    /**
+     * @brief Gets the preview width
+     * @return Preview width
+     */
+    int getPreviewWidth() const { return previewWidth_; }
+    
+    /**
+     * @brief Gets the preview height
+     * @return Preview height
+     */
+    int getPreviewHeight() const { return previewHeight_; }
+    
+    /**
+     * @brief Sets configuration from a map
+     * @param config Configuration map
+     */
+    void setConfiguration(const std::map<std::string, std::any>& config);
 
 protected:
-    /**
-     * @brief Creates the main dialog content
-     */
+    // ... (same protected methods as before)
     void createDialogContent();
-    
-    /**
-     * @brief Creates the theme selection panel
-     */
     void createThemePanel();
-    
-    /**
-     * @brief Creates the general preferences panel
-     */
     void createGeneralPanel();
-    
-    /**
-     * @brief Creates the display preferences panel
-     */
     void createDisplayPanel();
-    
-    /**
-     * @brief Creates a theme selection card
-     * @param theme Theme information
-     * @return Container widget for the theme card
-     */
     std::unique_ptr<Wt::WContainerWidget> createThemeCard(const ThemeInfo& theme);
-    
-    /**
-     * @brief Creates the action buttons container
-     * @return Container widget with action buttons
-     */
     std::unique_ptr<Wt::WContainerWidget> createActionButtons();
-    
-    /**
-     * @brief Sets up event handlers for UI interactions
-     */
     void setupEventHandlers();
-    
-    /**
-     * @brief Shows the theme selection panel
-     */
     void showThemePanel();
-    
-    /**
-     * @brief Shows the general preferences panel
-     */
     void showGeneralPanel();
-    
-    /**
-     * @brief Shows the display preferences panel
-     */
     void showDisplayPanel();
-    
-    /**
-     * @brief Handles theme selection change
-     */
     void onThemeSelectionChanged();
-    
-    /**
-     * @brief Handles specific theme selection
-     * @param themeId Selected theme ID
-     */
     void onThemeSelected(const std::string& themeId);
-    
-    /**
-     * @brief Toggles preview mode on/off
-     */
     void togglePreviewMode();
-    
-    /**
-     * @brief Resets all settings to defaults
-     */
     void resetToDefaults();
-    
-    /**
-     * @brief Applies all changes and closes dialog
-     */
     void applyChanges();
-    
-    /**
-     * @brief Applies a specific theme
-     * @param themeId Theme ID to apply
-     */
     void applyTheme(const std::string& themeId);
-    
-    /**
-     * @brief Loads theme configuration from JSON file
-     */
     void loadThemeConfiguration();
-    
-    /**
-     * @brief Loads default themes if config file unavailable
-     */
     void loadDefaultThemes();
-    
-    /**
-     * @brief Loads current theme from preferences
-     */
     void loadCurrentTheme();
-    
-    /**
-     * @brief Saves preferences to persistent storage
-     */
     void savePreferences();
 
 private:
+    /**
+     * @brief Initialize dialog with default values
+     */
+    void initializeDefaults();
+    
+    /**
+     * @brief Convert string callback to ThemeChangeCallback
+     * @param stringCallback String callback to convert
+     * @return ThemeChangeCallback
+     */
+    ThemeChangeCallback convertStringCallback(StringCallback stringCallback);
+
     // Core components
     std::shared_ptr<EventManager> eventManager_;
     ThemeChangeCallback themeChangeCallback_;
@@ -231,6 +355,14 @@ private:
     std::string selectedThemeId_;
     std::string originalThemeId_;
     bool previewMode_;
+    
+    // Configuration options
+    bool showPreviews_;
+    bool livePreviewEnabled_;
+    bool showDescriptions_;
+    int maxThemes_;
+    int previewWidth_;
+    int previewHeight_;
     
     // UI Components - Tab Navigation
     Wt::WContainerWidget* tabContent_;

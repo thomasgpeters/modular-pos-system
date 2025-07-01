@@ -1,36 +1,31 @@
 #include "../include/Order.hpp"
-
-/**
- * @file Order.cpp
- * @brief Implementation of the OrderItem and Order classes
- */
+#include <chrono>
 
 // OrderItem Implementation
 OrderItem::OrderItem(const MenuItem& menuItem, int quantity)
-    : menuItem_(menuItem), quantity_(quantity) {
-    totalPrice_ = menuItem_.getPrice() * quantity_;
+    : menuItem_(menuItem), quantity_(quantity), specialInstructions_("") {
+    setQuantity(quantity);
 }
 
 void OrderItem::setQuantity(int quantity) {
-    quantity_ = quantity;
-    totalPrice_ = menuItem_.getPrice() * quantity_;
+    quantity_ = std::max(1, quantity);
+    totalPrice_ = quantity_ * menuItem_.getPrice();
 }
 
 Wt::Json::Object OrderItem::toJson() const {
-    Wt::Json::Object obj;
-    obj["menuItem"] = menuItem_.toJson();
-    obj["quantity"] = Wt::Json::Value(quantity_);
-    obj["totalPrice"] = Wt::Json::Value(totalPrice_);
-    obj["specialInstructions"] = Wt::Json::Value(specialInstructions_);
-    return obj;
+    Wt::Json::Object json;
+    json["menuItem"] = menuItem_.toJson();
+    json["quantity"] = Wt::Json::Value(quantity_);
+    json["totalPrice"] = Wt::Json::Value(totalPrice_);
+    json["specialInstructions"] = Wt::Json::Value(specialInstructions_);
+    return json;
 }
 
 // Order Implementation
 Order::Order(int orderId, int tableNumber)
     : orderId_(orderId), tableNumber_(tableNumber), status_(PENDING),
       subtotal_(0.0), tax_(0.0), total_(0.0),
-      timestamp_(std::chrono::system_clock::now()) {
-}
+      timestamp_(std::chrono::system_clock::now()) {}
 
 void Order::addItem(const OrderItem& item) {
     items_.push_back(item);
@@ -61,36 +56,34 @@ void Order::calculateTotals() {
 }
 
 Wt::Json::Object Order::toJson() const {
-    Wt::Json::Object obj;
-    obj["orderId"] = Wt::Json::Value(orderId_);
-    obj["tableNumber"] = Wt::Json::Value(tableNumber_);
-    obj["status"] = Wt::Json::Value(static_cast<int>(status_));
-    obj["statusName"] = Wt::Json::Value(statusToString(status_));
-    obj["subtotal"] = Wt::Json::Value(subtotal_);
-    obj["tax"] = Wt::Json::Value(tax_);
-    obj["total"] = Wt::Json::Value(total_);
-    
-    // Convert timestamp to string
-    auto timestamp_t = std::chrono::system_clock::to_time_t(timestamp_);
-    obj["timestamp"] = Wt::Json::Value(static_cast<int64_t>(timestamp_t));
+    Wt::Json::Object json;
+    json["orderId"] = Wt::Json::Value(orderId_);
+    json["tableNumber"] = Wt::Json::Value(tableNumber_);
+    json["status"] = Wt::Json::Value(static_cast<int>(status_));
+    json["statusName"] = Wt::Json::Value(statusToString(status_));
+    json["subtotal"] = Wt::Json::Value(subtotal_);
+    json["tax"] = Wt::Json::Value(tax_);
+    json["total"] = Wt::Json::Value(total_);
+    json["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
+        std::chrono::system_clock::to_time_t(timestamp_)));
     
     Wt::Json::Array itemsArray;
     for (const auto& item : items_) {
         itemsArray.push_back(item.toJson());
     }
-    obj["items"] = itemsArray;
+    json["items"] = itemsArray;
     
-    return obj;
+    return json;
 }
 
 std::string Order::statusToString(Status status) {
     switch (status) {
-        case PENDING:           return "Pending";
-        case SENT_TO_KITCHEN:   return "In Kitchen";
-        case PREPARING:         return "Preparing";
-        case READY:             return "Ready";
-        case SERVED:            return "Served";
-        case CANCELLED:         return "Cancelled";
-        default:                return "Unknown";
+        case PENDING:         return "Pending";
+        case SENT_TO_KITCHEN: return "Sent to Kitchen";
+        case PREPARING:       return "Preparing";
+        case READY:           return "Ready";
+        case SERVED:          return "Served";
+        case CANCELLED:       return "Cancelled";
+        default:              return "Unknown";
     }
 }

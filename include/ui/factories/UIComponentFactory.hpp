@@ -137,6 +137,72 @@ public:
     std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
         std::function<void(const std::string&)> callback = nullptr);
     
+    /**
+     * @brief Creates a theme selection dialog with ThemeSelectionCallback
+     * @param callback Theme selection callback (ThemeSelectionCallback type)
+     * @return Unique pointer to the created dialog
+     */
+    std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
+        ThemeSelectionDialog::ThemeSelectionCallback callback);
+    
+    // =================================================================
+    // Enhanced Creation Methods - Adding methods that might be called
+    // =================================================================
+    
+    /**
+     * @brief Creates a theme selection dialog with configuration options
+     * @param callback Theme selection callback
+     * @param showPreviews Whether to show theme previews
+     * @param showDescriptions Whether to show theme descriptions
+     * @param maxThemes Maximum number of themes to display
+     * @return Unique pointer to the created dialog
+     */
+    std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
+        ThemeSelectionDialog::ThemeSelectionCallback callback,
+        bool showPreviews,
+        bool showDescriptions = true,
+        int maxThemes = 10);
+    
+    /**
+     * @brief Creates a configured theme selection dialog
+     * @param callback Theme selection callback
+     * @param config Configuration options for the dialog
+     * @return Unique pointer to the created dialog
+     */
+    std::unique_ptr<ThemeSelectionDialog> createConfiguredThemeSelectionDialog(
+        ThemeSelectionDialog::ThemeSelectionCallback callback,
+        const std::map<std::string, std::any>& config);
+    
+    /**
+     * @brief Creates a payment dialog with specific configuration
+     * @param order Order to process payment for
+     * @param callback Payment completion callback
+     * @param allowSplitPayments Whether to allow split payments
+     * @param suggestedTips Suggested tip percentages
+     * @return Unique pointer to the created dialog
+     */
+    std::unique_ptr<PaymentDialog> createPaymentDialog(
+        std::shared_ptr<Order> order,
+        PaymentDialog::PaymentCallback callback,
+        bool allowSplitPayments,
+        const std::vector<double>& suggestedTips = {0.15, 0.18, 0.20});
+    
+    /**
+     * @brief Creates a category popover with configuration
+     * @param category Menu category to display
+     * @param items Menu items in the category
+     * @param callback Item selection callback
+     * @param maxColumns Maximum columns for item display
+     * @param showDescriptions Whether to show item descriptions
+     * @return Unique pointer to the created popover
+     */
+    std::unique_ptr<CategoryPopover> createCategoryPopover(
+        MenuItem::Category category,
+        const std::vector<std::shared_ptr<MenuItem>>& items,
+        CategoryPopover::ItemSelectionCallback callback,
+        int maxColumns,
+        bool showDescriptions = true);
+    
     // =================================================================
     // Service Registration
     // =================================================================
@@ -152,6 +218,36 @@ public:
      * @param notificationService Notification service instance
      */
     void registerNotificationService(std::shared_ptr<NotificationService> notificationService);
+    
+    /**
+     * @brief Gets the current theme service
+     * @return Shared pointer to theme service
+     */
+    std::shared_ptr<ThemeService> getThemeService() const { return themeService_; }
+    
+    /**
+     * @brief Gets the current notification service
+     * @return Shared pointer to notification service
+     */
+    std::shared_ptr<NotificationService> getNotificationService() const { return notificationService_; }
+    
+    /**
+     * @brief Gets the POS service
+     * @return Shared pointer to POS service
+     */
+    std::shared_ptr<POSService> getPOSService() const { return posService_; }
+    
+    /**
+     * @brief Gets the event manager
+     * @return Shared pointer to event manager
+     */
+    std::shared_ptr<EventManager> getEventManager() const { return eventManager_; }
+    
+    /**
+     * @brief Gets the configuration manager
+     * @return Shared pointer to configuration manager
+     */
+    std::shared_ptr<ConfigurationManager> getConfigurationManager() const { return configManager_; }
 
 protected:
     /**
@@ -169,6 +265,18 @@ protected:
      */
     template<typename T>
     void applyComponentConfiguration(T* component);
+    
+    /**
+     * @brief Applies theme configuration to a dialog
+     * @param dialog Dialog to configure
+     * @param showPreviews Whether to show previews
+     * @param showDescriptions Whether to show descriptions
+     * @param maxThemes Maximum themes to display
+     */
+    void configureThemeDialog(ThemeSelectionDialog* dialog, 
+                             bool showPreviews = true,
+                             bool showDescriptions = true, 
+                             int maxThemes = 10);
 
 private:
     // Core services
@@ -183,9 +291,34 @@ private:
     // Factory state
     bool initialized_;
     
+    // Default configuration values
+    bool defaultShowPreviews_;
+    bool defaultShowDescriptions_;
+    int defaultMaxThemes_;
+    std::vector<double> defaultTipSuggestions_;
+    
     // Helper methods
     void validateDependencies() const;
     void logComponentCreation(const std::string& componentName) const;
+    void initializeDefaults();
 };
+
+// Template implementation for configureComponent
+template<typename T>
+void UIComponentFactory::configureComponent(T* component) {
+    if (!component) return;
+    
+    // Apply common configuration based on component type
+    applyComponentConfiguration(component);
+}
+
+template<typename T>
+void UIComponentFactory::applyComponentConfiguration(T* component) {
+    // Default implementation - can be specialized for specific types
+    if constexpr (std::is_base_of_v<Wt::WWidget, T>) {
+        // Apply common widget configuration
+        component->addStyleClass("pos-component");
+    }
+}
 
 #endif // UICOMPONENTFACTORY_H

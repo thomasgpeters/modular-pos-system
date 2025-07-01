@@ -1,0 +1,17 @@
+<server>
+    <application-settings location="*">
+        <max-request-size>128</max-request-size>
+        <session-timeout>600</session-timeout>
+    </application-settings>
+    
+    <http-server>
+        <http-listen>127.0.0.1</http-listen>
+        <http-port>8081</http-port>
+    </http-server>
+    
+    <!-- Map application to root -->
+    <properties>
+        <property name="approot">.</property>
+        <property name="docroot">.</property>
+    </properties>
+</server>

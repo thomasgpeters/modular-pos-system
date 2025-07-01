@@ -1,19 +1,12 @@
 #include "../include/OrderManager.hpp"
-#include <algorithm>
 
-/**
- * @file OrderManager.cpp
- * @brief Implementation of the OrderManager class
- */
-
-OrderManager::OrderManager() : nextOrderId_(1000) {
-}
+OrderManager::OrderManager() : nextOrderId_(1000) {}
 
 std::shared_ptr<Order> OrderManager::createOrder(int tableNumber) {
     auto order = std::make_shared<Order>(nextOrderId_++, tableNumber);
     activeOrders_[order->getOrderId()] = order;
     
-    // Notify observers
+    // Call extension point
     onOrderCreated(order);
     
     return order;
@@ -28,8 +21,8 @@ std::vector<std::shared_ptr<Order>> OrderManager::getActiveOrders() {
     std::vector<std::shared_ptr<Order>> orders;
     orders.reserve(activeOrders_.size());
     
-    for (const auto& pair : activeOrders_) {
-        orders.push_back(pair.second);
+    for (const auto& [id, order] : activeOrders_) {
+        orders.push_back(order);
     }
     
     return orders;
@@ -42,9 +35,9 @@ std::vector<std::shared_ptr<Order>> OrderManager::getCompletedOrders() {
 std::vector<std::shared_ptr<Order>> OrderManager::getOrdersByTable(int tableNumber) {
     std::vector<std::shared_ptr<Order>> orders;
     
-    for (const auto& pair : activeOrders_) {
-        if (pair.second->getTableNumber() == tableNumber) {
-            orders.push_back(pair.second);
+    for (const auto& [id, order] : activeOrders_) {
+        if (order->getTableNumber() == tableNumber) {
+            orders.push_back(order);
         }
     }
     
@@ -54,18 +47,9 @@ std::vector<std::shared_ptr<Order>> OrderManager::getOrdersByTable(int tableNumb
 std::vector<std::shared_ptr<Order>> OrderManager::getOrdersByStatus(Order::Status status) {
     std::vector<std::shared_ptr<Order>> orders;
     
-    for (const auto& pair : activeOrders_) {
-        if (pair.second->getStatus() == status) {
-            orders.push_back(pair.second);
-        }
-    }
-    
-    // Also check completed orders if looking for SERVED status
-    if (status == Order::SERVED) {
-        for (const auto& order : completedOrders_) {
-            if (order->getStatus() == status) {
-                orders.push_back(order);
-            }
+    for (const auto& [id, order] : activeOrders_) {
+        if (order->getStatus() == status) {
+            orders.push_back(order);
         }
     }
     
@@ -75,12 +59,10 @@ std::vector<std::shared_ptr<Order>> OrderManager::getOrdersByStatus(Order::Statu
 bool OrderManager::completeOrder(int orderId) {
     auto order = removeFromActive(orderId);
     if (order) {
-        Order::Status oldStatus = order->getStatus();
         order->setStatus(Order::SERVED);
         completedOrders_.push_back(order);
         
-        // Notify observers
-        onOrderStatusChanged(order, oldStatus, Order::SERVED);
+        // Call extension point
         onOrderCompleted(order);
         
         return true;
@@ -91,12 +73,10 @@ bool OrderManager::completeOrder(int orderId) {
 bool OrderManager::cancelOrder(int orderId) {
     auto order = removeFromActive(orderId);
     if (order) {
-        Order::Status oldStatus = order->getStatus();
         order->setStatus(Order::CANCELLED);
         completedOrders_.push_back(order);
         
-        // Notify observers
-        onOrderStatusChanged(order, oldStatus, Order::CANCELLED);
+        // Call extension point
         onOrderCancelled(order);
         
         return true;
@@ -105,14 +85,13 @@ bool OrderManager::cancelOrder(int orderId) {
 }
 
 bool OrderManager::updateOrderStatus(int orderId, Order::Status status) {
-    auto it = activeOrders_.find(orderId);
-    if (it != activeOrders_.end()) {
-        Order::Status oldStatus = it->second->getStatus();
-        it->second->setStatus(status);
+    auto order = getOrder(orderId);
+    if (order) {
+        Order::Status oldStatus = order->getStatus();
+        order->setStatus(status);
         
-        // Notify observers
-        onOrderStatusChanged(it->second, oldStatus, status);
-        onOrderModified(it->second);
+        // Call extension point
+        onOrderStatusChanged(order, oldStatus, status);
         
         return true;
     }
