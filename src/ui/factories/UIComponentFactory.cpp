@@ -1,6 +1,5 @@
 #include "../../../include/ui/factories/UIComponentFactory.hpp"
 
-
 #include <iostream>
 
 UIComponentFactory::UIComponentFactory(std::shared_ptr<POSService> posService,
@@ -42,7 +41,47 @@ void UIComponentFactory::logComponentCreation(const std::string& componentName) 
 }
 
 // ============================================================================
-// Component Creation Methods
+// Template Method Implementations - FIXED: Add missing template implementations
+// ============================================================================
+
+template<typename T>
+void UIComponentFactory::configureComponent(T* component) {
+    if (!component) return;
+    
+    // Apply common configuration to all components
+    applyComponentConfiguration(component);
+    
+    std::cout << "Component configured with factory settings" << std::endl;
+}
+
+template<typename T>
+void UIComponentFactory::applyComponentConfiguration(T* component) {
+    if (!component) return;
+    
+    // Apply theme-related configuration if ThemeService is available
+    if (themeService_) {
+        // Components that support theming can be configured here
+        // This is a placeholder for future theme integration
+    }
+    
+    // Apply other configuration from ConfigurationManager
+    if (configManager_) {
+        // Apply configuration-based settings
+        // This is extensible for future configuration options
+    }
+}
+
+// Explicit template instantiations for the components we use
+template void UIComponentFactory::configureComponent<OrderEntryPanel>(OrderEntryPanel* component);
+template void UIComponentFactory::configureComponent<OrderStatusPanel>(OrderStatusPanel* component);
+template void UIComponentFactory::configureComponent<MenuDisplay>(MenuDisplay* component);
+template void UIComponentFactory::configureComponent<CurrentOrderDisplay>(CurrentOrderDisplay* component);
+template void UIComponentFactory::configureComponent<ActiveOrdersDisplay>(ActiveOrdersDisplay* component);
+template void UIComponentFactory::configureComponent<KitchenStatusDisplay>(KitchenStatusDisplay* component);
+template void UIComponentFactory::configureComponent<ThemeSelector>(ThemeSelector* component);
+
+// ============================================================================
+// Component Creation Methods (Currently Implemented)
 // ============================================================================
 
 std::unique_ptr<OrderEntryPanel> UIComponentFactory::createOrderEntryPanel() {
@@ -62,6 +101,25 @@ std::unique_ptr<OrderStatusPanel> UIComponentFactory::createOrderStatusPanel() {
     
     return component;
 }
+
+std::unique_ptr<ThemeSelector> UIComponentFactory::createThemeSelector() {
+    logComponentCreation("ThemeSelector");
+    
+    if (!themeService_) {
+        std::cerr << "UIComponentFactory: ThemeService not registered, cannot create ThemeSelector" << std::endl;
+        return nullptr;
+    }
+    
+    // FIXED: Use correct constructor signature - ThemeSelector(themeService, displayMode)
+    auto component = std::make_unique<ThemeSelector>(themeService_, ThemeSelector::DisplayMode::DROPDOWN);
+    configureComponent(component.get());
+    
+    return component;
+}
+
+// ============================================================================
+// Component Creation Methods (Now Implemented)
+// ============================================================================
 
 std::unique_ptr<MenuDisplay> UIComponentFactory::createMenuDisplay() {
     logComponentCreation("MenuDisplay");
@@ -99,33 +157,25 @@ std::unique_ptr<KitchenStatusDisplay> UIComponentFactory::createKitchenStatusDis
     return component;
 }
 
-std::unique_ptr<ThemeSelector> UIComponentFactory::createThemeSelector() {
-    logComponentCreation("ThemeSelector");
-    
-    if (!themeService_) {
-        std::cerr << "UIComponentFactory: ThemeService not registered, creating basic ThemeSelector" << std::endl;
-    }
-    
-    auto component = std::make_unique<ThemeSelector>(themeService_, eventManager_);
-    configureComponent(component.get());
-    
-    return component;
-}
-
 // ============================================================================
-// Dialog Creation Methods - FIXED: Exact signature matching
+// Dialog Creation Methods - FIXED: Remove placeholder classes and implement properly
 // ============================================================================
 
-// FIXED: Remove ALL default parameter values from implementation signatures
-
-// Basic PaymentDialog creation - NO DEFAULT VALUES
 std::unique_ptr<PaymentDialog> UIComponentFactory::createPaymentDialog(
     std::shared_ptr<Order> order,
-    PaymentDialog::PaymentCallback callback) {
+    std::function<void(bool success)> callback) {
     
     logComponentCreation("PaymentDialog");
     
-    auto dialog = std::make_unique<PaymentDialog>(order, eventManager_, callback);
+    // Convert the simple bool callback to PaymentProcessor::PaymentCallback
+    PaymentProcessor::PaymentResult dummyResult; // We need this for the lambda
+    auto paymentCallback = [callback](const PaymentProcessor::PaymentResult& result) {
+        if (callback) {
+            callback(result.success);
+        }
+    };
+    
+    auto dialog = std::make_unique<PaymentDialog>(order, eventManager_, paymentCallback);
     
     // Configure payment methods from configuration
     if (configManager_) {
@@ -156,17 +206,22 @@ std::unique_ptr<PaymentDialog> UIComponentFactory::createPaymentDialog(
     return dialog;
 }
 
-// Extended PaymentDialog creation - NO DEFAULT VALUES  
 std::unique_ptr<PaymentDialog> UIComponentFactory::createPaymentDialog(
     std::shared_ptr<Order> order,
-    PaymentDialog::PaymentCallback callback,
+    std::function<void(bool success)> callback,
     bool allowSplitPayments,
     const std::vector<double>& suggestedTips) {
     
     logComponentCreation("PaymentDialog (Extended)");
     
-    // Create dialog directly to avoid recursion
-    auto dialog = std::make_unique<PaymentDialog>(order, eventManager_, callback);
+    // Convert the simple bool callback to PaymentProcessor::PaymentCallback
+    auto paymentCallback = [callback](const PaymentProcessor::PaymentResult& result) {
+        if (callback) {
+            callback(result.success);
+        }
+    };
+    
+    auto dialog = std::make_unique<PaymentDialog>(order, eventManager_, paymentCallback);
     
     // Configure payment methods from configuration
     if (configManager_) {
@@ -193,19 +248,24 @@ std::unique_ptr<PaymentDialog> UIComponentFactory::createPaymentDialog(
     return dialog;
 }
 
-// Basic CategoryPopover creation - NO DEFAULT VALUES
 std::unique_ptr<CategoryPopover> UIComponentFactory::createCategoryPopover(
     MenuItem::Category category,
     const std::vector<std::shared_ptr<MenuItem>>& items,
-    CategoryPopover::ItemSelectionCallback callback) {
+    std::function<void(int itemId)> callback) {
     
     logComponentCreation("CategoryPopover");
     
-    auto popover = std::make_unique<CategoryPopover>(category, items, eventManager_, callback);
+    // Convert the int callback to CategoryPopover::ItemSelectionCallback
+    auto itemCallback = [callback](std::shared_ptr<MenuItem> item) {
+        if (callback && item) {
+            callback(item->getId()); // Assuming MenuItem has getId() method
+        }
+    };
+    
+    auto popover = std::make_unique<CategoryPopover>(category, items, eventManager_, itemCallback);
     
     // Configure from settings
     if (configManager_) {
-        // Configure based on UI settings
         bool showDescriptions = configManager_->getValue<bool>("ui.menu.show.descriptions", defaultShowDescriptions_);
         popover->setShowDescriptions(showDescriptions);
         
@@ -216,18 +276,23 @@ std::unique_ptr<CategoryPopover> UIComponentFactory::createCategoryPopover(
     return popover;
 }
 
-// Extended CategoryPopover creation - NO DEFAULT VALUES
 std::unique_ptr<CategoryPopover> UIComponentFactory::createCategoryPopover(
     MenuItem::Category category,
     const std::vector<std::shared_ptr<MenuItem>>& items,
-    CategoryPopover::ItemSelectionCallback callback,
+    std::function<void(int itemId)> callback,
     int maxColumns,
     bool showDescriptions) {
     
     logComponentCreation("CategoryPopover (Extended)");
     
-    // Create popover directly
-    auto popover = std::make_unique<CategoryPopover>(category, items, eventManager_, callback);
+    // Convert the int callback to CategoryPopover::ItemSelectionCallback
+    auto itemCallback = [callback](std::shared_ptr<MenuItem> item) {
+        if (callback && item) {
+            callback(item->getId());
+        }
+    };
+    
+    auto popover = std::make_unique<CategoryPopover>(category, items, eventManager_, itemCallback);
     
     // Apply extended configuration
     popover->setMaxColumns(maxColumns);
@@ -236,20 +301,17 @@ std::unique_ptr<CategoryPopover> UIComponentFactory::createCategoryPopover(
     return popover;
 }
 
-// Basic ThemeSelectionDialog creation (string callback) - NO DEFAULT VALUES
 std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDialog(
     std::function<void(const std::string&)> callback) {
     
     logComponentCreation("ThemeSelectionDialog");
     
-    // Convert the string callback to ThemeSelectionCallback
-    ThemeSelectionDialog::ThemeSelectionCallback themeCallback = nullptr;
-    
-    if (callback) {
-        themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
+    // Convert the string callback to ThemeSelectionDialog::ThemeSelectionCallback
+    auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
+        if (callback) {
             callback(theme.id);
-        };
-    }
+        }
+    };
     
     auto dialog = std::make_unique<ThemeSelectionDialog>(eventManager_, themeCallback);
     
@@ -261,13 +323,27 @@ std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDi
     return dialog;
 }
 
-// ThemeSelectionDialog creation with ThemeSelectionCallback
 std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDialog(
-    ThemeSelectionDialog::ThemeSelectionCallback callback) {
+    std::function<void(ThemeService::Theme theme)> callback) {
     
-    logComponentCreation("ThemeSelectionDialog (ThemeSelectionCallback)");
+    logComponentCreation("ThemeSelectionDialog (ThemeService callback)");
     
-    auto dialog = std::make_unique<ThemeSelectionDialog>(eventManager_, callback);
+    // Convert ThemeService::Theme callback to ThemeSelectionDialog callback
+    auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
+        if (callback) {
+            // Convert theme.id string to ThemeService::Theme enum
+            ThemeService::Theme themeEnum = ThemeService::Theme::LIGHT; // Default
+            if (theme.id == "light") themeEnum = ThemeService::Theme::LIGHT;
+            else if (theme.id == "dark") themeEnum = ThemeService::Theme::DARK;
+            else if (theme.id == "colorful") themeEnum = ThemeService::Theme::COLORFUL;
+            else if (theme.id == "base") themeEnum = ThemeService::Theme::BASE;
+            else if (theme.id == "auto") themeEnum = ThemeService::Theme::AUTO;
+            
+            callback(themeEnum);
+        }
+    };
+    
+    auto dialog = std::make_unique<ThemeSelectionDialog>(eventManager_, themeCallback);
     
     // Apply default configuration
     dialog->setShowPreviews(defaultShowPreviews_);
@@ -277,31 +353,59 @@ std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDi
     return dialog;
 }
 
-// Extended ThemeSelectionDialog creation - NO DEFAULT VALUES
 std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDialog(
-    ThemeSelectionDialog::ThemeSelectionCallback callback,
+    std::function<void(ThemeService::Theme theme)> callback,
     bool showPreviews,
     bool showDescriptions,
     int maxThemes) {
     
     logComponentCreation("ThemeSelectionDialog (Extended)");
     
+    // Convert ThemeService::Theme callback to ThemeSelectionDialog callback
+    auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
+        if (callback) {
+            // Convert theme.id string to ThemeService::Theme enum
+            ThemeService::Theme themeEnum = ThemeService::Theme::LIGHT;
+            if (theme.id == "light") themeEnum = ThemeService::Theme::LIGHT;
+            else if (theme.id == "dark") themeEnum = ThemeService::Theme::DARK;
+            else if (theme.id == "colorful") themeEnum = ThemeService::Theme::COLORFUL;
+            else if (theme.id == "base") themeEnum = ThemeService::Theme::BASE;
+            else if (theme.id == "auto") themeEnum = ThemeService::Theme::AUTO;
+            
+            callback(themeEnum);
+        }
+    };
+    
     auto dialog = std::make_unique<ThemeSelectionDialog>(
-        eventManager_, callback, showPreviews, showDescriptions, maxThemes);
+        eventManager_, themeCallback, showPreviews, showDescriptions, maxThemes);
     
     configureThemeDialog(dialog.get(), showPreviews, showDescriptions, maxThemes);
     
     return dialog;
 }
 
-// Configured ThemeSelectionDialog creation
 std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createConfiguredThemeSelectionDialog(
-    ThemeSelectionDialog::ThemeSelectionCallback callback,
+    std::function<void(ThemeService::Theme theme)> callback,
     const std::map<std::string, std::any>& config) {
     
     logComponentCreation("ThemeSelectionDialog (Configured)");
     
-    auto dialog = std::make_unique<ThemeSelectionDialog>(eventManager_, callback, config);
+    // Convert ThemeService::Theme callback to ThemeSelectionDialog callback
+    auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
+        if (callback) {
+            // Convert theme.id string to ThemeService::Theme enum
+            ThemeService::Theme themeEnum = ThemeService::Theme::LIGHT;
+            if (theme.id == "light") themeEnum = ThemeService::Theme::LIGHT;
+            else if (theme.id == "dark") themeEnum = ThemeService::Theme::DARK;
+            else if (theme.id == "colorful") themeEnum = ThemeService::Theme::COLORFUL;
+            else if (theme.id == "base") themeEnum = ThemeService::Theme::BASE;
+            else if (theme.id == "auto") themeEnum = ThemeService::Theme::AUTO;
+            
+            callback(themeEnum);
+        }
+    };
+    
+    auto dialog = std::make_unique<ThemeSelectionDialog>(eventManager_, themeCallback, config);
     
     return dialog;
 }
@@ -324,24 +428,24 @@ void UIComponentFactory::registerNotificationService(std::shared_ptr<Notificatio
 // Protected Helper Methods
 // ============================================================================
 
-// FIXED: configureThemeDialog - NO DEFAULT VALUES in implementation
-void UIComponentFactory::configureThemeDialog(ThemeSelectionDialog* dialog, 
+void UIComponentFactory::configureThemeDialog(void* dialog, 
                                              bool showPreviews,
                                              bool showDescriptions, 
                                              int maxThemes) {
-    if (!dialog) return;
+    auto* themeDialog = static_cast<ThemeSelectionDialog*>(dialog);
+    if (!themeDialog) return;
     
-    dialog->setShowPreviews(showPreviews);
-    dialog->setShowDescriptions(showDescriptions);
-    dialog->setMaxThemes(maxThemes);
+    themeDialog->setShowPreviews(showPreviews);
+    themeDialog->setShowDescriptions(showDescriptions);
+    themeDialog->setMaxThemes(maxThemes);
     
     // Apply additional configuration from config manager if available
     if (configManager_) {
         int previewWidth = configManager_->getValue<int>("ui.theme.preview.width", 200);
         int previewHeight = configManager_->getValue<int>("ui.theme.preview.height", 150);
-        dialog->setPreviewSize(previewWidth, previewHeight);
+        themeDialog->setPreviewSize(previewWidth, previewHeight);
         
         bool livePreview = configManager_->getValue<bool>("ui.theme.live.preview", true);
-        dialog->setLivePreviewEnabled(livePreview);
+        themeDialog->setLivePreviewEnabled(livePreview);
     }
 }

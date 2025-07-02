@@ -1,78 +1,91 @@
 #include "../../include/services/POSService.hpp"
 
+#include <algorithm>
+#include <iostream>
+#include <regex>
+
 POSService::POSService(std::shared_ptr<EventManager> eventManager)
-    : eventManager_(eventManager) {
-    initializeComponents();
-    setupEventListeners();
+    : eventManager_(eventManager), currentOrder_(nullptr), 
+      orderCreatedCallback_(nullptr), orderModifiedCallback_(nullptr) {
+    
+    initializeSubsystems();
+    initializeMenuItems();
+    
+    std::cout << "POSService initialized with OrderManager, KitchenInterface, and PaymentProcessor" << std::endl;
 }
 
-void POSService::initializeComponents() {
-    // Initialize core components
+void POSService::initializeSubsystems() {
+    // Initialize the major subsystems
     orderManager_ = std::make_unique<OrderManager>();
-    paymentProcessor_ = std::make_unique<PaymentProcessor>();
     kitchenInterface_ = std::make_unique<KitchenInterface>();
+    paymentProcessor_ = std::make_unique<PaymentProcessor>();
+    
+    std::cout << "POS subsystems initialized" << std::endl;
 }
 
-void POSService::setupEventListeners() {
-    // Set up internal event handling between components
-    // This would typically involve connecting the components together
-}
-
-void POSService::initializeMenu() {
+void POSService::initializeMenuItems() {
     menuItems_.clear();
     
-    // Initialize with sample menu items
-    menuItems_.push_back(std::make_shared<MenuItem>(1, "Caesar Salad", 12.99, MenuItem::APPETIZER));
-    menuItems_.push_back(std::make_shared<MenuItem>(2, "Buffalo Wings", 14.99, MenuItem::APPETIZER));
-    menuItems_.push_back(std::make_shared<MenuItem>(3, "Grilled Salmon", 24.99, MenuItem::MAIN_COURSE));
-    menuItems_.push_back(std::make_shared<MenuItem>(4, "Ribeye Steak", 32.99, MenuItem::MAIN_COURSE));
-    menuItems_.push_back(std::make_shared<MenuItem>(5, "Margherita Pizza", 18.99, MenuItem::MAIN_COURSE));
-    menuItems_.push_back(std::make_shared<MenuItem>(6, "Chocolate Cake", 8.99, MenuItem::DESSERT));
-    menuItems_.push_back(std::make_shared<MenuItem>(7, "Tiramisu", 9.99, MenuItem::DESSERT));
-    menuItems_.push_back(std::make_shared<MenuItem>(8, "Coca Cola", 3.99, MenuItem::BEVERAGE));
-    menuItems_.push_back(std::make_shared<MenuItem>(9, "Coffee", 4.99, MenuItem::BEVERAGE));
-    menuItems_.push_back(std::make_shared<MenuItem>(10, "Chef's Special", 28.99, MenuItem::SPECIAL));
-}
-
-const std::vector<std::shared_ptr<MenuItem>>& POSService::getMenuItems() const {
-    return menuItems_;
-}
-
-std::vector<std::shared_ptr<MenuItem>> POSService::getMenuItemsByCategory(MenuItem::Category category) const {
-    std::vector<std::shared_ptr<MenuItem>> filteredItems;
+    // Create some default menu items using the correct constructor
+    // MenuItem(int id, const std::string& name, double price, Category category)
+    menuItems_.push_back(std::make_shared<MenuItem>(1, "Caesar Salad", 8.99, MenuItem::APPETIZER));
+    menuItems_.push_back(std::make_shared<MenuItem>(2, "Garlic Bread", 5.99, MenuItem::APPETIZER));
+    menuItems_.push_back(std::make_shared<MenuItem>(3, "Grilled Chicken", 15.99, MenuItem::MAIN_COURSE));
+    menuItems_.push_back(std::make_shared<MenuItem>(4, "Beef Steak", 22.99, MenuItem::MAIN_COURSE));
+    menuItems_.push_back(std::make_shared<MenuItem>(5, "Chocolate Cake", 6.99, MenuItem::DESSERT));
+    menuItems_.push_back(std::make_shared<MenuItem>(6, "Ice Cream", 4.99, MenuItem::DESSERT));
+    menuItems_.push_back(std::make_shared<MenuItem>(7, "Coffee", 2.99, MenuItem::BEVERAGE));
+    menuItems_.push_back(std::make_shared<MenuItem>(8, "Soft Drink", 2.49, MenuItem::BEVERAGE));
+    menuItems_.push_back(std::make_shared<MenuItem>(9, "Today's Special", 18.99, MenuItem::SPECIAL));
     
-    for (const auto& item : menuItems_) {
-        if (item->getCategory() == category && item->isAvailable()) {
-            filteredItems.push_back(item);
+    std::cout << "Loaded " << menuItems_.size() << " menu items" << std::endl;
+}
+
+// =====================================================================
+// Order Management Methods (Delegate to OrderManager)
+// =====================================================================
+
+std::shared_ptr<Order> POSService::createOrder(const std::string& tableIdentifier) {
+    if (!orderManager_) {
+        std::cerr << "OrderManager not initialized" << std::endl;
+        return nullptr;
+    }
+    
+    auto order = orderManager_->createOrder(tableIdentifier);
+    
+    if (order && eventManager_) {
+        auto eventData = POSEvents::createOrderCreatedEvent(order);
+        eventManager_->publish(POSEvents::ORDER_CREATED, eventData);
+        
+        // Also call the UI callback if registered
+        if (orderCreatedCallback_) {
+            orderCreatedCallback_(order);
         }
     }
     
-    return filteredItems;
-}
-
-void POSService::addMenuItem(std::shared_ptr<MenuItem> item) {
-    if (item) {
-        menuItems_.push_back(item);
-    }
-}
-
-bool POSService::updateMenuItem(int itemId, std::shared_ptr<MenuItem> updatedItem) {
-    auto it = std::find_if(menuItems_.begin(), menuItems_.end(),
-        [itemId](const std::shared_ptr<MenuItem>& item) { return item->getId() == itemId; });
-    
-    if (it != menuItems_.end() && updatedItem) {
-        *it = updatedItem;
-        return true;
-    }
-    return false;
+    return order;
 }
 
 std::shared_ptr<Order> POSService::createOrder(int tableNumber) {
-    auto order = orderManager_->createOrder(tableNumber);
-    if (order) {
-        handleOrderCreated(order);
+    // Convert table number to string identifier for compatibility
+    std::string tableIdentifier = "table " + std::to_string(tableNumber);
+    return createOrder(tableIdentifier);
+}
+
+std::vector<std::shared_ptr<Order>> POSService::getActiveOrders() const {
+    if (!orderManager_) {
+        return {};
     }
-    return order;
+    
+    return orderManager_->getActiveOrders();
+}
+
+std::shared_ptr<Order> POSService::getOrderById(int orderId) const {
+    if (!orderManager_) {
+        return nullptr;
+    }
+    
+    return orderManager_->getOrder(orderId);
 }
 
 std::shared_ptr<Order> POSService::getCurrentOrder() const {
@@ -81,266 +94,335 @@ std::shared_ptr<Order> POSService::getCurrentOrder() const {
 
 void POSService::setCurrentOrder(std::shared_ptr<Order> order) {
     currentOrder_ = order;
+    
+    if (eventManager_) {
+        // Create a simple JSON object for current order changed event
+        Wt::Json::Object eventData;
+        if (order) {
+            eventData["orderId"] = Wt::Json::Value(order->getOrderId());
+            eventData["tableNumber"] = Wt::Json::Value(order->getTableNumber());
+        } else {
+            eventData["orderId"] = Wt::Json::Value(-1);
+            eventData["tableNumber"] = Wt::Json::Value(-1);
+        }
+        eventManager_->publish("CURRENT_ORDER_CHANGED", eventData);
+    }
 }
 
-bool POSService::addItemToCurrentOrder(std::shared_ptr<MenuItem> menuItem, 
-                                      int quantity, 
-                                      const std::string& specialInstructions) {
-    if (!validateCurrentOrder() || !menuItem) return false;
-    
-    OrderItem orderItem(*menuItem, quantity);
-    if (!specialInstructions.empty()) {
-        orderItem.setSpecialInstructions(specialInstructions);
+bool POSService::cancelOrder(int orderId) {
+    if (!orderManager_) {
+        return false;
     }
     
-    currentOrder_->addItem(orderItem);
-    handleOrderModified(currentOrder_);
+    bool success = orderManager_->cancelOrder(orderId);
     
-    return true;
+    if (success) {
+        // Clear current order if it's the one being cancelled
+        if (currentOrder_ && currentOrder_->getOrderId() == orderId) {
+            currentOrder_ = nullptr;
+        }
+        
+        if (eventManager_) {
+            auto order = orderManager_->getOrder(orderId);
+            if (order) {
+                auto eventData = POSEvents::createOrderModifiedEvent(order);
+                eventManager_->publish(POSEvents::ORDER_CANCELLED, eventData);
+            }
+        }
+    }
+    
+    return success;
 }
 
-bool POSService::removeItemFromCurrentOrder(size_t index) {
-    if (!validateCurrentOrder()) return false;
+bool POSService::isTableIdentifierInUse(const std::string& tableIdentifier) const {
+    if (!orderManager_) {
+        return false;
+    }
     
-    if (index < currentOrder_->getItems().size()) {
-        currentOrder_->removeItem(index);
-        handleOrderModified(currentOrder_);
+    return orderManager_->isTableIdentifierInUse(tableIdentifier);
+}
+
+bool POSService::isValidTableIdentifier(const std::string& tableIdentifier) const {
+    return Order::isValidTableIdentifier(tableIdentifier);
+}
+
+// =====================================================================
+// Current Order Management
+// =====================================================================
+
+bool POSService::addItemToCurrentOrder(std::shared_ptr<MenuItem> item) {
+    if (!item || !item->isAvailable()) {
+        std::cerr << "Invalid or unavailable menu item" << std::endl;
+        return false;
+    }
+    
+    if (!currentOrder_) {
+        std::cerr << "No current order to add item to" << std::endl;
+        return false;
+    }
+    
+    try {
+        // Create OrderItem with the MenuItem and add to order
+        OrderItem orderItem(*item, 1); // quantity = 1
+        currentOrder_->addItem(orderItem);
+        
+        if (eventManager_) {
+            auto eventData = POSEvents::createOrderModifiedEvent(currentOrder_);
+            eventManager_->publish(POSEvents::ORDER_ITEM_ADDED, eventData);
+            
+            // Also call the UI callback if registered
+            if (orderModifiedCallback_) {
+                orderModifiedCallback_(currentOrder_);
+            }
+        }
+        
+        std::cout << "Added " << item->getName() << " to current order" << std::endl;
         return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error adding item to order: " << e.what() << std::endl;
+        return false;
     }
-    return false;
 }
 
-bool POSService::updateCurrentOrderItemQuantity(size_t index, int newQuantity) {
-    if (!validateCurrentOrder()) return false;
+bool POSService::removeItemFromCurrentOrder(size_t itemIndex) {
+    if (!currentOrder_) {
+        return false;
+    }
     
-    if (index < currentOrder_->getItems().size() && newQuantity > 0) {
-        currentOrder_->updateItemQuantity(index, newQuantity);
-        handleOrderModified(currentOrder_);
-        return true;
+    const auto& items = currentOrder_->getItems();
+    if (itemIndex >= items.size()) {
+        return false;
     }
-    return false;
+    
+    try {
+        currentOrder_->removeItem(itemIndex);
+        
+        if (eventManager_) {
+            auto eventData = POSEvents::createOrderModifiedEvent(currentOrder_);
+            eventManager_->publish(POSEvents::ORDER_ITEM_REMOVED, eventData);
+            
+            // Also call the UI callback if registered
+            if (orderModifiedCallback_) {
+                orderModifiedCallback_(currentOrder_);
+            }
+        }
+        
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error removing item from order: " << e.what() << std::endl;
+        return false;
+    }
 }
 
-std::vector<std::shared_ptr<Order>> POSService::getActiveOrders() const {
-    return orderManager_->getActiveOrders();
-}
-
-std::vector<std::shared_ptr<Order>> POSService::getOrdersByTable(int tableNumber) const {
-    return orderManager_->getOrdersByTable(tableNumber);
-}
-
-std::shared_ptr<Order> POSService::getOrderById(int orderId) const {
-    return orderManager_->getOrder(orderId);
+bool POSService::updateCurrentOrderItemQuantity(size_t itemIndex, int newQuantity) {
+    if (!currentOrder_ || newQuantity <= 0) {
+        return false;
+    }
+    
+    const auto& items = currentOrder_->getItems();
+    if (itemIndex >= items.size()) {
+        return false;
+    }
+    
+    try {
+        currentOrder_->updateItemQuantity(itemIndex, newQuantity);
+        
+        if (eventManager_) {
+            auto eventData = POSEvents::createOrderModifiedEvent(currentOrder_);
+            eventManager_->publish(POSEvents::ORDER_MODIFIED, eventData);
+            
+            // Also call the UI callback if registered
+            if (orderModifiedCallback_) {
+                orderModifiedCallback_(currentOrder_);
+            }
+        }
+        
+        return true;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error updating item quantity: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool POSService::sendCurrentOrderToKitchen() {
-    if (!validateCurrentOrder()) return false;
-    
-    return sendOrderToKitchen(currentOrder_);
-}
-
-bool POSService::sendOrderToKitchen(std::shared_ptr<Order> order) {
-    if (!order || order->getItems().empty()) return false;
-    
-    bool success = kitchenInterface_->sendOrderToKitchen(order);
-    if (success) {
-        orderManager_->updateOrderStatus(order->getOrderId(), Order::SENT_TO_KITCHEN);
-        // Publish event
-        eventManager_->publish(POSEvents::ORDER_SENT_TO_KITCHEN, 
-            POSEvents::createOrderCreatedEvent(order));
+    if (!currentOrder_ || !kitchenInterface_) {
+        std::cerr << "No current order or kitchen interface not available" << std::endl;
+        return false;
     }
     
-    return success;
+    if (currentOrder_->getItems().empty()) {
+        std::cerr << "Cannot send empty order to kitchen" << std::endl;
+        return false;
+    }
+    
+    try {
+        // Send order to kitchen using the KitchenInterface
+        bool success = kitchenInterface_->sendOrderToKitchen(currentOrder_);
+        
+        if (success) {
+            // Update order status
+            currentOrder_->setStatus(Order::SENT_TO_KITCHEN);
+            
+            if (eventManager_) {
+                auto eventData = POSEvents::createOrderModifiedEvent(currentOrder_);
+                eventManager_->publish(POSEvents::ORDER_SENT_TO_KITCHEN, eventData);
+            }
+            
+            std::cout << "Order #" << currentOrder_->getOrderId() << " sent to kitchen" << std::endl;
+            
+            // Clear current order after sending to kitchen
+            currentOrder_ = nullptr;
+        }
+        
+        return success;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Error sending order to kitchen: " << e.what() << std::endl;
+        return false;
+    }
 }
 
-bool POSService::updateKitchenStatus(int orderId, KitchenInterface::KitchenStatus status) {
-    bool success = kitchenInterface_->updateKitchenStatus(orderId, status);
-    if (success) {
-        handleKitchenStatusChanged(orderId, status);
-    }
-    return success;
-}
+// =====================================================================
+// Kitchen Interface Methods
+// =====================================================================
 
 std::vector<KitchenInterface::KitchenTicket> POSService::getKitchenTickets() const {
+    if (!kitchenInterface_) {
+        return {};
+    }
+    
     return kitchenInterface_->getActiveTickets();
 }
 
-Wt::Json::Object POSService::getKitchenQueueStatus() const {
-    return kitchenInterface_->getKitchenQueueStatus();
-}
-
 int POSService::getEstimatedWaitTime() const {
+    if (!kitchenInterface_) {
+        return 0;
+    }
+    
     return kitchenInterface_->getEstimatedWaitTime();
 }
 
-PaymentProcessor::PaymentResult POSService::processCurrentOrderPayment(
-    PaymentProcessor::PaymentMethod method,
-    double amount,
-    double tipAmount) {
-    
-    if (!validateCurrentOrder()) {
-        PaymentProcessor::PaymentResult result;
-        result.success = false;
-        result.errorMessage = "No current order";
-        return result;
+Wt::Json::Object POSService::getKitchenQueueStatus() const {
+    if (!kitchenInterface_) {
+        Wt::Json::Object emptyStatus;
+        emptyStatus["queueSize"] = 0;
+        emptyStatus["estimatedWaitTime"] = 0;
+        return emptyStatus;
     }
     
-    return processOrderPayment(currentOrder_, method, amount, tipAmount);
+    return kitchenInterface_->getKitchenQueueStatus();
 }
 
-PaymentProcessor::PaymentResult POSService::processOrderPayment(
+// =====================================================================
+// Menu Management Methods
+// =====================================================================
+
+std::vector<std::shared_ptr<MenuItem>> POSService::getMenuItems() const {
+    return menuItems_;
+}
+
+std::vector<std::shared_ptr<MenuItem>> POSService::getMenuItemsByCategory(MenuItem::Category category) const {
+    std::vector<std::shared_ptr<MenuItem>> categoryItems;
+    
+    for (const auto& item : menuItems_) {
+        if (item && item->getCategory() == category) {
+            categoryItems.push_back(item);
+        }
+    }
+    
+    return categoryItems;
+}
+
+// =====================================================================
+// Payment Processing Methods
+// =====================================================================
+
+PaymentProcessor::PaymentResult POSService::processPayment(
     std::shared_ptr<Order> order,
     PaymentProcessor::PaymentMethod method,
     double amount,
     double tipAmount) {
     
+    if (!paymentProcessor_) {
+        PaymentProcessor::PaymentResult result;
+        result.success = false;
+        result.errorMessage = "Payment processor not available";
+        return result;
+    }
+    
     auto result = paymentProcessor_->processPayment(order, method, amount, tipAmount);
-    handlePaymentProcessed(result);
+    
+    if (result.success && eventManager_) {
+        auto eventData = POSEvents::createPaymentCompletedEvent(result, order);
+        eventManager_->publish(POSEvents::PAYMENT_COMPLETED, eventData);
+    }
     
     return result;
 }
 
-std::vector<PaymentProcessor::PaymentResult> POSService::processSplitPayment(
-    std::shared_ptr<Order> order,
-    const std::vector<std::pair<PaymentProcessor::PaymentMethod, double>>& payments) {
-    
-    auto results = paymentProcessor_->processSplitPayment(order, payments);
-    
-    for (const auto& result : results) {
-        handlePaymentProcessed(result);
+std::vector<PaymentProcessor::PaymentResult> POSService::getTransactionHistory() const {
+    if (!paymentProcessor_) {
+        return {};
     }
     
-    return results;
-}
-
-const std::vector<PaymentProcessor::PaymentResult>& POSService::getTransactionHistory() const {
     return paymentProcessor_->getTransactionHistory();
 }
 
-bool POSService::completeOrder(int orderId) {
-    bool success = orderManager_->completeOrder(orderId);
-    if (success) {
-        kitchenInterface_->removeTicket(orderId);
-        // Publish event
-        auto order = orderManager_->getOrder(orderId);
-        if (order) {
-            eventManager_->publish(POSEvents::ORDER_COMPLETED, 
-                POSEvents::createOrderCreatedEvent(order));
+// =====================================================================
+// Configuration Methods
+// =====================================================================
+
+std::vector<std::string> POSService::getEnabledPaymentMethods() const {
+    // Return default enabled payment methods
+    return {"cash", "credit_card", "debit_card", "mobile_pay"};
+}
+
+std::vector<double> POSService::getTipSuggestions() const {
+    // Return default tip suggestions (as decimal percentages)
+    return {0.15, 0.18, 0.20, 0.25};
+}
+
+// =====================================================================
+// Initialization and Callback Registration Methods
+// =====================================================================
+
+void POSService::initializeMenu() {
+    // This method is called by RestaurantPOSApp to initialize the menu
+    initializeMenuItems();
+    std::cout << "Menu initialized via initializeMenu() call" << std::endl;
+}
+
+void POSService::onOrderCreated(std::function<void(std::shared_ptr<Order>)> callback) {
+    orderCreatedCallback_ = callback;
+    std::cout << "Order created callback registered" << std::endl;
+}
+
+void POSService::onOrderModified(std::function<void(std::shared_ptr<Order>)> callback) {
+    orderModifiedCallback_ = callback;
+    std::cout << "Order modified callback registered" << std::endl;
+}
+
+// =====================================================================
+// Helper Methods
+// =====================================================================
+
+std::vector<std::string> POSService::convertOrderItemsToStringList(const std::vector<OrderItem>& items) const {
+    std::vector<std::string> itemList;
+    
+    for (const auto& item : items) {
+        std::string itemString = std::to_string(item.getQuantity()) + "x " + 
+                                item.getMenuItem().getName();
+        
+        if (!item.getSpecialInstructions().empty()) {
+            itemString += " (" + item.getSpecialInstructions() + ")";
         }
+        
+        itemList.push_back(itemString);
     }
-    return success;
-}
-
-bool POSService::cancelOrder(int orderId) {
-    bool success = orderManager_->cancelOrder(orderId);
-    if (success) {
-        kitchenInterface_->removeTicket(orderId);
-        // Publish event
-        auto order = orderManager_->getOrder(orderId);
-        if (order) {
-            eventManager_->publish(POSEvents::ORDER_CANCELLED, 
-                POSEvents::createOrderCreatedEvent(order));
-        }
-    }
-    return success;
-}
-
-Wt::Json::Object POSService::getBusinessStatistics() const {
-    Wt::Json::Object stats;
     
-    auto activeOrders = getActiveOrders();
-    auto transactions = getTransactionHistory();
-    
-    stats["activeOrderCount"] = Wt::Json::Value(static_cast<int>(activeOrders.size()));
-    stats["totalTransactions"] = Wt::Json::Value(static_cast<int>(transactions.size()));
-    stats["kitchenQueueSize"] = Wt::Json::Value(static_cast<int>(getKitchenTickets().size()));
-    stats["estimatedWaitTime"] = Wt::Json::Value(getEstimatedWaitTime());
-    
-    // Calculate total revenue
-    double totalRevenue = 0.0;
-    for (const auto& transaction : transactions) {
-        if (transaction.success) {
-            totalRevenue += transaction.amountProcessed;
-        }
-    }
-    stats["totalRevenue"] = Wt::Json::Value(totalRevenue);
-    
-    return stats;
+    return itemList;
 }
 
-KitchenInterface::KitchenStatus POSService::getKitchenStatus(int orderId) const {
-    const auto* ticket = kitchenInterface_->getTicketByOrderId(orderId);
-    return ticket ? ticket->status : KitchenInterface::ORDER_RECEIVED;
-}
-
-void POSService::onOrderCreated(OrderEventCallback callback) {
-    orderCreatedCallbacks_.push_back(callback);
-}
-
-void POSService::onOrderModified(OrderEventCallback callback) {
-    orderModifiedCallbacks_.push_back(callback);
-}
-
-void POSService::onKitchenStatusChanged(KitchenEventCallback callback) {
-    kitchenStatusCallbacks_.push_back(callback);
-}
-
-void POSService::onPaymentProcessed(PaymentEventCallback callback) {
-    paymentCallbacks_.push_back(callback);
-}
-
-bool POSService::validateCurrentOrder() const {
-    return currentOrder_ != nullptr;
-}
-
-void POSService::handleOrderCreated(std::shared_ptr<Order> order) {
-    notifyOrderCreated(order);
-    eventManager_->publish(POSEvents::ORDER_CREATED, 
-        POSEvents::createOrderCreatedEvent(order));
-}
-
-void POSService::handleOrderModified(std::shared_ptr<Order> order) {
-    notifyOrderModified(order);
-    eventManager_->publish(POSEvents::ORDER_MODIFIED, 
-        POSEvents::createOrderModifiedEvent(order));
-}
-
-void POSService::handleKitchenStatusChanged(int orderId, KitchenInterface::KitchenStatus status) {
-    notifyKitchenStatusChanged(orderId, status);
-    eventManager_->publish(POSEvents::KITCHEN_STATUS_CHANGED, 
-        POSEvents::createKitchenStatusChangedEvent(orderId, status, KitchenInterface::ORDER_RECEIVED));
-}
-
-void POSService::handlePaymentProcessed(const PaymentProcessor::PaymentResult& result) {
-    notifyPaymentProcessed(result);
-    
-    if (result.success) {
-        eventManager_->publish(POSEvents::PAYMENT_COMPLETED, result);
-    } else {
-        eventManager_->publish(POSEvents::PAYMENT_FAILED, result);
-    }
-}
-
-void POSService::notifyOrderCreated(std::shared_ptr<Order> order) {
-    for (auto& callback : orderCreatedCallbacks_) {
-        callback(order);
-    }
-}
-
-void POSService::notifyOrderModified(std::shared_ptr<Order> order) {
-    for (auto& callback : orderModifiedCallbacks_) {
-        callback(order);
-    }
-}
-
-void POSService::notifyKitchenStatusChanged(int orderId, KitchenInterface::KitchenStatus status) {
-    for (auto& callback : kitchenStatusCallbacks_) {
-        callback(orderId, status);
-    }
-}
-
-void POSService::notifyPaymentProcessed(const PaymentProcessor::PaymentResult& result) {
-    for (auto& callback : paymentCallbacks_) {
-        callback(result);
-    }
-}

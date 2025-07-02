@@ -6,20 +6,29 @@
 #include "../../core/ConfigurationManager.hpp"
 #include "../../services/NotificationService.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../MenuItem.hpp"
+#include "../../Order.hpp"
+#include "../../PaymentProcessor.hpp"
 
 #include "../components/OrderEntryPanel.hpp"
 #include "../components/OrderStatusPanel.hpp"
 #include "../components/ThemeSelector.hpp"
-#include "../dialogs/ThemeSelectionDialog.hpp"
+#include "../components/MenuDisplay.hpp"
+#include "../components/CurrentOrderDisplay.hpp"
+#include "../components/ActiveOrdersDisplay.hpp"
+#include "../components/KitchenStatusDisplay.hpp"
 #include "../dialogs/PaymentDialog.hpp"
 #include "../dialogs/CategoryPopover.hpp"
+#include "../dialogs/ThemeSelectionDialog.hpp"
 
-
-// Forward declarations for components not yet implemented
+// Forward declarations for components
 class MenuDisplay;
 class CurrentOrderDisplay;
 class ActiveOrdersDisplay;
 class KitchenStatusDisplay;
+class PaymentDialog;
+class CategoryPopover;
+class ThemeSelectionDialog;
 
 #include <memory>
 #include <map>
@@ -33,10 +42,10 @@ class KitchenStatusDisplay;
  * 
  * This factory centralizes the creation of UI components and handles
  * dependency injection, making the system more modular and testable.
- * Simplified version that works with currently implemented components.
+ * Updated version with proper method signatures and implementations.
  * 
  * @author Restaurant POS Team
- * @version 2.1.0
+ * @version 2.2.0
  */
 
 /**
@@ -82,157 +91,133 @@ public:
     
     /**
      * @brief Creates a theme selector component
-     * @return Unique pointer to the created component
+     * @return Unique pointer to the created component (nullptr if no ThemeService)
      */
     std::unique_ptr<ThemeSelector> createThemeSelector();
     
     // =================================================================
-    // Component Creation Methods (Not Yet Implemented - Return nullptr)
+    // Component Creation Methods (Now Implemented)
     // =================================================================
     
     /**
      * @brief Creates a menu display component
-     * @return Nullptr (not yet implemented)
+     * @return Unique pointer to the created component
      */
     std::unique_ptr<MenuDisplay> createMenuDisplay();
     
     /**
      * @brief Creates a current order display component
-     * @return Nullptr (not yet implemented)
+     * @return Unique pointer to the created component
      */
     std::unique_ptr<CurrentOrderDisplay> createCurrentOrderDisplay();
     
     /**
      * @brief Creates an active orders display component
-     * @return Nullptr (not yet implemented)
+     * @return Unique pointer to the created component
      */
     std::unique_ptr<ActiveOrdersDisplay> createActiveOrdersDisplay();
     
     /**
      * @brief Creates a kitchen status display component
-     * @return Nullptr (not yet implemented)
+     * @return Unique pointer to the created component
      */
     std::unique_ptr<KitchenStatusDisplay> createKitchenStatusDisplay();
     
     // =================================================================
-    // Dialog Creation Methods (Not Yet Implemented)
+    // Dialog Creation Methods - FIXED: Corrected method signatures
     // =================================================================
     
     /**
-     * @brief Payment callback type for dialogs
-     */
-    class PaymentDialog {
-    public:
-        using PaymentCallback = std::function<void(bool success)>;
-    };
-    
-    /**
-     * @brief Category popover callback type
-     */
-    class CategoryPopover {
-    public:
-        using ItemSelectionCallback = std::function<void(int itemId)>;
-    };
-    
-    /**
-     * @brief Theme selection dialog callback type
-     */
-    class ThemeSelectionDialog {
-    public:
-        using ThemeSelectionCallback = std::function<void(ThemeService::Theme theme)>;
-    };
-    
-    /**
-     * @brief Creates a payment dialog
+     * @brief Creates a payment dialog with simple success callback
      * @param order Order to process payment for
-     * @param callback Payment completion callback
-     * @return Nullptr (not yet implemented)
+     * @param callback Simple success/failure callback
+     * @return Unique pointer to the created dialog
      */
     std::unique_ptr<PaymentDialog> createPaymentDialog(
         std::shared_ptr<Order> order,
-        PaymentDialog::PaymentCallback callback = nullptr);
+        std::function<void(bool success)> callback = nullptr);
     
     /**
-     * @brief Creates a category popover
+     * @brief Creates a payment dialog with extended configuration
+     * @param order Order to process payment for
+     * @param callback Simple success/failure callback
+     * @param allowSplitPayments Whether to allow split payments
+     * @param suggestedTips Suggested tip percentages
+     * @return Unique pointer to the created dialog
+     */
+    std::unique_ptr<PaymentDialog> createPaymentDialog(
+        std::shared_ptr<Order> order,
+        std::function<void(bool success)> callback,
+        bool allowSplitPayments,
+        const std::vector<double>& suggestedTips = {0.15, 0.18, 0.20});
+    
+    /**
+     * @brief Creates a category popover with item ID callback
      * @param category Menu category to display
      * @param items Menu items in the category
-     * @param callback Item selection callback
-     * @return Nullptr (not yet implemented)
+     * @param callback Item selection callback (receives item ID)
+     * @return Unique pointer to the created popover
      */
     std::unique_ptr<CategoryPopover> createCategoryPopover(
         MenuItem::Category category,
         const std::vector<std::shared_ptr<MenuItem>>& items,
-        CategoryPopover::ItemSelectionCallback callback = nullptr);
+        std::function<void(int itemId)> callback = nullptr);
     
     /**
-     * @brief Creates a theme selection dialog
-     * @param callback Theme selection callback
-     * @return Nullptr (not yet implemented)
+     * @brief Creates a category popover with extended configuration
+     * @param category Menu category to display
+     * @param items Menu items in the category
+     * @param callback Item selection callback (receives item ID)
+     * @param maxColumns Maximum columns for item display
+     * @param showDescriptions Whether to show item descriptions
+     * @return Unique pointer to the created popover
+     */
+    std::unique_ptr<CategoryPopover> createCategoryPopover(
+        MenuItem::Category category,
+        const std::vector<std::shared_ptr<MenuItem>>& items,
+        std::function<void(int itemId)> callback,
+        int maxColumns,
+        bool showDescriptions = true);
+    
+    /**
+     * @brief Creates a theme selection dialog with string callback
+     * @param callback Theme selection callback (receives theme ID string)
+     * @return Unique pointer to the created dialog
      */
     std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
         std::function<void(const std::string&)> callback = nullptr);
     
     /**
-     * @brief Creates a theme selection dialog with ThemeSelectionCallback
-     * @param callback Theme selection callback (ThemeSelectionCallback type)
-     * @return Nullptr (not yet implemented)
+     * @brief Creates a theme selection dialog with ThemeService enum callback
+     * @param callback Theme selection callback (receives ThemeService::Theme enum)
+     * @return Unique pointer to the created dialog
      */
     std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
-        ThemeSelectionDialog::ThemeSelectionCallback callback);
+        std::function<void(ThemeService::Theme theme)> callback);
     
     /**
      * @brief Creates a theme selection dialog with configuration options
-     * @param callback Theme selection callback
+     * @param callback Theme selection callback (receives ThemeService::Theme enum)
      * @param showPreviews Whether to show theme previews
      * @param showDescriptions Whether to show theme descriptions
      * @param maxThemes Maximum number of themes to display
-     * @return Nullptr (not yet implemented)
+     * @return Unique pointer to the created dialog
      */
     std::unique_ptr<ThemeSelectionDialog> createThemeSelectionDialog(
-        ThemeSelectionDialog::ThemeSelectionCallback callback,
+        std::function<void(ThemeService::Theme theme)> callback,
         bool showPreviews,
         bool showDescriptions = true,
         int maxThemes = 10);
     
     /**
      * @brief Creates a configured theme selection dialog
-     * @param callback Theme selection callback
+     * @param callback Theme selection callback (receives ThemeService::Theme enum)
      * @param config Configuration options for the dialog
-     * @return Nullptr (not yet implemented)
+     * @return Unique pointer to the created dialog
      */
     std::unique_ptr<ThemeSelectionDialog> createConfiguredThemeSelectionDialog(
-        ThemeSelectionDialog::ThemeSelectionCallback callback,
+        std::function<void(ThemeService::Theme theme)> callback,
         const std::map<std::string, std::any>& config);
-    
-    /**
-     * @brief Creates a payment dialog with specific configuration
-     * @param order Order to process payment for
-     * @param callback Payment completion callback
-     * @param allowSplitPayments Whether to allow split payments
-     * @param suggestedTips Suggested tip percentages
-     * @return Nullptr (not yet implemented)
-     */
-    std::unique_ptr<PaymentDialog> createPaymentDialog(
-        std::shared_ptr<Order> order,
-        PaymentDialog::PaymentCallback callback,
-        bool allowSplitPayments,
-        const std::vector<double>& suggestedTips = {0.15, 0.18, 0.20});
-    
-    /**
-     * @brief Creates a category popover with configuration
-     * @param category Menu category to display
-     * @param items Menu items in the category
-     * @param callback Item selection callback
-     * @param maxColumns Maximum columns for item display
-     * @param showDescriptions Whether to show item descriptions
-     * @return Nullptr (not yet implemented)
-     */
-    std::unique_ptr<CategoryPopover> createCategoryPopover(
-        MenuItem::Category category,
-        const std::vector<std::shared_ptr<MenuItem>>& items,
-        CategoryPopover::ItemSelectionCallback callback,
-        int maxColumns,
-        bool showDescriptions = true);
     
     // =================================================================
     // Service Registration
@@ -252,7 +237,7 @@ public:
     
     /**
      * @brief Gets the current theme service
-     * @return Shared pointer to theme service
+     * @return Shared pointer to theme service (may be null)
      */
     std::shared_ptr<ThemeService> getThemeService() const { return themeService_; }
     
@@ -299,7 +284,7 @@ protected:
     
     /**
      * @brief Applies theme configuration to a dialog
-     * @param dialog Dialog to configure (placeholder)
+     * @param dialog Dialog to configure (as void* for flexibility)
      * @param showPreviews Whether to show previews
      * @param showDescriptions Whether to show descriptions
      * @param maxThemes Maximum themes to display

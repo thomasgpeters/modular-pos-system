@@ -52,7 +52,9 @@ private:
     Wt::WContainerWidget* mainContainer_;
     Wt::WContainerWidget* orderControlsContainer_;
     Wt::WText* statusText_;
-    std::unique_ptr<Wt::WTimer> updateTimer_;
+
+    // Change this line - use raw pointer since it's managed by the widget tree now
+    Wt::WTimer* updateTimer_;
     
     // New order controls
     Wt::WGroupBox* newOrderGroup_;
@@ -76,6 +78,7 @@ private:
     // CSS and styling methods
     void setupBootstrapTheme();
     void addCustomCSS();
+    void setupMetaTags();
     void applyComponentStyling();
     
     // Event handlers
