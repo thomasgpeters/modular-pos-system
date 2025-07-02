@@ -15,7 +15,7 @@
  * foundation of the POS system (Order Management, Payment Processing, Kitchen Interface).
  * 
  * @author Restaurant POS Team
- * @version 1.0.0
+ * @version 1.1.0 - Updated for string-based table identifiers
  */
 
 /**
@@ -25,6 +25,7 @@
  * The OrderManager class handles creation, modification, and tracking of customer orders.
  * It maintains active orders in memory and provides methods for order lifecycle management.
  * Designed with extension points for database persistence, order analytics, and workflow automation.
+ * Now supports string-based table identifiers for various order types.
  */
 class OrderManager {
 public:
@@ -40,7 +41,15 @@ public:
     virtual ~OrderManager() = default;
     
     /**
-     * @brief Creates a new order for a table
+     * @brief Creates a new order for a table/location
+     * @param tableIdentifier Table/location identifier (e.g., "table 5", "walk-in", "grubhub")
+     * @return Shared pointer to the created order
+     */
+    std::shared_ptr<Order> createOrder(const std::string& tableIdentifier);
+    
+    /**
+     * @brief Creates a new order for a table number (legacy compatibility)
+     * @deprecated Use createOrder(const std::string&) instead
      * @param tableNumber Table number for the order
      * @return Shared pointer to the created order
      */
@@ -66,7 +75,15 @@ public:
     std::vector<std::shared_ptr<Order>> getCompletedOrders();
     
     /**
-     * @brief Gets orders by table number
+     * @brief Gets orders by table identifier
+     * @param tableIdentifier Table identifier to filter by
+     * @return Vector of orders for the specified table/location
+     */
+    std::vector<std::shared_ptr<Order>> getOrdersByTableIdentifier(const std::string& tableIdentifier);
+    
+    /**
+     * @brief Gets orders by table number (legacy compatibility)
+     * @deprecated Use getOrdersByTableIdentifier() instead
      * @param tableNumber Table number to filter by
      * @return Vector of orders for the specified table
      */
@@ -78,6 +95,31 @@ public:
      * @return Vector of orders with the specified status
      */
     std::vector<std::shared_ptr<Order>> getOrdersByStatus(Order::Status status);
+    
+    /**
+     * @brief Gets orders by order type
+     * @param orderType Order type ("Dine-In", "Delivery", "Walk-In")
+     * @return Vector of orders of the specified type
+     */
+    std::vector<std::shared_ptr<Order>> getOrdersByType(const std::string& orderType);
+    
+    /**
+     * @brief Gets all dine-in orders
+     * @return Vector of dine-in orders
+     */
+    std::vector<std::shared_ptr<Order>> getDineInOrders();
+    
+    /**
+     * @brief Gets all delivery orders
+     * @return Vector of delivery orders
+     */
+    std::vector<std::shared_ptr<Order>> getDeliveryOrders();
+    
+    /**
+     * @brief Gets all walk-in orders
+     * @return Vector of walk-in orders
+     */
+    std::vector<std::shared_ptr<Order>> getWalkInOrders();
     
     /**
      * @brief Completes an order and moves it to history
@@ -114,10 +156,30 @@ public:
     size_t getCompletedOrderCount() const { return completedOrders_.size(); }
     
     /**
+     * @brief Gets the number of active orders by type
+     * @param orderType Order type to count
+     * @return Number of active orders of the specified type
+     */
+    size_t getActiveOrderCountByType(const std::string& orderType) const;
+    
+    /**
      * @brief Gets the next order ID that will be assigned
      * @return Next order ID
      */
     int getNextOrderId() const { return nextOrderId_; }
+    
+    /**
+     * @brief Gets available table identifiers in use
+     * @return Vector of currently used table identifiers
+     */
+    std::vector<std::string> getActiveTableIdentifiers() const;
+    
+    /**
+     * @brief Checks if a table identifier is currently in use
+     * @param tableIdentifier Table identifier to check
+     * @return True if identifier is in use
+     */
+    bool isTableIdentifierInUse(const std::string& tableIdentifier) const;
     
     // Extension points for future features
     /**
@@ -172,6 +234,10 @@ private:
     int nextOrderId_;                                       ///< Next order ID to assign
     std::map<int, std::shared_ptr<Order>> activeOrders_;   ///< Active orders by ID
     std::vector<std::shared_ptr<Order>> completedOrders_;  ///< Completed order history
+    
+    // Helper methods for new functionality
+    std::string generateTableIdentifier(int tableNumber) const;
+    bool matchesOrderType(const std::shared_ptr<Order>& order, const std::string& orderType) const;
 };
 
 #endif // ORDERMANAGER_H

@@ -10,9 +10,11 @@
 #include <Wt/WContainerWidget.h>
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
-#include <Wt/WSpinBox.h>
+#include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
+#include <Wt/WGroupBox.h>
+#include <Wt/WLabel.h>
 
 #include <memory>
 
@@ -22,9 +24,10 @@
  * 
  * This component handles the left panel of the POS interface, including
  * table selection, menu display, and current order management.
+ * Updated to support string-based table identifiers.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0 - Updated for string-based table identifiers
  */
 
 /**
@@ -32,7 +35,7 @@
  * @brief UI component for order entry and menu selection
  * 
  * The OrderEntryPanel manages the order creation workflow, including
- * table number selection, menu browsing, and current order building.
+ * table identifier selection, menu browsing, and current order building.
  * It coordinates with the POSService for business operations and uses
  * the event system for communication with other components.
  */
@@ -57,13 +60,27 @@ public:
     void refresh();
     
     /**
-     * @brief Sets the current table number
+     * @brief Sets the current table identifier
+     * @param tableIdentifier Table identifier to set (e.g., "table 5", "walk-in")
+     */
+    void setTableIdentifier(const std::string& tableIdentifier);
+    
+    /**
+     * @brief Gets the current table identifier
+     * @return Current table identifier
+     */
+    std::string getTableIdentifier() const;
+    
+    /**
+     * @brief Sets the current table number (legacy compatibility)
+     * @deprecated Use setTableIdentifier() instead
      * @param tableNumber Table number to set
      */
     void setTableNumber(int tableNumber);
     
     /**
-     * @brief Gets the current table number
+     * @brief Gets the current table number (legacy compatibility)
+     * @deprecated Use getTableIdentifier() instead
      * @return Current table number
      */
     int getTableNumber() const;
@@ -73,6 +90,18 @@ public:
      * @param enabled True to enable, false to disable
      */
     void setOrderEntryEnabled(bool enabled);
+    
+    /**
+     * @brief Sets the available table identifier options
+     * @param identifiers Vector of available table identifiers
+     */
+    void setAvailableTableIdentifiers(const std::vector<std::string>& identifiers);
+    
+    /**
+     * @brief Gets the selected table identifier from the combo box
+     * @return Selected table identifier, empty string if none selected
+     */
+    std::string getSelectedTableIdentifier() const;
 
 protected:
     /**
@@ -86,7 +115,7 @@ protected:
     void setupEventListeners();
     
     /**
-     * @brief Sets up event listeners
+     * @brief Sets up event handlers
      */
     void setupEventHandlers();
     
@@ -101,6 +130,16 @@ protected:
      * @return Container widget with order action buttons
      */
     std::unique_ptr<Wt::WWidget> createOrderActionsSection();
+    
+    /**
+     * @brief Creates the table identifier combo box
+     */
+    void createTableIdentifierCombo();
+    
+    /**
+     * @brief Populates the table identifier combo box
+     */
+    void populateTableIdentifierCombo();
 
 private:
     // Services and dependencies
@@ -108,7 +147,10 @@ private:
     std::shared_ptr<EventManager> eventManager_;
     
     // UI components
-    Wt::WSpinBox* tableNumberEdit_;
+    Wt::WGroupBox* tableSelectionGroup_;
+    Wt::WLabel* tableIdentifierLabel_;
+    Wt::WComboBox* tableIdentifierCombo_;
+    Wt::WText* tableStatusText_;
     Wt::WPushButton* newOrderButton_;
     Wt::WPushButton* sendToKitchenButton_;
     Wt::WPushButton* processPaymentButton_;
@@ -116,6 +158,9 @@ private:
     // Child components (raw pointers - Wt manages lifetime)
     MenuDisplay* menuDisplay_;
     CurrentOrderDisplay* currentOrderDisplay_;
+    
+    // Available table identifiers
+    std::vector<std::string> availableTableIdentifiers_;
     
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
@@ -129,11 +174,18 @@ private:
     void onNewOrderClicked();
     void onSendToKitchenClicked();
     void onProcessPaymentClicked();
-    void onTableNumberChanged();
+    void onTableIdentifierChanged();
     
-    // Business logic methods (ADDED)
+    // Business logic methods
     /**
-     * @brief Creates a new order for the specified table
+     * @brief Creates a new order for the specified table identifier
+     * @param tableIdentifier Table identifier for the new order
+     */
+    void createNewOrder(const std::string& tableIdentifier);
+    
+    /**
+     * @brief Creates a new order for the specified table number (legacy)
+     * @deprecated Use createNewOrder(const std::string&) instead
      * @param tableNumber Table number for the new order
      */
     void createNewOrder(int tableNumber);
@@ -150,10 +202,32 @@ private:
      * @brief Validates the current order state
      * @return True if current order is valid, false otherwise
      */
-    bool validateCurrentOrder();  // CHANGED: now returns bool instead of void
+    bool validateCurrentOrder();
+    
+    /**
+     * @brief Validates the table identifier selection
+     * @return True if a valid table identifier is selected
+     */
+    bool validateTableIdentifierSelection();
     
     bool hasCurrentOrder() const;
     void showOrderValidationError(const std::string& message);
+    void updateTableStatus();
+    std::string formatTableIdentifier(const std::string& identifier) const;
+    std::string getTableIdentifierIcon(const std::string& identifier) const;
+    bool isTableIdentifierAvailable(const std::string& identifier) const;
+    void refreshAvailableIdentifiers();
+    
+    // Table identifier management
+    std::string extractTableIdentifierFromDisplayText(const std::string& displayText) const;
+    std::string formatTableIdentifierForDisplay(const std::string& identifier) const;
+    
+    // Default table identifiers
+    std::vector<std::string> getDefaultTableIdentifiers() const;
+    
+    // Styling methods
+    void applyTableSelectionStyling();
+    void updateTableIdentifierStyling();
 };
 
 #endif // ORDERENTRYPANEL_H

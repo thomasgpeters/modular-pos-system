@@ -1,227 +1,334 @@
-
 #ifndef THEMESERVICE_H
 #define THEMESERVICE_H
 
-#include "../events/EventManager.hpp"
-#include "../events/POSEvents.hpp"
-
 #include <Wt/WApplication.h>
-#include <Wt/WLink.h>
-
+#include <Wt/WContainerWidget.h>
 #include <string>
 #include <vector>
+#include <map>
+#include <functional>
 #include <memory>
-#include <unordered_map>
 
 /**
  * @file ThemeService.hpp
- * @brief Centralized theme management service
+ * @brief Modular theme management service for the Restaurant POS System
  * 
- * This service handles all theme-related operations including loading,
- * switching, and managing theme configurations.
+ * This service provides a centralized way to manage themes across the application,
+ * supporting light, dark, colorful, and base modes. Integrates with the CSS
+ * theme framework for consistent styling.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0
  */
 
 /**
  * @class ThemeService
- * @brief Service for managing UI themes
+ * @brief Service for managing application themes and user preferences
  * 
- * The ThemeService provides centralized theme management, allowing
- * dynamic theme switching and theme persistence across sessions.
+ * The ThemeService handles theme switching, persistence, and provides
+ * a clean interface for components to react to theme changes.
  */
 class ThemeService {
 public:
     /**
-     * @struct ThemeInfo
-     * @brief Information about a theme
+     * @enum Theme
+     * @brief Available theme options
      */
-    struct ThemeInfo {
-        std::string id;                          ///< Unique theme identifier
-        std::string name;                        ///< Display name
-        std::string description;                 ///< Theme description
-        std::string cssFile;                     ///< Path to CSS file
-        std::string externalCss;                 ///< External CSS URL (optional)
-        std::vector<std::string> previewColors; ///< Colors for preview
-        bool isDefault;                          ///< Whether this is the default theme
-        bool isEnabled;                          ///< Whether theme is enabled
-        
-        ThemeInfo() : isDefault(false), isEnabled(true) {}
-        
-        ThemeInfo(const std::string& id, const std::string& name,
-                 const std::string& description, const std::string& cssFile,
-                 const std::string& externalCss = "",
-                 const std::vector<std::string>& previewColors = {},
-                 bool isDefault = false, bool isEnabled = true)
-            : id(id), name(name), description(description), cssFile(cssFile),
-              externalCss(externalCss), previewColors(previewColors),
-              isDefault(isDefault), isEnabled(isEnabled) {}
+    enum class Theme {
+        LIGHT,      ///< Light theme (default)
+        DARK,       ///< Dark theme
+        COLORFUL,   ///< Colorful theme with vibrant colors
+        BASE,       ///< Minimal base theme
+        AUTO        ///< Automatic theme based on system preference
     };
     
     /**
-     * @brief Constructs the theme service
-     * @param eventManager Shared event manager for notifications
-     * @param application Wt application instance for theme application
+     * @brief Theme change callback type
      */
-    ThemeService(std::shared_ptr<EventManager> eventManager,
-                Wt::WApplication* application);
+    using ThemeChangeCallback = std::function<void(Theme oldTheme, Theme newTheme)>;
+    
+    /**
+     * @brief Constructs the theme service
+     * @param app Wt application instance for DOM manipulation
+     */
+    explicit ThemeService(Wt::WApplication* app);
     
     /**
      * @brief Virtual destructor
      */
     virtual ~ThemeService() = default;
     
+    // =================================================================
+    // Theme Management
+    // =================================================================
+    
     /**
-     * @brief Initializes the theme service
-     * Loads available themes and applies the default theme
+     * @brief Sets the current theme
+     * @param theme Theme to activate
+     * @param savePreference Whether to save the preference (default: true)
      */
-    void initialize();
+    void setTheme(Theme theme, bool savePreference = true);
+    
+    /**
+     * @brief Gets the current active theme
+     * @return Current theme
+     */
+    Theme getCurrentTheme() const { return currentTheme_; }
+    
+    /**
+     * @brief Gets the user's preferred theme
+     * @return Preferred theme (may differ from current if auto mode is active)
+     */
+    Theme getPreferredTheme() const { return preferredTheme_; }
+    
+    /**
+     * @brief Toggles between light and dark themes
+     */
+    void toggleTheme();
+    
+    /**
+     * @brief Cycles through all available themes
+     */
+    void cycleTheme();
+    
+    /**
+     * @brief Sets theme based on system preference
+     */
+    void setAutoTheme();
+    
+    /**
+     * @brief Checks if system dark mode is preferred
+     * @return True if system prefers dark mode
+     */
+    bool isSystemDarkMode() const;
+    
+    // =================================================================
+    // Theme Information
+    // =================================================================
     
     /**
      * @brief Gets all available themes
-     * @return Vector of theme information
+     * @return Vector of theme options
      */
-    const std::vector<ThemeInfo>& getAvailableThemes() const;
+    std::vector<Theme> getAvailableThemes() const;
     
     /**
-     * @brief Gets enabled themes only
-     * @return Vector of enabled theme information
+     * @brief Gets theme display name
+     * @param theme Theme to get name for
+     * @return Human-readable theme name
      */
-    std::vector<ThemeInfo> getEnabledThemes() const;
+    std::string getThemeName(Theme theme) const;
     
     /**
-     * @brief Gets theme information by ID
-     * @param themeId Theme ID to look up
-     * @return Pointer to theme info, or nullptr if not found
+     * @brief Gets theme description
+     * @param theme Theme to get description for
+     * @return Theme description
      */
-    const ThemeInfo* getThemeById(const std::string& themeId) const;
+    std::string getThemeDescription(Theme theme) const;
     
     /**
-     * @brief Gets the currently active theme ID
-     * @return Current theme ID
+     * @brief Gets theme CSS class name
+     * @param theme Theme to get class for
+     * @return CSS class name
      */
-    const std::string& getCurrentThemeId() const;
+    std::string getThemeCSSClass(Theme theme) const;
     
     /**
-     * @brief Gets the currently active theme information
-     * @return Pointer to current theme info, or nullptr if none set
+     * @brief Gets theme icon
+     * @param theme Theme to get icon for
+     * @return Unicode icon or emoji
      */
-    const ThemeInfo* getCurrentTheme() const;
+    std::string getThemeIcon(Theme theme) const;
     
     /**
-     * @brief Applies a theme by ID
-     * @param themeId ID of the theme to apply
-     * @return True if theme was found and applied, false otherwise
+     * @brief Gets theme primary color (hex)
+     * @param theme Theme to get color for
+     * @return Primary color in hex format
      */
-    bool applyTheme(const std::string& themeId);
+    std::string getThemePrimaryColor(Theme theme) const;
+    
+    // =================================================================
+    // Event Handling
+    // =================================================================
     
     /**
-     * @brief Applies the default theme
-     * @return True if default theme was applied, false if none found
+     * @brief Registers a callback for theme changes
+     * @param callback Function to call when theme changes
+     * @return Subscription handle for unregistering
      */
-    bool applyDefaultTheme();
+    size_t onThemeChanged(ThemeChangeCallback callback);
     
     /**
-     * @brief Reloads themes from configuration
-     * Useful for development or when themes are added dynamically
+     * @brief Unregisters a theme change callback
+     * @param handle Subscription handle from onThemeChanged
      */
-    void reloadThemes();
+    void removeThemeChangeCallback(size_t handle);
+    
+    // =================================================================
+    // Persistence
+    // =================================================================
     
     /**
-     * @brief Adds a new theme
-     * @param theme Theme information to add
-     * @return True if theme was added, false if ID already exists
+     * @brief Loads theme preference from storage
      */
-    bool addTheme(const ThemeInfo& theme);
+    void loadThemePreference();
     
     /**
-     * @brief Removes a theme by ID
-     * @param themeId ID of theme to remove
-     * @return True if theme was found and removed, false otherwise
+     * @brief Saves current theme preference to storage
      */
-    bool removeTheme(const std::string& themeId);
+    void saveThemePreference();
     
     /**
-     * @brief Enables or disables a theme
-     * @param themeId ID of theme to modify
-     * @param enabled True to enable, false to disable
-     * @return True if theme was found and modified, false otherwise
+     * @brief Clears saved theme preference
      */
-    bool setThemeEnabled(const std::string& themeId, bool enabled);
+    void clearThemePreference();
     
     /**
-     * @brief Gets user's preferred theme from storage
-     * @return Preferred theme ID, or empty string if none set
+     * @brief Checks if theme preference is saved
+     * @return True if preference is saved
      */
-    std::string getUserPreferredTheme() const;
+    bool hasThemePreference() const;
+    
+    // =================================================================
+    // Utility Methods
+    // =================================================================
     
     /**
-     * @brief Sets user's preferred theme in storage
-     * @param themeId Theme ID to set as preferred
+     * @brief Applies theme to a specific container
+     * @param container Container to apply theme to
+     * @param theme Theme to apply (uses current if not specified)
      */
-    void setUserPreferredTheme(const std::string& themeId);
+    void applyThemeToContainer(Wt::WContainerWidget* container, 
+                              Theme theme = Theme::AUTO);
     
     /**
-     * @brief Clears user's theme preference
+     * @brief Removes theme classes from a container
+     * @param container Container to remove themes from
      */
-    void clearUserPreferredTheme();
+    void removeThemeFromContainer(Wt::WContainerWidget* container);
+    
+    /**
+     * @brief Gets CSS variables for current theme
+     * @return Map of CSS variable names to values
+     */
+    std::map<std::string, std::string> getThemeCSSVariables() const;
+    
+    /**
+     * @brief Injects custom CSS for theme support
+     */
+    void injectThemeCSS();
+    
+    /**
+     * @brief Checks if theme supports dark mode
+     * @param theme Theme to check
+     * @return True if theme is dark
+     */
+    bool isThemeDark(Theme theme) const;
+    
+    /**
+     * @brief Gets contrast ratio for theme
+     * @param theme Theme to check
+     * @return Contrast ratio (higher = better accessibility)
+     */
+    double getThemeContrastRatio(Theme theme) const;
+    
+    /**
+     * @brief Validates theme choice for accessibility
+     * @param theme Theme to validate
+     * @return True if theme meets accessibility standards
+     */
+    bool isThemeAccessible(Theme theme) const;
 
 protected:
     /**
-     * @brief Loads hardcoded themes
-     * Fallback method when configuration file is not available
+     * @brief Applies theme classes to the application root
      */
-    void loadHardcodedThemes();
+    void applyThemeClasses();
     
     /**
-     * @brief Loads themes from configuration file
-     * @return True if configuration was loaded, false otherwise
+     * @brief Removes all theme classes from application root
      */
-    bool loadThemesFromConfiguration();
+    void removeThemeClasses();
     
     /**
-     * @brief Applies CSS files for a theme
-     * @param theme Theme to apply
-     * @return True if CSS was successfully applied
+     * @brief Notifies all registered callbacks of theme change
+     * @param oldTheme Previous theme
+     * @param newTheme New theme
      */
-    bool applyCSSFiles(const ThemeInfo& theme);
+    void notifyThemeChange(Theme oldTheme, Theme newTheme);
     
     /**
-     * @brief Removes previously applied CSS files
+     * @brief Determines effective theme (resolves AUTO mode)
+     * @param theme Theme to resolve
+     * @return Effective theme
      */
-    void removePreviousCSSFiles();
+    Theme resolveTheme(Theme theme) const;
 
 private:
-    // Dependencies
-    std::shared_ptr<EventManager> eventManager_;
-    Wt::WApplication* application_;
+    Wt::WApplication* app_;                                 ///< Application instance
+    Theme currentTheme_;                                    ///< Current active theme
+    Theme preferredTheme_;                                  ///< User's preferred theme
+    std::map<size_t, ThemeChangeCallback> callbacks_;      ///< Theme change callbacks
+    size_t nextCallbackId_;                                 ///< Next callback ID
     
-    // Theme data
-    std::vector<ThemeInfo> availableThemes_;
-    std::string currentThemeId_;
-    std::string previousThemeId_;
-    
-    // Theme directories
-    std::string themeDirectory_;
-    std::string customThemeDirectory_;
-    
-    // Applied CSS links for cleanup
-    std::vector<Wt::WLink> appliedCSSLinks_;
-    
-    // Configuration
-    bool allowUserThemes_;
-    bool persistUserPreference_;
+    // Theme metadata
+    std::map<Theme, std::string> themeNames_;
+    std::map<Theme, std::string> themeDescriptions_;
+    std::map<Theme, std::string> themeCSSClasses_;
+    std::map<Theme, std::string> themeIcons_;
+    std::map<Theme, std::string> themePrimaryColors_;
     
     // Helper methods
-    void initializeDefaultThemes();
-    void notifyThemeChanged(const std::string& newThemeId, const std::string& oldThemeId);
-    bool validateTheme(const ThemeInfo& theme) const;
-    std::string sanitizeThemeId(const std::string& themeId) const;
+    void initializeThemeMetadata();
+    Theme parseThemeFromString(const std::string& themeString) const;
+    std::string themeToString(Theme theme) const;
+    void detectSystemTheme();
     
-    // Storage methods
-    void saveThemePreference(const std::string& themeId);
-    std::string loadThemePreference() const;
+    // Storage key for preferences
+    static constexpr const char* THEME_PREFERENCE_KEY = "pos_theme_preference";
 };
+
+/**
+ * @brief Theme management utility functions
+ */
+namespace ThemeUtils {
+    
+    /**
+     * @brief Creates a theme selector widget
+     * @param themeService Theme service instance
+     * @param showDescriptions Whether to show theme descriptions
+     * @return Theme selector widget
+     */
+    std::unique_ptr<Wt::WWidget> createThemeSelector(
+        std::shared_ptr<ThemeService> themeService,
+        bool showDescriptions = true);
+    
+    /**
+     * @brief Creates a theme toggle button
+     * @param themeService Theme service instance
+     * @return Theme toggle button
+     */
+    std::unique_ptr<Wt::WPushButton> createThemeToggleButton(
+        std::shared_ptr<ThemeService> themeService);
+    
+    /**
+     * @brief Gets recommended theme based on time of day
+     * @return Recommended theme
+     */
+    ThemeService::Theme getRecommendedTheme();
+    
+    /**
+     * @brief Checks if theme switching should be animated
+     * @return True if animations are supported/enabled
+     */
+    bool shouldAnimateThemeTransitions();
+    
+    /**
+     * @brief Applies transition animation for theme changes
+     * @param app Application instance
+     * @param duration Animation duration in milliseconds
+     */
+    void applyThemeTransition(Wt::WApplication* app, int duration = 300);
+}
 
 #endif // THEMESERVICE_H

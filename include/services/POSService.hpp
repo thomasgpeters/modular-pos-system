@@ -21,7 +21,7 @@
  * all business operations and coordinates between the three-legged foundation.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0 - Updated for string-based table identifiers
  */
 
 /**
@@ -88,7 +88,15 @@ public:
     // =================================================================
     
     /**
-     * @brief Creates a new order for a table
+     * @brief Creates a new order for a table/location
+     * @param tableIdentifier Table/location identifier (e.g., "table 5", "walk-in", "grubhub")
+     * @return Shared pointer to the created order
+     */
+    std::shared_ptr<Order> createOrder(const std::string& tableIdentifier);
+    
+    /**
+     * @brief Creates a new order for a table number (legacy compatibility)
+     * @deprecated Use createOrder(const std::string&) instead
      * @param tableNumber Table number for the order
      * @return Shared pointer to the created order
      */
@@ -139,7 +147,15 @@ public:
     std::vector<std::shared_ptr<Order>> getActiveOrders() const;
     
     /**
-     * @brief Gets orders by table number
+     * @brief Gets orders by table identifier
+     * @param tableIdentifier Table identifier to filter by
+     * @return Vector of orders for the specified table/location
+     */
+    std::vector<std::shared_ptr<Order>> getOrdersByTableIdentifier(const std::string& tableIdentifier) const;
+    
+    /**
+     * @brief Gets orders by table number (legacy compatibility)
+     * @deprecated Use getOrdersByTableIdentifier() instead
      * @param tableNumber Table number to filter by
      * @return Vector of orders for the specified table
      */
@@ -151,6 +167,40 @@ public:
      * @return Pointer to order, or nullptr if not found
      */
     std::shared_ptr<Order> getOrderById(int orderId) const;
+    
+    /**
+     * @brief Gets orders by order type
+     * @param orderType Order type ("Dine-In", "Delivery", "Walk-In")
+     * @return Vector of orders of the specified type
+     */
+    std::vector<std::shared_ptr<Order>> getOrdersByType(const std::string& orderType) const;
+    
+    /**
+     * @brief Gets available table identifier options
+     * @return Vector of valid table identifier patterns
+     */
+    std::vector<std::string> getTableIdentifierOptions() const;
+    
+    /**
+     * @brief Generates table identifiers for a given number of tables
+     * @param numberOfTables Number of tables to generate identifiers for
+     * @return Vector of table identifiers (e.g., "table 1", "table 2", ...)
+     */
+    std::vector<std::string> generateTableIdentifiers(int numberOfTables) const;
+    
+    /**
+     * @brief Validates a table identifier
+     * @param identifier Table identifier to validate
+     * @return True if identifier is valid
+     */
+    bool isValidTableIdentifier(const std::string& identifier) const;
+    
+    /**
+     * @brief Checks if a table identifier is currently in use
+     * @param tableIdentifier Table identifier to check
+     * @return True if identifier is in use
+     */
+    bool isTableIdentifierInUse(const std::string& tableIdentifier) const;
     
     // =================================================================
     // Kitchen Operations
@@ -265,6 +315,13 @@ public:
      */
     Wt::Json::Object getBusinessStatistics() const;
     
+    /**
+     * @brief Gets business statistics by order type
+     * @param orderType Order type to filter by
+     * @return JSON object with order type specific metrics
+     */
+    Wt::Json::Object getBusinessStatisticsByType(const std::string& orderType) const;
+    
     // =================================================================
     // Event Callbacks (for UI notifications)
     // =================================================================
@@ -362,6 +419,10 @@ private:
     void notifyOrderModified(std::shared_ptr<Order> order);
     void notifyKitchenStatusChanged(int orderId, KitchenInterface::KitchenStatus status);
     void notifyPaymentProcessed(const PaymentProcessor::PaymentResult& result);
+    
+    // Helper methods for new functionality
+    std::string formatTableIdentifier(int tableNumber) const;
+    bool isDeliveryService(const std::string& identifier) const;
 };
 
 #endif // POSSERVICE_H

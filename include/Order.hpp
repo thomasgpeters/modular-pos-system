@@ -20,7 +20,7 @@
  * features like order modifications, timing tracking, and customer information.
  * 
  * @author Restaurant POS Team
- * @version 1.0.0
+ * @version 1.1.0 - Updated for string-based table numbers
  */
 
 /**
@@ -99,7 +99,8 @@ private:
  * 
  * The Order class manages a complete customer order including multiple items,
  * status tracking, pricing calculations, and timing information. Supports
- * order modifications and lifecycle management.
+ * order modifications and lifecycle management. Now supports string-based
+ * table identifiers for dine-in, delivery, and pickup orders.
  */
 class Order {
 public:
@@ -119,9 +120,9 @@ public:
     /**
      * @brief Constructs a new Order
      * @param orderId Unique identifier for the order
-     * @param tableNumber Table number for the order
+     * @param tableIdentifier Table/location identifier (e.g., "table 5", "walk-in", "grubhub")
      */
-    Order(int orderId, int tableNumber);
+    Order(int orderId, const std::string& tableIdentifier);
     
     // Order management
     /**
@@ -151,10 +152,17 @@ public:
     int getOrderId() const { return orderId_; }
     
     /**
-     * @brief Gets the table number for this order
-     * @return The table number
+     * @brief Gets the table/location identifier for this order
+     * @return The table identifier (e.g., "table 5", "walk-in", "grubhub")
      */
-    int getTableNumber() const { return tableNumber_; }
+    const std::string& getTableIdentifier() const { return tableIdentifier_; }
+    
+    /**
+     * @brief Gets the table number for this order (legacy compatibility)
+     * @deprecated Use getTableIdentifier() instead
+     * @return The table number (extracted from identifier if possible, 0 for delivery/pickup)
+     */
+    int getTableNumber() const;
     
     /**
      * @brief Gets the current order status
@@ -192,12 +200,44 @@ public:
      */
     std::chrono::system_clock::time_point getTimestamp() const { return timestamp_; }
     
+    /**
+     * @brief Determines if this is a dine-in order
+     * @return True if order is for a table
+     */
+    bool isDineIn() const;
+    
+    /**
+     * @brief Determines if this is a delivery order
+     * @return True if order is for delivery (grubhub, ubereats)
+     */
+    bool isDelivery() const;
+    
+    /**
+     * @brief Determines if this is a walk-in/takeout order
+     * @return True if order is walk-in
+     */
+    bool isWalkIn() const;
+    
+    /**
+     * @brief Gets the order type as a string
+     * @return Order type ("Dine-In", "Delivery", "Walk-In")
+     */
+    std::string getOrderType() const;
+    
     // Status management
     /**
      * @brief Updates the order status
      * @param status New status for the order
      */
     void setStatus(Status status) { status_ = status; }
+    
+    /**
+     * @brief Sets the table/location identifier
+     * @param tableIdentifier New table identifier
+     */
+    void setTableIdentifier(const std::string& tableIdentifier) { 
+        tableIdentifier_ = tableIdentifier; 
+    }
     
     /**
      * @brief Converts the order to JSON format
@@ -211,6 +251,19 @@ public:
      * @return String representation of the status
      */
     static std::string statusToString(Status status);
+    
+    /**
+     * @brief Validates a table identifier
+     * @param identifier Table identifier to validate
+     * @return True if identifier is valid
+     */
+    static bool isValidTableIdentifier(const std::string& identifier);
+    
+    /**
+     * @brief Gets available table identifier options
+     * @return Vector of valid table identifier patterns
+     */
+    static std::vector<std::string> getTableIdentifierOptions();
 
 private:
     /**
@@ -218,8 +271,14 @@ private:
      */
     void calculateTotals();
     
+    /**
+     * @brief Extracts numeric table number from identifier
+     * @return Table number or 0 if not applicable
+     */
+    int extractTableNumber() const;
+    
     int orderId_;                       ///< Unique order identifier
-    int tableNumber_;                   ///< Table number
+    std::string tableIdentifier_;      ///< Table/location identifier
     Status status_;                     ///< Current order status
     std::vector<OrderItem> items_;      ///< Items in the order
     double subtotal_;                   ///< Subtotal amount

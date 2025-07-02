@@ -1,329 +1,467 @@
 #include "../../include/core/RestaurantPOSApp.hpp"
 
-#include <Wt/WBootstrapTheme.h>
-#include <Wt/WLabel.h>
-#include <Wt/WCssTheme.h>
-
+#include <Wt/WBootstrap5Theme.h>
+#include <Wt/WCssDecorationStyle.h>
 #include <iostream>
-#include <exception>
 
-RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env) 
-    : Wt::WApplication(env), mainContainer_(nullptr), statusText_(nullptr), 
-      testButton_(nullptr), updateTimer_(nullptr) {
+RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
+    : Wt::WApplication(env)
+    , eventManager_(nullptr)
+    , posService_(nullptr)
+    , mainContainer_(nullptr)
+    , orderControlsContainer_(nullptr)
+    , statusText_(nullptr)
+    , updateTimer_(nullptr)
+    , newOrderGroup_(nullptr)
+    , tableIdentifierCombo_(nullptr)
+    , newOrderButton_(nullptr)
+    , currentOrderStatusText_(nullptr)
+    , statusControlsContainer_(nullptr)
+    , refreshButton_(nullptr)
+    , systemStatusText_(nullptr)
+{
+    logApplicationStart();
     
-    try {
-        logApplicationStart();
-        
-        // Set basic application properties
-        setTitle("Restaurant POS System - Modular Architecture");
-        
-        // FIXED: Properly configure Bootstrap theme with CSS loading
-        setupBootstrapTheme();
-        
-        // FIXED: Add custom CSS for better styling
-        addCustomCSS();
-        
-        // Initialize services
-        initializeServices();
-        
-        // Set up the UI
-        setupMainLayout();
-        
-        // Set up event listeners
-        setupEventListeners();
-        
-        // Set up real-time updates
-        setupRealTimeUpdates();
-        
-        updateStatus("Application initialized successfully");
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Failed to initialize application: " << e.what() << std::endl;
-        updateStatus("Failed to initialize: " + std::string(e.what()));
-    }
-}
-
-void RestaurantPOSApp::setupBootstrapTheme() {
-    // Set up Bootstrap 3 theme with proper CSS loading
-    auto bootstrapTheme = std::make_shared<Wt::WBootstrapTheme>();
-    bootstrapTheme->setVersion(Wt::BootstrapVersion::v3);
+    // Initialize services first
+    initializeServices();
     
-    // Enable responsive features
-    bootstrapTheme->setResponsive(true);
+    // Setup CSS and theming
+    setupBootstrapTheme();
+    addCustomCSS();
     
-    setTheme(bootstrapTheme);
+    // Setup the main UI layout
+    setupMainLayout();
+    setupNewOrderControls();
+    setupStatusControls();
     
-    // Add viewport meta tag for mobile responsiveness
-    addMetaHeader("viewport", "width=device-width, initial-scale=1.0");
+    // Setup event handling and real-time updates
+    setupEventListeners();
+    setupRealTimeUpdates();
     
-    std::cout << "✅ Bootstrap theme configured" << std::endl;
-}
-
-void RestaurantPOSApp::addCustomCSS() {
-    // Add custom CSS for POS styling
-    useStyleSheet(Wt::WLink("https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"));
+    // Initial UI update
+    updateCurrentOrderStatus();
+    updateSystemStatus();
     
-    // Add custom inline CSS
-    styleSheet().addRule(".pos-application", 
-        "padding: 20px; background-color: #f8f9fa; min-height: 100vh;");
-    
-    styleSheet().addRule(".pos-header", 
-        "background-color: #ffffff; padding: 20px; margin-bottom: 20px; "
-        "border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);");
-    
-    styleSheet().addRule(".status-card", 
-        "background-color: #ffffff; border: 1px solid #dee2e6; "
-        "border-radius: 8px; padding: 15px; margin-bottom: 15px;");
-    
-    styleSheet().addRule(".menu-item", 
-        "padding: 10px; border-bottom: 1px solid #eee; "
-        "background-color: #ffffff; margin-bottom: 5px; border-radius: 4px;");
-    
-    styleSheet().addRule(".menu-item:hover", 
-        "background-color: #f8f9fa; cursor: pointer;");
-    
-    styleSheet().addRule(".order-summary", 
-        "background-color: #e3f2fd; padding: 15px; border-radius: 8px; "
-        "border-left: 4px solid #2196f3;");
-    
-    styleSheet().addRule(".btn-pos", 
-        "margin: 5px; padding: 10px 20px; font-weight: bold;");
-    
-    styleSheet().addRule(".system-status", 
-        "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); "
-        "color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;");
-    
-    styleSheet().addRule(".menu-section", 
-        "background-color: #ffffff; border-radius: 8px; padding: 20px; "
-        "box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;");
-    
-    std::cout << "✅ Custom CSS added" << std::endl;
+    // Apply final styling
+    applyComponentStyling();
 }
 
 void RestaurantPOSApp::initializeServices() {
-    std::cout << "Initializing services..." << std::endl;
-    
-    // Initialize event manager
+    // Create event manager
     eventManager_ = std::make_shared<EventManager>();
     
-    // Initialize core business service
+    // Create POS service with event manager
     posService_ = std::make_shared<POSService>(eventManager_);
     
     // Initialize the menu
     posService_->initializeMenu();
     
-    std::cout << "✅ All services initialized" << std::endl;
+    std::cout << "[RestaurantPOSApp] Services initialized successfully" << std::endl;
 }
 
 void RestaurantPOSApp::setupMainLayout() {
-    std::cout << "Setting up main layout..." << std::endl;
+    setTitle("Restaurant POS System - Enhanced Order Management");
     
-    // Create main container with proper CSS classes
+    // Create main container
     mainContainer_ = root()->addNew<Wt::WContainerWidget>();
-    mainContainer_->setStyleClass("pos-application container-fluid");
+    mainContainer_->addStyleClass("container-fluid pos-main-container");
     
-    // Create layout
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
+    // Create main layout
+    auto mainLayout = std::make_unique<Wt::WVBoxLayout>();
     
-    // Add system status header
-    auto statusHeader = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    statusHeader->setStyleClass("system-status");
+    // Header section
+    auto headerContainer = std::make_unique<Wt::WContainerWidget>();
+    headerContainer->addStyleClass("pos-header bg-primary text-white p-3 mb-4");
     
-    auto headerLayout = std::make_unique<Wt::WHBoxLayout>();
+    auto headerTitle = headerContainer->addNew<Wt::WText>("Restaurant POS System");
+    headerTitle->addStyleClass("h2 mb-0");
     
-    // Title section
-    auto titleContainer = headerLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto title = titleContainer->addNew<Wt::WText>("🍽️ Restaurant POS System");
-    title->setStyleClass("h2");
+    mainLayout->addWidget(std::move(headerContainer));
     
-    auto subtitle = titleContainer->addNew<Wt::WText>("Modular Architecture: Service Layer • Event System • Business Logic");
-    subtitle->setStyleClass("small");
+    // Content area container
+    auto contentContainer = std::make_unique<Wt::WContainerWidget>();
+    contentContainer->addStyleClass("row");
     
-    // Status section
-    statusText_ = headerLayout->addWidget(std::make_unique<Wt::WText>("Initializing..."));
-    statusText_->setStyleClass("h4 text-right");
+    // Order controls column (left side)
+    orderControlsContainer_ = contentContainer->addNew<Wt::WContainerWidget>();
+    orderControlsContainer_->addStyleClass("col-md-6 pos-order-controls");
     
-    statusHeader->setLayout(std::move(headerLayout));
+    // Status column (right side)
+    statusControlsContainer_ = contentContainer->addNew<Wt::WContainerWidget>();
+    statusControlsContainer_->addStyleClass("col-md-6 pos-status-section");
     
-    // Add main content area
-    auto contentRow = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    contentRow->setStyleClass("row");
+    mainLayout->addWidget(std::move(contentContainer));
     
-    // Left column - Menu and Test
-    auto leftCol = contentRow->addNew<Wt::WContainerWidget>();
-    leftCol->setStyleClass("col-md-8");
+    // Status bar at bottom
+    statusText_ = mainContainer_->addNew<Wt::WText>("System Ready");
+    statusText_->addStyleClass("pos-status-bar bg-light p-2 mt-4 border-top");
     
-    // Test button section
-    auto testSection = leftCol->addNew<Wt::WContainerWidget>();
-    testSection->setStyleClass("status-card text-center");
+    mainContainer_->setLayout(std::move(mainLayout));
+}
+
+void RestaurantPOSApp::setupNewOrderControls() {
+    // Create new order group box
+    newOrderGroup_ = orderControlsContainer_->addNew<Wt::WGroupBox>();
+    newOrderGroup_->setTitle("Create New Order");
+    newOrderGroup_->addStyleClass("pos-new-order-group mb-4");
     
-    testButton_ = testSection->addNew<Wt::WPushButton>("Test Order Creation");
-    testButton_->setStyleClass("btn btn-primary btn-lg btn-pos");
-    testButton_->clicked().connect(this, &RestaurantPOSApp::onTestButtonClicked);
+    auto groupLayout = std::make_unique<Wt::WVBoxLayout>();
     
-    // Menu display section
-    auto menuSection = leftCol->addNew<Wt::WContainerWidget>();
-    menuSection->setStyleClass("menu-section");
+    // Table identifier selection
+    auto tableSelectionContainer = std::make_unique<Wt::WContainerWidget>();
+    tableSelectionContainer->addStyleClass("mb-3");
     
-    auto menuHeader = menuSection->addNew<Wt::WText>("📋 Available Menu Items");
-    menuHeader->setStyleClass("h3 text-primary");
+    auto tableLabel = tableSelectionContainer->addNew<Wt::WLabel>("Select Table/Location:");
+    tableLabel->addStyleClass("form-label");
     
-    auto menuGrid = menuSection->addNew<Wt::WContainerWidget>();
-    menuGrid->setStyleClass("row");
+    tableIdentifierCombo_ = tableSelectionContainer->addNew<Wt::WComboBox>();
+    tableIdentifierCombo_->addStyleClass("form-select pos-table-combo");
+    populateTableIdentifierCombo();
     
-    // Display menu items in a nice grid
-    const auto& menuItems = posService_->getMenuItems();
-    int itemCount = 0;
-    for (const auto& item : menuItems) {
-        if (itemCount % 2 == 0 && itemCount > 0) {
-            // Start new row every 2 items
-            menuGrid = menuSection->addNew<Wt::WContainerWidget>();
-            menuGrid->setStyleClass("row");
-        }
-        
-        auto itemCol = menuGrid->addNew<Wt::WContainerWidget>();
-        itemCol->setStyleClass("col-md-6");
-        
-        auto itemCard = itemCol->addNew<Wt::WContainerWidget>();
-        itemCard->setStyleClass("menu-item");
-        
-        // Item header with name and price
-        auto itemHeader = itemCard->addNew<Wt::WContainerWidget>();
-        auto itemName = itemHeader->addNew<Wt::WText>(item->getName());
-        itemName->setStyleClass("h5 pull-left");
-        
-        auto itemPrice = itemHeader->addNew<Wt::WText>("$" + std::to_string(item->getPrice()).substr(0, 5));
-        itemPrice->setStyleClass("h5 text-success pull-right");
-        
-        itemCard->addNew<Wt::WText>("<div class='clearfix'></div>", Wt::TextFormat::UnsafeXHTML);
-        
-        // Item category
-        auto itemCategory = itemCard->addNew<Wt::WText>(MenuItem::categoryToString(item->getCategory()));
-        itemCategory->setStyleClass("text-muted small");
-        
-        itemCount++;
-    }
+    // Connect table identifier change event
+    tableIdentifierCombo_->changed().connect([this] {
+        onTableIdentifierChanged();
+    });
     
-    // Right column - Order Status
-    auto rightCol = contentRow->addNew<Wt::WContainerWidget>();
-    rightCol->setStyleClass("col-md-4");
+    groupLayout->addWidget(std::move(tableSelectionContainer));
     
-    // Order summary section
-    auto orderSection = rightCol->addNew<Wt::WContainerWidget>();
-    orderSection->setStyleClass("order-summary");
+    // New order button
+    auto buttonContainer = std::make_unique<Wt::WContainerWidget>();
+    buttonContainer->addStyleClass("d-grid mb-3");
     
-    auto orderHeader = orderSection->addNew<Wt::WText>("📊 System Status");
-    orderHeader->setStyleClass("h4");
+    newOrderButton_ = buttonContainer->addNew<Wt::WPushButton>("Start New Order");
+    newOrderButton_->addStyleClass("btn btn-success btn-lg pos-new-order-btn");
+    newOrderButton_->setEnabled(false); // Disabled until valid selection
     
-    auto activeOrdersText = orderSection->addNew<Wt::WText>("Active Orders: Loading...");
-    activeOrdersText->setStyleClass("lead");
+    // Connect new order button click
+    newOrderButton_->clicked().connect([this] {
+        onNewOrderButtonClicked();
+    });
     
-    auto transactionsText = orderSection->addNew<Wt::WText>("Transactions: Loading...");
-    transactionsText->setStyleClass("lead");
+    groupLayout->addWidget(std::move(buttonContainer));
     
-    // Set layout
-    mainContainer_->setLayout(std::move(layout));
+    // Current order status
+    currentOrderStatusText_ = newOrderGroup_->addNew<Wt::WText>("No active order");
+    currentOrderStatusText_->addStyleClass("pos-current-order-status text-muted");
     
-    std::cout << "✅ Enhanced layout setup complete" << std::endl;
+    newOrderGroup_->setLayout(std::move(groupLayout));
+}
+
+void RestaurantPOSApp::setupStatusControls() {
+    // System status section
+    auto statusGroup = statusControlsContainer_->addNew<Wt::WGroupBox>();
+    statusGroup->setTitle("System Status");
+    statusGroup->addStyleClass("pos-status-group mb-4");
+    
+    auto statusLayout = std::make_unique<Wt::WVBoxLayout>();
+    
+    // System status text
+    systemStatusText_ = statusGroup->addNew<Wt::WText>();
+    systemStatusText_->addStyleClass("pos-system-status mb-3");
+    
+    // Refresh button
+    auto refreshContainer = std::make_unique<Wt::WContainerWidget>();
+    refreshContainer->addStyleClass("d-grid");
+    
+    refreshButton_ = refreshContainer->addNew<Wt::WPushButton>("Refresh Status");
+    refreshButton_->addStyleClass("btn btn-outline-primary pos-refresh-btn");
+    
+    refreshButton_->clicked().connect([this] {
+        onRefreshButtonClicked();
+    });
+    
+    statusLayout->addWidget(std::move(refreshContainer));
+    statusGroup->setLayout(std::move(statusLayout));
 }
 
 void RestaurantPOSApp::setupEventListeners() {
-    std::cout << "Setting up event listeners..." << std::endl;
+    // Register for order creation events
+    posService_->onOrderCreated([this](std::shared_ptr<Order> order) {
+        onOrderCreated(order);
+    });
     
-    // Subscribe to order events
-    eventManager_->subscribe(POSEvents::ORDER_CREATED, 
-        [this](const std::any& data) {
-            updateStatus("✅ Order created successfully!");
-        });
-    
-    eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
-        [this](const std::any& data) {
-            updateStatus("📝 Order modified");
-        });
-    
-    std::cout << "✅ Event listeners setup complete" << std::endl;
+    // Register for order modification events
+    posService_->onOrderModified([this](std::shared_ptr<Order> order) {
+        onOrderModified(order);
+    });
 }
 
 void RestaurantPOSApp::setupRealTimeUpdates() {
-    std::cout << "Setting up real-time updates..." << std::endl;
-    
-    updateTimer_ = root()->addChild(std::make_unique<Wt::WTimer>());
-    updateTimer_->setInterval(std::chrono::seconds(5));
-    updateTimer_->timeout().connect(this, &RestaurantPOSApp::onPeriodicUpdate);
+    // Create and start update timer
+    updateTimer_ = std::make_unique<Wt::WTimer>();
+    updateTimer_->setInterval(std::chrono::seconds(5)); // Update every 5 seconds
+    updateTimer_->timeout().connect([this] {
+        onPeriodicUpdate();
+    });
     updateTimer_->start();
-    
-    std::cout << "✅ Real-time updates configured" << std::endl;
 }
 
-void RestaurantPOSApp::onTestButtonClicked() {
-    try {
-        // Create a test order
-        auto order = posService_->createOrder(5); // Table 5
-        
-        if (order) {
-            // Add some items to the order
-            const auto& menuItems = posService_->getMenuItems();
-            if (!menuItems.empty()) {
-                posService_->setCurrentOrder(order);
-                posService_->addItemToCurrentOrder(menuItems[0], 2, "Extra sauce");
-                if (menuItems.size() > 1) {
-                    posService_->addItemToCurrentOrder(menuItems[1], 1);
-                }
-            }
-            
-            updateStatus("✅ Test order #" + std::to_string(order->getOrderId()) + 
-                        " created for Table " + std::to_string(order->getTableNumber()) +
-                        " | Total: $" + std::to_string(order->getTotal()).substr(0, 5));
-            
-            // Update button
-            testButton_->setText("✅ Order Created! Create Another?");
-            testButton_->setStyleClass("btn btn-success btn-lg btn-pos");
-            
-        } else {
-            updateStatus("❌ Failed to create test order");
-        }
-        
-    } catch (const std::exception& e) {
-        updateStatus("❌ Error: " + std::string(e.what()));
+void RestaurantPOSApp::setupBootstrapTheme() {
+    // Set Bootstrap 5 theme
+    setTheme(std::make_shared<Wt::WBootstrap5Theme>());
+    
+    // Use external Bootstrap CSS
+    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css");
+    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css");
+}
+
+void RestaurantPOSApp::addCustomCSS() {
+    styleSheet().addRule(".pos-main-container", "min-height: 100vh; background-color: #f8f9fa;");
+    styleSheet().addRule(".pos-header", "box-shadow: 0 2px 4px rgba(0,0,0,0.1);");
+    styleSheet().addRule(".pos-new-order-group", "border: 2px solid #198754; box-shadow: 0 4px 6px rgba(0,0,0,0.1);");
+    styleSheet().addRule(".pos-table-combo", "font-size: 1.1rem; padding: 0.75rem;");
+    styleSheet().addRule(".pos-new-order-btn", "font-size: 1.2rem; padding: 1rem; box-shadow: 0 3px 6px rgba(25,135,84,0.3);");
+    styleSheet().addRule(".pos-new-order-btn:hover", "transform: translateY(-1px); box-shadow: 0 4px 8px rgba(25,135,84,0.4);");
+    styleSheet().addRule(".pos-current-order-status", "font-style: italic; border-left: 3px solid #6c757d; padding-left: 0.75rem;");
+    styleSheet().addRule(".pos-status-group", "border: 1px solid #dee2e6;");
+    styleSheet().addRule(".pos-system-status", "font-family: 'Courier New', monospace; background-color: #f8f9fa; padding: 1rem; border-radius: 0.375rem;");
+    styleSheet().addRule(".pos-status-bar", "font-size: 0.9rem; color: #6c757d;");
+    
+    // Table identifier specific styles
+    styleSheet().addRule(".table-identifier-dine-in", "color: #0d6efd; font-weight: 500;");
+    styleSheet().addRule(".table-identifier-delivery", "color: #fd7e14; font-weight: 500;");
+    styleSheet().addRule(".table-identifier-walk-in", "color: #20c997; font-weight: 500;");
+    
+    // Order status styles
+    styleSheet().addRule(".order-status-active", "color: #198754; font-weight: bold;");
+    styleSheet().addRule(".order-status-inactive", "color: #6c757d;");
+}
+
+void RestaurantPOSApp::applyComponentStyling() {
+    // Apply dark mode support
+    styleSheet().addRule("@media (prefers-color-scheme: dark)", 
+        ".pos-main-container { background-color: #212529; color: #ffffff; }");
+}
+
+void RestaurantPOSApp::populateTableIdentifierCombo() {
+    tableIdentifierCombo_->clear();
+    
+    // Add default option
+    tableIdentifierCombo_->addItem("-- Select Table/Location --");
+    
+    // Add table numbers (1-20)
+    for (int i = 1; i <= 20; ++i) {
+        std::string tableId = "table " + std::to_string(i);
+        tableIdentifierCombo_->addItem(getOrderTypeIcon(tableId) + " " + tableId);
     }
+    
+    // Add special locations
+    tableIdentifierCombo_->addItem(getOrderTypeIcon("walk-in") + " walk-in");
+    tableIdentifierCombo_->addItem(getOrderTypeIcon("grubhub") + " grubhub");
+    tableIdentifierCombo_->addItem(getOrderTypeIcon("ubereats") + " ubereats");
+    
+    // Set default selection
+    tableIdentifierCombo_->setCurrentIndex(0);
+}
+
+void RestaurantPOSApp::onNewOrderButtonClicked() {
+    if (!validateNewOrderInput()) {
+        showValidationError("Please select a valid table/location");
+        return;
+    }
+    
+    std::string tableIdentifier = getCurrentTableIdentifier();
+    
+    try {
+        // Create new order
+        auto newOrder = posService_->createOrder(tableIdentifier);
+        
+        if (newOrder) {
+            // Set as current order
+            posService_->setCurrentOrder(newOrder);
+            
+            // Update UI
+            showOrderCreationStatus(true, tableIdentifier);
+            updateCurrentOrderStatus();
+            updateOrderControls();
+            
+            updateStatus("New order created for " + tableIdentifier + " (Order #" + std::to_string(newOrder->getOrderId()) + ")");
+        } else {
+            showOrderCreationStatus(false, tableIdentifier);
+            updateStatus("Failed to create order for " + tableIdentifier);
+        }
+    } catch (const std::exception& e) {
+        showOrderCreationStatus(false, tableIdentifier);
+        updateStatus("Error creating order: " + std::string(e.what()));
+    }
+}
+
+void RestaurantPOSApp::onTableIdentifierChanged() {
+    bool isValidSelection = isValidTableSelection();
+    newOrderButton_->setEnabled(isValidSelection);
+    
+    if (isValidSelection) {
+        std::string identifier = getCurrentTableIdentifier();
+        bool isAvailable = isTableIdentifierAvailable(identifier);
+        
+        if (!isAvailable) {
+            newOrderButton_->setText("Table/Location In Use");
+            newOrderButton_->setEnabled(false);
+            newOrderButton_->addStyleClass("btn-warning");
+            newOrderButton_->removeStyleClass("btn-success");
+        } else {
+            newOrderButton_->setText("Start New Order");
+            newOrderButton_->setEnabled(true);
+            newOrderButton_->addStyleClass("btn-success");
+            newOrderButton_->removeStyleClass("btn-warning");
+        }
+    }
+}
+
+void RestaurantPOSApp::onRefreshButtonClicked() {
+    updateCurrentOrderStatus();
+    updateSystemStatus();
+    populateTableIdentifierCombo(); // Refresh available tables
+    updateStatus("Status refreshed");
 }
 
 void RestaurantPOSApp::onPeriodicUpdate() {
-    try {
-        // Get business statistics
-        auto stats = posService_->getBusinessStatistics();
-        
-        // Update status with current stats
-        updateStatus("📊 " + std::to_string(stats["activeOrderCount"].orIfNull(0)) + 
-                    " active orders • " + std::to_string(stats["totalTransactions"].orIfNull(0)) + 
-                    " transactions • Revenue: $" + std::to_string(stats["totalRevenue"].orIfNull(0.0)).substr(0, 6));
-        
-        // Reset button if needed
-        if (testButton_->text().toUTF8().find("Order Created") != std::string::npos) {
-            testButton_->setText("Create Another Test Order");
-            testButton_->setStyleClass("btn btn-primary btn-lg btn-pos");
-        }
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Error during periodic update: " << e.what() << std::endl;
+    updateCurrentOrderStatus();
+    updateSystemStatus();
+}
+
+void RestaurantPOSApp::onOrderCreated(std::shared_ptr<Order> order) {
+    updateCurrentOrderStatus();
+    updateSystemStatus();
+    // Reset order controls after successful creation
+    resetOrderControls();
+}
+
+void RestaurantPOSApp::onOrderModified(std::shared_ptr<Order> order) {
+    updateCurrentOrderStatus();
+}
+
+void RestaurantPOSApp::onCurrentOrderChanged() {
+    updateCurrentOrderStatus();
+    updateOrderControls();
+}
+
+void RestaurantPOSApp::updateCurrentOrderStatus() {
+    auto currentOrder = posService_->getCurrentOrder();
+    
+    if (currentOrder) {
+        std::string statusText = formatOrderStatus(currentOrder);
+        currentOrderStatusText_->setText(statusText);
+        currentOrderStatusText_->removeStyleClass("text-muted");
+        currentOrderStatusText_->addStyleClass("order-status-active");
+    } else {
+        currentOrderStatusText_->setText("No active order");
+        currentOrderStatusText_->removeStyleClass("order-status-active");
+        currentOrderStatusText_->addStyleClass("text-muted");
     }
+}
+
+void RestaurantPOSApp::updateSystemStatus() {
+    std::string statusText = formatSystemStatus();
+    systemStatusText_->setText(statusText);
+}
+
+void RestaurantPOSApp::updateOrderControls() {
+    // Update table combo based on current availability
+    onTableIdentifierChanged();
+}
+
+std::string RestaurantPOSApp::getCurrentTableIdentifier() const {
+    if (tableIdentifierCombo_->currentIndex() <= 0) {
+        return "";
+    }
+    
+    std::string displayText = tableIdentifierCombo_->currentText().toUTF8();
+    
+    // Remove icon prefix if present
+    size_t spacePos = displayText.find(' ');
+    if (spacePos != std::string::npos && spacePos < 3) {
+        return displayText.substr(spacePos + 1);
+    }
+    
+    return displayText;
+}
+
+bool RestaurantPOSApp::isValidTableSelection() const {
+    return tableIdentifierCombo_->currentIndex() > 0;
+}
+
+bool RestaurantPOSApp::validateNewOrderInput() const {
+    return isValidTableSelection() && !getCurrentTableIdentifier().empty();
+}
+
+void RestaurantPOSApp::showValidationError(const std::string& message) {
+    updateStatus("Validation Error: " + message);
+}
+
+void RestaurantPOSApp::showOrderCreationStatus(bool success, const std::string& tableIdentifier) {
+    if (success) {
+        updateStatus("✓ Order created successfully for " + tableIdentifier);
+    } else {
+        updateStatus("✗ Failed to create order for " + tableIdentifier);
+    }
+}
+
+void RestaurantPOSApp::resetOrderControls() {
+    tableIdentifierCombo_->setCurrentIndex(0);
+    newOrderButton_->setEnabled(false);
+    newOrderButton_->setText("Start New Order");
+    newOrderButton_->addStyleClass("btn-success");
+    newOrderButton_->removeStyleClass("btn-warning");
+}
+
+std::string RestaurantPOSApp::formatOrderStatus(std::shared_ptr<Order> order) const {
+    if (!order) return "No active order";
+    
+    std::string icon = getOrderTypeIcon(order->getTableIdentifier());
+    std::string type = order->getOrderType();
+    std::string status = Order::statusToString(order->getStatus());
+    
+    return icon + " Order #" + std::to_string(order->getOrderId()) + 
+           " (" + order->getTableIdentifier() + ") - " + status +
+           " | Items: " + std::to_string(order->getItems().size()) +
+           " | Total: $" + std::to_string(order->getTotal());
+}
+
+std::string RestaurantPOSApp::formatSystemStatus() const {
+    auto activeOrders = posService_->getActiveOrders();
+    int totalActive = activeOrders.size();
+    
+    int dineInCount = 0, deliveryCount = 0, walkInCount = 0;
+    
+    for (const auto& order : activeOrders) {
+        if (order->isDineIn()) dineInCount++;
+        else if (order->isDelivery()) deliveryCount++;
+        else if (order->isWalkIn()) walkInCount++;
+    }
+    
+    return "Active Orders: " + std::to_string(totalActive) +
+           " | Dine-In: " + std::to_string(dineInCount) +
+           " | Delivery: " + std::to_string(deliveryCount) +
+           " | Walk-In: " + std::to_string(walkInCount) +
+           "\nKitchen Queue: " + std::to_string(posService_->getKitchenTickets().size()) +
+           " | Est. Wait: " + std::to_string(posService_->getEstimatedWaitTime()) + " min";
+}
+
+std::string RestaurantPOSApp::getOrderTypeIcon(const std::string& tableIdentifier) const {
+    if (tableIdentifier.find("table") == 0) {
+        return "🪑"; // Chair icon for dine-in
+    } else if (tableIdentifier == "grubhub" || tableIdentifier == "ubereats") {
+        return "🚗"; // Car icon for delivery
+    } else if (tableIdentifier == "walk-in") {
+        return "🚶"; // Walking icon for walk-in
+    }
+    return "📋"; // Default clipboard icon
+}
+
+bool RestaurantPOSApp::isTableIdentifierAvailable(const std::string& identifier) const {
+    return !posService_->isTableIdentifierInUse(identifier);
 }
 
 void RestaurantPOSApp::logApplicationStart() {
-    std::cout << "===========================================================" << std::endl;
-    std::cout << "  Restaurant POS System - Enhanced UI v2.0.0" << std::endl;
-    std::cout << "===========================================================" << std::endl;
-    std::cout << "Framework: Wt (C++ Web Toolkit)" << std::endl;
-    std::cout << "Architecture: Modular Service-Component Design" << std::endl;
-    std::cout << "UI: Bootstrap 3 + Custom CSS" << std::endl;
-    std::cout << "===========================================================" << std::endl;
+    std::cout << "=== Restaurant POS Application Starting ===" << std::endl;
+    std::cout << "Version: 2.1.0 - Enhanced Order Management" << std::endl;
+    std::cout << "Features: String-based table identifiers, delivery support" << std::endl;
 }
 
 void RestaurantPOSApp::updateStatus(const std::string& message) {
-    if (statusText_) {
-        statusText_->setText(message);
-        std::cout << "Status: " << message << std::endl;
-    }
+    statusText_->setText(message);
+    std::cout << "[POS] " << message << std::endl;
 }
 
 std::unique_ptr<Wt::WApplication> createApplication(const Wt::WEnvironment& env) {

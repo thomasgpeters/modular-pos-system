@@ -1,0 +1,543 @@
+/**
+ * Restaurant POS System - Modular Theme Framework
+ * Version: 2.1.0
+ * 
+ * This CSS file provides a modular theming system that supports:
+ * - Light Mode
+ * - Dark Mode  
+ * - Colorful Mode
+ * - Base Mode
+ * 
+ * Usage: Add theme classes to the root element:
+ * - theme-light (default)
+ * - theme-dark
+ * - theme-colorful
+ * - theme-base
+ */
+
+/* ========================================
+   CSS CUSTOM PROPERTIES (CSS VARIABLES)
+   ======================================== */
+
+:root {
+  /* Base spacing and sizing */
+  --pos-border-radius: 0.375rem;
+  --pos-border-radius-lg: 0.5rem;
+  --pos-border-radius-xl: 0.75rem;
+  --pos-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --pos-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --pos-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --pos-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Transitions */
+  --pos-transition: all 0.3s ease;
+  --pos-transition-fast: all 0.15s ease;
+  
+  /* Z-index layers */
+  --pos-z-dropdown: 1000;
+  --pos-z-sticky: 1020;
+  --pos-z-fixed: 1030;
+  --pos-z-modal: 1040;
+  --pos-z-popover: 1050;
+  --pos-z-tooltip: 1060;
+}
+
+/* ========================================
+   LIGHT THEME (DEFAULT)
+   ======================================== */
+
+:root,
+.theme-light {
+  /* Primary colors */
+  --pos-primary: #0d6efd;
+  --pos-primary-dark: #0b5ed7;
+  --pos-primary-light: #6ea8fe;
+  --pos-primary-rgb: 13, 110, 253;
+  
+  /* Success colors */
+  --pos-success: #198754;
+  --pos-success-dark: #146c43;
+  --pos-success-light: #75b798;
+  
+  /* Warning colors */
+  --pos-warning: #fd7e14;
+  --pos-warning-dark: #e8660d;
+  --pos-warning-light: #ffb976;
+  
+  /* Danger colors */
+  --pos-danger: #dc3545;
+  --pos-danger-dark: #b02a37;
+  --pos-danger-light: #ea868f;
+  
+  /* Info colors */
+  --pos-info: #0dcaf0;
+  --pos-info-dark: #087990;
+  --pos-info-light: #74c0fc;
+  
+  /* Neutral colors */
+  --pos-background: #ffffff;
+  --pos-background-secondary: #f8f9fa;
+  --pos-background-tertiary: #e9ecef;
+  --pos-surface: #ffffff;
+  --pos-surface-secondary: #f8f9fa;
+  
+  /* Text colors */
+  --pos-text-primary: #212529;
+  --pos-text-secondary: #6c757d;
+  --pos-text-muted: #adb5bd;
+  --pos-text-on-primary: #ffffff;
+  --pos-text-on-success: #ffffff;
+  --pos-text-on-warning: #000000;
+  --pos-text-on-danger: #ffffff;
+  
+  /* Border colors */
+  --pos-border: #dee2e6;
+  --pos-border-light: #f1f3f4;
+  --pos-border-dark: #adb5bd;
+  
+  /* Order type colors */
+  --pos-dine-in-color: var(--pos-primary);
+  --pos-delivery-color: var(--pos-warning);
+  --pos-walk-in-color: var(--pos-info);
+}
+
+/* ========================================
+   DARK THEME
+   ======================================== */
+
+.theme-dark {
+  /* Primary colors - adjusted for dark theme */
+  --pos-primary: #6ea8fe;
+  --pos-primary-dark: #0b5ed7;
+  --pos-primary-light: #cfe2ff;
+  
+  /* Success colors */
+  --pos-success: #75b798;
+  --pos-success-dark: #146c43;
+  --pos-success-light: #a3cfbb;
+  
+  /* Warning colors */
+  --pos-warning: #ffb976;
+  --pos-warning-dark: #e8660d;
+  --pos-warning-light: #ffc892;
+  
+  /* Danger colors */
+  --pos-danger: #ea868f;
+  --pos-danger-dark: #b02a37;
+  --pos-danger-light: #f1959e;
+  
+  /* Info colors */
+  --pos-info: #74c0fc;
+  --pos-info-dark: #087990;
+  --pos-info-light: #9ec5fe;
+  
+  /* Neutral colors */
+  --pos-background: #212529;
+  --pos-background-secondary: #343a40;
+  --pos-background-tertiary: #495057;
+  --pos-surface: #343a40;
+  --pos-surface-secondary: #495057;
+  
+  /* Text colors */
+  --pos-text-primary: #f8f9fa;
+  --pos-text-secondary: #adb5bd;
+  --pos-text-muted: #6c757d;
+  --pos-text-on-primary: #000000;
+  --pos-text-on-success: #000000;
+  --pos-text-on-warning: #000000;
+  --pos-text-on-danger: #000000;
+  
+  /* Border colors */
+  --pos-border: #495057;
+  --pos-border-light: #343a40;
+  --pos-border-dark: #6c757d;
+  
+  /* Order type colors */
+  --pos-dine-in-color: var(--pos-primary);
+  --pos-delivery-color: var(--pos-warning);
+  --pos-walk-in-color: var(--pos-info);
+}
+
+/* ========================================
+   COLORFUL THEME
+   ======================================== */
+
+.theme-colorful {
+  /* Vibrant primary colors */
+  --pos-primary: #8b5cf6;
+  --pos-primary-dark: #7c3aed;
+  --pos-primary-light: #c4b5fd;
+  
+  /* Vibrant success colors */
+  --pos-success: #10b981;
+  --pos-success-dark: #059669;
+  --pos-success-light: #6ee7b7;
+  
+  /* Vibrant warning colors */
+  --pos-warning: #f59e0b;
+  --pos-warning-dark: #d97706;
+  --pos-warning-light: #fcd34d;
+  
+  /* Vibrant danger colors */
+  --pos-danger: #ef4444;
+  --pos-danger-dark: #dc2626;
+  --pos-danger-light: #fca5a5;
+  
+  /* Vibrant info colors */
+  --pos-info: #06b6d4;
+  --pos-info-dark: #0891b2;
+  --pos-info-light: #67e8f9;
+  
+  /* Colorful neutral colors */
+  --pos-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --pos-background-secondary: rgba(255, 255, 255, 0.9);
+  --pos-background-tertiary: rgba(255, 255, 255, 0.8);
+  --pos-surface: rgba(255, 255, 255, 0.95);
+  --pos-surface-secondary: rgba(255, 255, 255, 0.85);
+  
+  /* Text colors */
+  --pos-text-primary: #1f2937;
+  --pos-text-secondary: #4b5563;
+  --pos-text-muted: #9ca3af;
+  --pos-text-on-primary: #ffffff;
+  --pos-text-on-success: #ffffff;
+  --pos-text-on-warning: #000000;
+  --pos-text-on-danger: #ffffff;
+  
+  /* Border colors */
+  --pos-border: rgba(139, 92, 246, 0.3);
+  --pos-border-light: rgba(139, 92, 246, 0.1);
+  --pos-border-dark: rgba(139, 92, 246, 0.5);
+  
+  /* Order type colors - more vibrant */
+  --pos-dine-in-color: #8b5cf6;
+  --pos-delivery-color: #f59e0b;
+  --pos-walk-in-color: #06b6d4;
+}
+
+/* ========================================
+   BASE THEME (MINIMAL)
+   ======================================== */
+
+.theme-base {
+  /* Monochromatic colors */
+  --pos-primary: #495057;
+  --pos-primary-dark: #343a40;
+  --pos-primary-light: #6c757d;
+  
+  /* Monochromatic success */
+  --pos-success: #6c757d;
+  --pos-success-dark: #495057;
+  --pos-success-light: #adb5bd;
+  
+  /* Monochromatic warning */
+  --pos-warning: #495057;
+  --pos-warning-dark: #343a40;
+  --pos-warning-light: #6c757d;
+  
+  /* Monochromatic danger */
+  --pos-danger: #343a40;
+  --pos-danger-dark: #212529;
+  --pos-danger-light: #495057;
+  
+  /* Monochromatic info */
+  --pos-info: #6c757d;
+  --pos-info-dark: #495057;
+  --pos-info-light: #adb5bd;
+  
+  /* Minimal neutral colors */
+  --pos-background: #ffffff;
+  --pos-background-secondary: #f8f9fa;
+  --pos-background-tertiary: #e9ecef;
+  --pos-surface: #ffffff;
+  --pos-surface-secondary: #f8f9fa;
+  
+  /* Text colors */
+  --pos-text-primary: #212529;
+  --pos-text-secondary: #495057;
+  --pos-text-muted: #6c757d;
+  --pos-text-on-primary: #ffffff;
+  --pos-text-on-success: #ffffff;
+  --pos-text-on-warning: #ffffff;
+  --pos-text-on-danger: #ffffff;
+  
+  /* Border colors */
+  --pos-border: #dee2e6;
+  --pos-border-light: #f1f3f4;
+  --pos-border-dark: #adb5bd;
+  
+  /* Order type colors - minimal */
+  --pos-dine-in-color: #495057;
+  --pos-delivery-color: #6c757d;
+  --pos-walk-in-color: #adb5bd;
+}
+
+/* ========================================
+   COMPONENT STYLES
+   ======================================== */
+
+/* Main Application Container */
+.pos-main-container {
+  background: var(--pos-background);
+  color: var(--pos-text-primary);
+  min-height: 100vh;
+  transition: var(--pos-transition);
+}
+
+.theme-colorful .pos-main-container {
+  background: var(--pos-background);
+}
+
+/* Header Styles */
+.pos-header {
+  background: var(--pos-primary) !important;
+  color: var(--pos-text-on-primary) !important;
+  box-shadow: var(--pos-shadow-lg);
+  border-bottom: 3px solid var(--pos-primary-dark);
+}
+
+/* Order Controls Section */
+.pos-order-controls {
+  background: var(--pos-surface);
+  border-radius: var(--pos-border-radius-lg);
+  box-shadow: var(--pos-shadow);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* New Order Group */
+.pos-new-order-group {
+  border: 2px solid var(--pos-success) !important;
+  background: var(--pos-surface) !important;
+  border-radius: var(--pos-border-radius-lg) !important;
+  box-shadow: var(--pos-shadow-lg) !important;
+  transition: var(--pos-transition);
+}
+
+.pos-new-order-group:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pos-shadow-xl);
+}
+
+/* Table Identifier Combo */
+.pos-table-combo {
+  font-size: 1.1rem !important;
+  padding: 0.75rem !important;
+  border: 2px solid var(--pos-border) !important;
+  border-radius: var(--pos-border-radius) !important;
+  background: var(--pos-surface) !important;
+  color: var(--pos-text-primary) !important;
+  transition: var(--pos-transition-fast);
+}
+
+.pos-table-combo:focus {
+  border-color: var(--pos-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--pos-primary-rgb), 0.25) !important;
+}
+
+/* New Order Button */
+.pos-new-order-btn {
+  font-size: 1.2rem !important;
+  padding: 1rem !important;
+  border-radius: var(--pos-border-radius-lg) !important;
+  background: var(--pos-success) !important;
+  border-color: var(--pos-success) !important;
+  box-shadow: var(--pos-shadow);
+  transition: var(--pos-transition-fast);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pos-new-order-btn:hover {
+  background: var(--pos-success-dark) !important;
+  border-color: var(--pos-success-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--pos-shadow-lg);
+}
+
+.pos-new-order-btn:disabled {
+  background: var(--pos-text-muted) !important;
+  border-color: var(--pos-text-muted) !important;
+  transform: none;
+  box-shadow: var(--pos-shadow-sm);
+}
+
+/* Current Order Status */
+.pos-current-order-status {
+  border-left: 4px solid var(--pos-border-dark);
+  padding-left: 0.75rem;
+  font-style: italic;
+  background: var(--pos-background-secondary);
+  padding: 0.75rem;
+  border-radius: var(--pos-border-radius);
+  margin-top: 1rem;
+}
+
+.order-status-active {
+  color: var(--pos-success) !important;
+  font-weight: 600 !important;
+  border-left-color: var(--pos-success) !important;
+}
+
+.order-status-inactive {
+  color: var(--pos-text-muted) !important;
+}
+
+/* Status Section */
+.pos-status-section {
+  background: var(--pos-surface);
+  border-radius: var(--pos-border-radius-lg);
+  box-shadow: var(--pos-shadow);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.pos-status-group {
+  border: 1px solid var(--pos-border) !important;
+  background: var(--pos-surface) !important;
+  border-radius: var(--pos-border-radius-lg) !important;
+}
+
+.pos-system-status {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+  background: var(--pos-background-secondary) !important;
+  color: var(--pos-text-primary) !important;
+  padding: 1rem !important;
+  border-radius: var(--pos-border-radius) !important;
+  border: 1px solid var(--pos-border);
+  white-space: pre-line;
+  font-size: 0.9rem;
+}
+
+/* Status Bar */
+.pos-status-bar {
+  background: var(--pos-background-secondary) !important;
+  color: var(--pos-text-secondary) !important;
+  border-top: 1px solid var(--pos-border) !important;
+  font-size: 0.9rem;
+  transition: var(--pos-transition);
+}
+
+/* Table Identifier Specific Styles */
+.table-identifier-dine-in {
+  color: var(--pos-dine-in-color) !important;
+  font-weight: 500 !important;
+}
+
+.table-identifier-delivery {
+  color: var(--pos-delivery-color) !important;
+  font-weight: 500 !important;
+}
+
+.table-identifier-walk-in {
+  color: var(--pos-walk-in-color) !important;
+  font-weight: 500 !important;
+}
+
+/* Refresh Button */
+.pos-refresh-btn {
+  border: 2px solid var(--pos-primary) !important;
+  color: var(--pos-primary) !important;
+  background: transparent !important;
+  transition: var(--pos-transition-fast);
+}
+
+.pos-refresh-btn:hover {
+  background: var(--pos-primary) !important;
+  color: var(--pos-text-on-primary) !important;
+  transform: translateY(-1px);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+  .pos-order-controls,
+  .pos-status-section {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+  
+  .pos-new-order-btn {
+    font-size: 1rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  .pos-table-combo {
+    font-size: 1rem !important;
+    padding: 0.5rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .pos-header {
+    padding: 1rem !important;
+  }
+  
+  .pos-system-status {
+    font-size: 0.8rem !important;
+  }
+  
+  .pos-status-bar {
+    font-size: 0.8rem !important;
+    padding: 0.75rem !important;
+  }
+}
+
+/* ========================================
+   DARK MODE MEDIA QUERY SUPPORT
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light):not(.theme-colorful):not(.theme-base) {
+    /* Apply dark theme variables automatically */
+    --pos-background: #212529;
+    --pos-background-secondary: #343a40;
+    --pos-background-tertiary: #495057;
+    --pos-surface: #343a40;
+    --pos-surface-secondary: #495057;
+    --pos-text-primary: #f8f9fa;
+    --pos-text-secondary: #adb5bd;
+    --pos-text-muted: #6c757d;
+    --pos-border: #495057;
+    --pos-border-light: #343a40;
+    --pos-border-dark: #6c757d;
+  }
+}
+
+/* ========================================
+   THEME TRANSITION ANIMATIONS
+   ======================================== */
+
+.pos-theme-transition * {
+  transition: background-color var(--pos-transition), 
+              color var(--pos-transition), 
+              border-color var(--pos-transition),
+              box-shadow var(--pos-transition) !important;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.pos-shadow-sm { box-shadow: var(--pos-shadow-sm) !important; }
+.pos-shadow { box-shadow: var(--pos-shadow) !important; }
+.pos-shadow-lg { box-shadow: var(--pos-shadow-lg) !important; }
+.pos-shadow-xl { box-shadow: var(--pos-shadow-xl) !important; }
+
+.pos-border-radius { border-radius: var(--pos-border-radius) !important; }
+.pos-border-radius-lg { border-radius: var(--pos-border-radius-lg) !important; }
+.pos-border-radius-xl { border-radius: var(--pos-border-radius-xl) !important; }
+
+.pos-text-primary { color: var(--pos-text-primary) !important; }
+.pos-text-secondary { color: var(--pos-text-secondary) !important; }
+.pos-text-muted { color: var(--pos-text-muted) !important; }
+
+.pos-bg-surface { background: var(--pos-surface) !important; }
+.pos-bg-surface-secondary { background: var(--pos-surface-secondary) !important; }
+
+.pos-border { border-color: var(--pos-border) !important; }
+.pos-border-light { border-color: var(--pos-border-light) !important; }
+.pos-border-dark { border-color: var(--pos-border-dark) !important; }
