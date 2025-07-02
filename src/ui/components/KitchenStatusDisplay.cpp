@@ -283,7 +283,7 @@ void KitchenStatusDisplay::updateQueueStatus() {
     }
     
     // Show "and X more" if there are additional tickets
-    if (kitchenTickets.size() > displayCount) {
+    if (static_cast<int>(kitchenTickets.size()) > displayCount) {
         auto moreText = std::make_unique<Wt::WText>(
             "... and " + std::to_string(kitchenTickets.size() - displayCount) + " more");
         moreText->addStyleClass("small text-muted font-italic");

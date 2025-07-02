@@ -309,7 +309,7 @@ void PaymentDialog::setupEventHandlers() {
     });
     
     if (splitPaymentButton_) {
-        splitPaymentButton_->clicked().connect([this]() {
+        splitPaymentButton_->clicked().connect([]() {
             // TODO: Implement split payment dialog
             std::cout << "Split payment not yet implemented" << std::endl;
         });
