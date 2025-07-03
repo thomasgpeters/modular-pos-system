@@ -2,6 +2,7 @@
 #define RESTAURANTPOSAPP_H
 
 #include "../services/POSService.hpp"
+#include "../services/ThemeService.hpp"
 #include "../events/EventManager.hpp"
 
 #include <Wt/WApplication.h>
@@ -19,16 +20,16 @@
 #include <memory>
 
 /**
- * @file RestaurantPOSApp.hpp (Enhanced with New Order Controls)
- * @brief Main application with new order creation interface
+ * @file RestaurantPOSApp.hpp (Enhanced with Theme Management)
+ * @brief Main application with integrated theme switching capability
  * 
  * @author Restaurant POS Team
- * @version 2.1.0 - Updated with table identifier selection
+ * @version 2.2.0 - Updated with ThemeService integration
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Main application orchestrator with enhanced order creation UI
+ * @brief Main application orchestrator with enhanced theming support
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
@@ -47,6 +48,7 @@ private:
     // Core services
     std::shared_ptr<EventManager> eventManager_;
     std::shared_ptr<POSService> posService_;
+    std::shared_ptr<ThemeService> themeService_;
     
     // UI components
     Wt::WContainerWidget* mainContainer_;
@@ -55,6 +57,12 @@ private:
 
     // Change this line - use raw pointer since it's managed by the widget tree now
     Wt::WTimer* updateTimer_;
+    
+    // Header and theme controls
+    Wt::WContainerWidget* headerContainer_;
+    Wt::WContainerWidget* themeControlsContainer_;
+    Wt::WComboBox* themeSelector_;
+    Wt::WPushButton* themeToggleButton_;
     
     // New order controls
     Wt::WGroupBox* newOrderGroup_;
@@ -70,16 +78,28 @@ private:
     // Initialization methods
     void initializeServices();
     void setupMainLayout();
+    void setupHeaderWithThemeControls();
     void setupNewOrderControls();
     void setupStatusControls();
     void setupEventListeners();
     void setupRealTimeUpdates();
     
+    // Theme management methods
+    void initializeThemeService();
+    void setupThemeControls();
+    void setupThemeEventHandlers();
+    void onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme);
+    void onThemeToggleClicked();
+    void onThemeSelectorChanged();
+    void updateThemeControls();
+    
     // CSS and styling methods
     void setupBootstrapTheme();
     void addCustomCSS();
+    void addThemeSpecificCSS();
     void setupMetaTags();
     void applyComponentStyling();
+    void applyThemeToComponents();
     
     // Event handlers
     void onNewOrderButtonClicked();
@@ -119,6 +139,12 @@ private:
     std::vector<std::string> getAvailableTableIdentifiers() const;
     std::string formatTableIdentifierDisplay(const std::string& identifier) const;
     bool isTableIdentifierAvailable(const std::string& identifier) const;
+    
+    // Theme utility methods
+    void createThemeSelector();
+    void createThemeToggleButton();
+    std::string getCurrentThemeDisplayName() const;
+    void applyThemeTransition();
 };
 
 /**

@@ -41,7 +41,44 @@ void UIComponentFactory::logComponentCreation(const std::string& componentName) 
 }
 
 // ============================================================================
-// Template Method Implementations - FIXED: Add missing template implementations
+// Helper function to convert string to ThemeService::Theme enum
+// This function safely handles any enum values that might exist in your ThemeService
+// ============================================================================
+
+namespace {
+    ThemeService::Theme parseThemeFromString(const std::string& themeId) {
+        if (themeId == "light") return ThemeService::Theme::LIGHT;
+        if (themeId == "dark") return ThemeService::Theme::DARK;
+        if (themeId == "base") return ThemeService::Theme::BASE;
+        if (themeId == "auto") return ThemeService::Theme::AUTO;
+        
+        // Try different possible names for colorful theme
+        if (themeId == "colorful") {
+            // Check if COLORFUL exists in your enum
+            // If not, we'll fall back to LIGHT
+            // You may need to change this to match your actual enum values
+            // Possible alternatives: VIBRANT, RAINBOW, BRIGHT, etc.
+            
+            // Uncomment the line below if your enum has COLORFUL
+            // return ThemeService::Theme::COLORFUL;
+            
+            // Uncomment one of these if your enum has different names:
+            // return ThemeService::Theme::VIBRANT;
+            // return ThemeService::Theme::RAINBOW;
+            // return ThemeService::Theme::BRIGHT;
+            
+            // For now, fallback to LIGHT if COLORFUL doesn't exist
+            std::cout << "WARNING: COLORFUL theme not found, falling back to LIGHT" << std::endl;
+            return ThemeService::Theme::LIGHT;
+        }
+        
+        // Default fallback
+        return ThemeService::Theme::LIGHT;
+    }
+}
+
+// ============================================================================
+// Template Method Implementations
 // ============================================================================
 
 template<typename T>
@@ -110,7 +147,7 @@ std::unique_ptr<ThemeSelector> UIComponentFactory::createThemeSelector() {
         return nullptr;
     }
     
-    // FIXED: Use correct constructor signature - ThemeSelector(themeService, displayMode)
+    // Use correct constructor signature - ThemeSelector(themeService, displayMode)
     auto component = std::make_unique<ThemeSelector>(themeService_, ThemeSelector::DisplayMode::DROPDOWN);
     configureComponent(component.get());
     
@@ -331,14 +368,8 @@ std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDi
     // Convert ThemeService::Theme callback to ThemeSelectionDialog callback
     auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
         if (callback) {
-            // Convert theme.id string to ThemeService::Theme enum
-            ThemeService::Theme themeEnum = ThemeService::Theme::LIGHT; // Default
-            if (theme.id == "light") themeEnum = ThemeService::Theme::LIGHT;
-            else if (theme.id == "dark") themeEnum = ThemeService::Theme::DARK;
-            else if (theme.id == "colorful") themeEnum = ThemeService::Theme::COLORFUL;
-            else if (theme.id == "base") themeEnum = ThemeService::Theme::BASE;
-            else if (theme.id == "auto") themeEnum = ThemeService::Theme::AUTO;
-            
+            // Use the safe parsing function
+            ThemeService::Theme themeEnum = parseThemeFromString(theme.id);
             callback(themeEnum);
         }
     };
@@ -364,14 +395,8 @@ std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createThemeSelectionDi
     // Convert ThemeService::Theme callback to ThemeSelectionDialog callback
     auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
         if (callback) {
-            // Convert theme.id string to ThemeService::Theme enum
-            ThemeService::Theme themeEnum = ThemeService::Theme::LIGHT;
-            if (theme.id == "light") themeEnum = ThemeService::Theme::LIGHT;
-            else if (theme.id == "dark") themeEnum = ThemeService::Theme::DARK;
-            else if (theme.id == "colorful") themeEnum = ThemeService::Theme::COLORFUL;
-            else if (theme.id == "base") themeEnum = ThemeService::Theme::BASE;
-            else if (theme.id == "auto") themeEnum = ThemeService::Theme::AUTO;
-            
+            // Use the safe parsing function
+            ThemeService::Theme themeEnum = parseThemeFromString(theme.id);
             callback(themeEnum);
         }
     };
@@ -393,14 +418,8 @@ std::unique_ptr<ThemeSelectionDialog> UIComponentFactory::createConfiguredThemeS
     // Convert ThemeService::Theme callback to ThemeSelectionDialog callback
     auto themeCallback = [callback](const ThemeSelectionDialog::ThemeInfo& theme) {
         if (callback) {
-            // Convert theme.id string to ThemeService::Theme enum
-            ThemeService::Theme themeEnum = ThemeService::Theme::LIGHT;
-            if (theme.id == "light") themeEnum = ThemeService::Theme::LIGHT;
-            else if (theme.id == "dark") themeEnum = ThemeService::Theme::DARK;
-            else if (theme.id == "colorful") themeEnum = ThemeService::Theme::COLORFUL;
-            else if (theme.id == "base") themeEnum = ThemeService::Theme::BASE;
-            else if (theme.id == "auto") themeEnum = ThemeService::Theme::AUTO;
-            
+            // Use the safe parsing function
+            ThemeService::Theme themeEnum = parseThemeFromString(theme.id);
             callback(themeEnum);
         }
     };

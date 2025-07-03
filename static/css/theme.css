@@ -1,0 +1,530 @@
+/**
+ * @file themes.css
+ * @brief Comprehensive theme system for Restaurant POS
+ * @version 2.2.0
+ * @author Restaurant POS Team
+ * 
+ * This CSS file provides a complete theme framework with support for:
+ * - Light mode (default)
+ * - Dark mode
+ * - Colorful mode (gradients and vibrant colors)
+ * - Base mode (minimal, monochromatic)
+ * - Smooth transitions between themes
+ * - Bootstrap 4 integration
+ * - Responsive design
+ */
+
+/* ===================================================================
+   ROOT VARIABLES - Default Light Theme
+   =================================================================== */
+:root {
+  --pos-primary: #0d6efd;
+  --pos-primary-hover: #0b5ed7;
+  --pos-secondary: #6c757d;
+  --pos-success: #198754;
+  --pos-danger: #dc3545;
+  --pos-warning: #ffc107;
+  --pos-info: #0dcaf0;
+  
+  /* Background Colors */
+  --pos-body-bg: #ffffff;
+  --pos-main-bg: #f8f9fa;
+  --pos-header-bg: #ffffff;
+  --pos-card-bg: #ffffff;
+  --pos-sidebar-bg: #f8f9fa;
+  
+  /* Text Colors */
+  --pos-body-text: #212529;
+  --pos-main-text: #212529;
+  --pos-header-text: #495057;
+  --pos-card-text: #212529;
+  --pos-muted-text: #6c757d;
+  --pos-title-color: #495057;
+  
+  /* Border Colors */
+  --pos-border-color: #dee2e6;
+  --pos-border-light: #e9ecef;
+  --pos-border-dark: #ced4da;
+  
+  /* Shadow Effects */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  
+  /* Transition Effects */
+  --pos-transition-fast: 0.15s ease-in-out;
+  --pos-transition-normal: 0.3s ease-in-out;
+  --pos-transition-slow: 0.6s ease-in-out;
+}
+
+/* ===================================================================
+   LIGHT THEME - Clean and Professional
+   =================================================================== */
+.theme-light {
+  --pos-primary: #0d6efd;
+  --pos-primary-hover: #0b5ed7;
+  --pos-secondary: #6c757d;
+  --pos-success: #198754;
+  --pos-danger: #dc3545;
+  --pos-warning: #ffc107;
+  --pos-info: #0dcaf0;
+  
+  --pos-body-bg: #ffffff;
+  --pos-main-bg: #f8f9fa;
+  --pos-header-bg: #ffffff;
+  --pos-card-bg: #ffffff;
+  --pos-sidebar-bg: #f8f9fa;
+  
+  --pos-body-text: #212529;
+  --pos-main-text: #212529;
+  --pos-header-text: #495057;
+  --pos-card-text: #212529;
+  --pos-muted-text: #6c757d;
+  --pos-title-color: #495057;
+  
+  --pos-border-color: #dee2e6;
+  --pos-border-light: #e9ecef;
+  --pos-border-dark: #ced4da;
+  
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+/* ===================================================================
+   DARK THEME - Easy on the Eyes
+   =================================================================== */
+.theme-dark {
+  --pos-primary: #6ea8fe;
+  --pos-primary-hover: #539bfe;
+  --pos-secondary: #adb5bd;
+  --pos-success: #198754;
+  --pos-danger: #dc3545;
+  --pos-warning: #ffc107;
+  --pos-info: #0dcaf0;
+  
+  --pos-body-bg: #212529;
+  --pos-main-bg: #212529;
+  --pos-header-bg: #343a40;
+  --pos-card-bg: #495057;
+  --pos-sidebar-bg: #343a40;
+  
+  --pos-body-text: #f8f9fa;
+  --pos-main-text: #f8f9fa;
+  --pos-header-text: #f8f9fa;
+  --pos-card-text: #f8f9fa;
+  --pos-muted-text: #adb5bd;
+  --pos-title-color: #f8f9fa;
+  
+  --pos-border-color: #6c757d;
+  --pos-border-light: #495057;
+  --pos-border-dark: #343a40;
+  
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+/* ===================================================================
+   COLORFUL THEME - Vibrant and Modern
+   =================================================================== */
+.theme-colorful {
+  --pos-primary: #8b5cf6;
+  --pos-primary-hover: #7c3aed;
+  --pos-secondary: #e879f9;
+  --pos-success: #10b981;
+  --pos-danger: #ef4444;
+  --pos-warning: #f59e0b;
+  --pos-info: #06b6d4;
+  
+  --pos-body-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --pos-main-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --pos-header-bg: rgba(255, 255, 255, 0.95);
+  --pos-card-bg: rgba(255, 255, 255, 0.95);
+  --pos-sidebar-bg: rgba(255, 255, 255, 0.9);
+  
+  --pos-body-text: #ffffff;
+  --pos-main-text: #ffffff;
+  --pos-header-text: #374151;
+  --pos-card-text: #374151;
+  --pos-muted-text: #6b7280;
+  --pos-title-color: #8b5cf6;
+  
+  --pos-border-color: rgba(255, 255, 255, 0.3);
+  --pos-border-light: rgba(255, 255, 255, 0.2);
+  --pos-border-dark: rgba(255, 255, 255, 0.4);
+  
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(139, 92, 246, 0.2);
+  --pos-shadow: 0 0.5rem 1rem rgba(139, 92, 246, 0.3);
+  --pos-shadow-lg: 0 1rem 3rem rgba(139, 92, 246, 0.4);
+}
+
+/* ===================================================================
+   BASE THEME - Minimal and Clean
+   =================================================================== */
+.theme-base {
+  --pos-primary: #495057;
+  --pos-primary-hover: #343a40;
+  --pos-secondary: #6c757d;
+  --pos-success: #495057;
+  --pos-danger: #6c757d;
+  --pos-warning: #adb5bd;
+  --pos-info: #495057;
+  
+  --pos-body-bg: #ffffff;
+  --pos-main-bg: #ffffff;
+  --pos-header-bg: #f8f9fa;
+  --pos-card-bg: #ffffff;
+  --pos-sidebar-bg: #f8f9fa;
+  
+  --pos-body-text: #495057;
+  --pos-main-text: #495057;
+  --pos-header-text: #495057;
+  --pos-card-text: #495057;
+  --pos-muted-text: #6c757d;
+  --pos-title-color: #495057;
+  
+  --pos-border-color: #ced4da;
+  --pos-border-light: #dee2e6;
+  --pos-border-dark: #adb5bd;
+  
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.15);
+}
+
+/* ===================================================================
+   GLOBAL THEME APPLICATION
+   =================================================================== */
+body {
+  background: var(--pos-body-bg) !important;
+  color: var(--pos-body-text) !important;
+  transition: background-color var(--pos-transition-normal), 
+              color var(--pos-transition-normal) !important;
+}
+
+/* ===================================================================
+   MAIN APPLICATION COMPONENTS
+   =================================================================== */
+
+/* Main Container */
+.pos-main-container {
+  background: var(--pos-main-bg) !important;
+  color: var(--pos-main-text) !important;
+  min-height: 100vh;
+  transition: background var(--pos-transition-normal), 
+              color var(--pos-transition-normal);
+}
+
+/* Header Component */
+.pos-header {
+  background: var(--pos-header-bg) !important;
+  color: var(--pos-header-text) !important;
+  border: 1px solid var(--pos-border-color) !important;
+  box-shadow: var(--pos-shadow-sm);
+  transition: all var(--pos-transition-normal);
+}
+
+.pos-app-title {
+  color: var(--pos-title-color) !important;
+  font-weight: 600;
+}
+
+/* Card Components */
+.pos-new-order-group,
+.pos-current-order-group,
+.pos-system-status-group,
+.status-card {
+  background: var(--pos-card-bg) !important;
+  color: var(--pos-card-text) !important;
+  border-color: var(--pos-border-color) !important;
+  box-shadow: var(--pos-shadow-sm);
+  transition: all var(--pos-transition-normal);
+}
+
+.pos-new-order-group {
+  border-left: 4px solid var(--pos-success) !important;
+}
+
+.pos-current-order-group {
+  border-left: 4px solid var(--pos-info) !important;
+}
+
+.pos-system-status-group {
+  border-left: 4px solid var(--pos-primary) !important;
+}
+
+/* Status Bar */
+.pos-status-bar {
+  background: var(--pos-card-bg) !important;
+  color: var(--pos-card-text) !important;
+  border: 1px solid var(--pos-border-color) !important;
+  transition: all var(--pos-transition-normal);
+}
+
+/* ===================================================================
+   FORM COMPONENTS
+   =================================================================== */
+
+/* Form Controls */
+.form-control,
+.form-select,
+.pos-table-combo {
+  background-color: var(--pos-card-bg) !important;
+  color: var(--pos-card-text) !important;
+  border-color: var(--pos-border-color) !important;
+  transition: all var(--pos-transition-fast);
+}
+
+.form-control:focus,
+.form-select:focus,
+.pos-table-combo:focus {
+  border-color: var(--pos-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--pos-primary-rgb), 0.25) !important;
+}
+
+/* Labels */
+.form-label {
+  color: var(--pos-card-text) !important;
+  font-weight: 500;
+}
+
+/* ===================================================================
+   BUTTON COMPONENTS
+   =================================================================== */
+
+/* Primary Buttons */
+.btn-primary,
+.pos-new-order-btn.btn-success {
+  background-color: var(--pos-primary) !important;
+  border-color: var(--pos-primary) !important;
+  color: #ffffff !important;
+  transition: all var(--pos-transition-fast);
+}
+
+.btn-primary:hover,
+.pos-new-order-btn.btn-success:hover {
+  background-color: var(--pos-primary-hover) !important;
+  border-color: var(--pos-primary-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--pos-shadow);
+}
+
+/* Secondary Buttons */
+.btn-secondary,
+.btn-outline-secondary {
+  color: var(--pos-card-text) !important;
+  border-color: var(--pos-border-color) !important;
+  transition: all var(--pos-transition-fast);
+}
+
+.btn-outline-secondary {
+  background-color: transparent !important;
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--pos-secondary) !important;
+  color: #ffffff !important;
+}
+
+/* Theme Controls */
+.pos-theme-selector {
+  background-color: var(--pos-card-bg) !important;
+  color: var(--pos-card-text) !important;
+  border-color: var(--pos-border-color) !important;
+  min-width: 150px;
+}
+
+.pos-theme-toggle {
+  background-color: var(--pos-card-bg) !important;
+  color: var(--pos-card-text) !important;
+  border-color: var(--pos-border-color) !important;
+  min-width: 120px;
+  transition: all var(--pos-transition-fast);
+}
+
+.pos-theme-toggle:hover {
+  background-color: var(--pos-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--pos-primary) !important;
+  transform: translateY(-1px);
+}
+
+/* ===================================================================
+   STATUS INDICATORS
+   =================================================================== */
+
+/* Order Status */
+.order-status-active {
+  color: var(--pos-success) !important;
+  font-weight: 600;
+}
+
+.order-status-inactive,
+.text-muted {
+  color: var(--pos-muted-text) !important;
+}
+
+/* System Status Text */
+.pos-current-order-status {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  background: rgba(var(--pos-primary-rgb), 0.1);
+  border-radius: 0.25rem;
+  border-left: 3px solid var(--pos-primary);
+}
+
+/* ===================================================================
+   THEME TRANSITIONS
+   =================================================================== */
+
+/* Smooth Theme Transitions */
+.pos-theme-transition,
+.pos-theme-transition * {
+  transition: background-color var(--pos-transition-normal),
+              color var(--pos-transition-normal),
+              border-color var(--pos-transition-normal),
+              box-shadow var(--pos-transition-normal) !important;
+}
+
+/* Special transition effects for colorful theme */
+.theme-colorful .pos-theme-transition {
+  animation: colorfulPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes colorfulPulse {
+  0% { filter: brightness(1); }
+  100% { filter: brightness(1.05); }
+}
+
+/* ===================================================================
+   RESPONSIVE DESIGN
+   =================================================================== */
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .pos-theme-selector,
+  .pos-theme-toggle {
+    min-width: auto;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .pos-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pos-header .row {
+    flex-direction: column;
+  }
+  
+  .pos-header .col-md-4 {
+    margin-top: 1rem;
+  }
+  
+  .pos-new-order-btn {
+    font-size: 1rem;
+    padding: 12px;
+  }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .pos-main-container {
+    padding: 10px;
+  }
+  
+  .pos-theme-selector {
+    min-width: 130px;
+  }
+  
+  .pos-theme-toggle {
+    min-width: 100px;
+  }
+}
+
+/* ===================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   =================================================================== */
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --pos-border-color: #000000;
+    --pos-border-light: #666666;
+  }
+  
+  .theme-dark {
+    --pos-border-color: #ffffff;
+    --pos-border-light: #cccccc;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .pos-theme-transition,
+  .pos-theme-transition * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Focus Indicators */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: 2px solid var(--pos-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* ===================================================================
+   PRINT STYLES
+   =================================================================== */
+@media print {
+  .pos-theme-selector,
+  .pos-theme-toggle,
+  .btn {
+    display: none !important;
+  }
+  
+  .pos-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  
+  .pos-main-container {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
+/* ===================================================================
+   UTILITY CLASSES
+   =================================================================== */
+
+/* Theme-aware text colors */
+.text-primary-theme { color: var(--pos-primary) !important; }
+.text-secondary-theme { color: var(--pos-secondary) !important; }
+.text-success-theme { color: var(--pos-success) !important; }
+.text-danger-theme { color: var(--pos-danger) !important; }
+.text-warning-theme { color: var(--pos-warning) !important; }
+.text-info-theme { color: var(--pos-info) !important; }
+.text-muted-theme { color: var(--pos-muted-text) !important; }
+
+/* Theme-aware background colors */
+.bg-primary-theme { background-color: var(--pos-primary) !important; }
+.bg-secondary-theme { background-color: var(--pos-secondary) !important; }
+.bg-card-theme { background-color: var(--pos-card-bg) !important; }
+.bg-main-theme { background-color: var(--pos-main-bg) !important; }
+
+/* Theme-aware borders */
+.border-theme { border-color: var(--pos-border-color) !important; }
+.border-light-theme { border-color: var(--pos-border-light) !important; }
+.border-dark-theme { border-color: var(--pos-border-dark) !important; }
+
+/* Shadow utilities */
+.shadow-sm-theme { box-shadow: var(--pos-shadow-sm) !important; }
+.shadow-theme { box-shadow: var(--pos-shadow) !important; }
+.shadow-lg-theme { box-shadow: var(--pos-shadow-lg) !important; }
