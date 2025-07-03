@@ -2,14 +2,21 @@
 #define MENUDISPLAY_H
 
 #include "../../services/POSService.hpp"
+#include "../../services/ThemeService.hpp"
 #include "../../events/EventManager.hpp"
 #include "../../events/POSEvents.hpp"
 #include "../../MenuItem.hpp"
 
 #include <Wt/WContainerWidget.h>
 #include <Wt/WTable.h>
-#include <Wt/WPushButton.h>
 #include <Wt/WText.h>
+#include <Wt/WPushButton.h>
+#include <Wt/WSpinBox.h>
+#include <Wt/WLineEdit.h>
+#include <Wt/WComboBox.h>
+#include <Wt/WGroupBox.h>
+#include <Wt/WVBoxLayout.h>
+#include <Wt/WHBoxLayout.h>
 
 #include <memory>
 #include <vector>
@@ -19,39 +26,32 @@
  * @file MenuDisplay.hpp
  * @brief Menu display component for the Restaurant POS System
  * 
- * This component manages the display of menu items, including category
- * organization and item selection functionality.
+ * This component displays the restaurant menu with categories and allows
+ * users to add items to the current order with quantity and special instructions.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.0.0 - Enhanced with theme support
  */
 
 /**
  * @class MenuDisplay
- * @brief UI component for displaying and selecting menu items
+ * @brief UI component for displaying menu items and adding them to orders
  * 
- * The MenuDisplay component shows menu items organized by category and
- * provides functionality for adding items to the current order. It supports
- * both table view and category tiles view.
+ * The MenuDisplay shows menu items organized by categories, with functionality
+ * to add items to the current order with specified quantities and special instructions.
+ * It integrates with the theme system for consistent styling.
  */
 class MenuDisplay : public Wt::WContainerWidget {
 public:
     /**
-     * @enum DisplayMode
-     * @brief Display modes for the menu
-     */
-    enum DisplayMode {
-        TABLE_VIEW,     ///< Traditional table view with all items
-        CATEGORY_TILES  ///< Category tiles with popover selection
-    };
-    
-    /**
      * @brief Constructs the menu display
      * @param posService Shared POS service for business operations
      * @param eventManager Shared event manager for component communication
+     * @param themeService Optional theme service for styling support
      */
     MenuDisplay(std::shared_ptr<POSService> posService,
-               std::shared_ptr<EventManager> eventManager);
+                std::shared_ptr<EventManager> eventManager,
+                std::shared_ptr<ThemeService> themeService = nullptr);
     
     /**
      * @brief Virtual destructor
@@ -64,27 +64,34 @@ public:
     void refresh();
     
     /**
-     * @brief Sets the display mode
-     * @param mode Display mode to use
+     * @brief Sets the current menu category filter
+     * @param category Category to display, empty string shows all
      */
-    void setDisplayMode(DisplayMode mode);
+    void setCategory(const std::string& category);
     
     /**
-     * @brief Gets the current display mode
-     * @return Current display mode
+     * @brief Gets the current category filter
+     * @return Current category filter
      */
-    DisplayMode getDisplayMode() const;
+    std::string getCurrentCategory() const;
     
     /**
-     * @brief Filters menu items by category
-     * @param category Category to show (use SPECIAL to show all)
+     * @brief Sets whether the menu is in selection mode
+     * @param enabled True to enable item selection, false for display only
      */
-    void filterByCategory(MenuItem::Category category);
+    void setSelectionEnabled(bool enabled);
     
     /**
-     * @brief Clears any category filter
+     * @brief Checks if selection mode is enabled
+     * @return True if selection is enabled
      */
-    void clearCategoryFilter();
+    bool isSelectionEnabled() const;
+    
+    /**
+     * @brief Gets all available menu categories
+     * @return Vector of category names
+     */
+    std::vector<std::string> getAvailableCategories() const;
 
 protected:
     /**
@@ -98,72 +105,95 @@ protected:
     void setupEventListeners();
     
     /**
-     * @brief Builds the table view display
+     * @brief Creates the menu header with category filter
+     * @return Container widget with header controls
      */
-    void buildTableView();
+    std::unique_ptr<Wt::WWidget> createMenuHeader();
     
     /**
-     * @brief Builds the category tiles display
+     * @brief Creates the menu items display table
      */
-    void buildCategoryTilesView();
+    void createMenuItemsTable();
     
     /**
-     * @brief Creates a category tile
-     * @param category Category for the tile
-     * @param itemCount Number of items in the category
-     * @return Container widget for the tile
+     * @brief Updates the menu items table with current category filter
      */
-    std::unique_ptr<Wt::WWidget> createCategoryTile(MenuItem::Category category, int itemCount);
+    void updateMenuItemsTable();
     
     /**
-     * @brief Shows category popover with items
-     * @param category Category to show
-     * @param items Items in the category
+     * @brief Adds a menu item row to the table
+     * @param item Menu item to add
+     * @param index Index for event handling
      */
-    void showCategoryPopover(MenuItem::Category category, 
-                           const std::vector<std::shared_ptr<MenuItem>>& items);
+    void addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t index);
 
 private:
     // Services and dependencies
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
+    std::shared_ptr<ThemeService> themeService_;
     
     // Configuration
-    DisplayMode displayMode_;
-    MenuItem::Category categoryFilter_;
-    bool hasFilter_;
+    std::string currentCategory_;
+    bool selectionEnabled_;
     
     // UI components
-    Wt::WContainerWidget* menuContainer_;
-    Wt::WTable* menuTable_;
-    Wt::WContainerWidget* categoryTilesContainer_;
+    Wt::WGroupBox* menuGroup_;
+    Wt::WComboBox* categoryCombo_;
+    Wt::WText* itemCountText_;
+    Wt::WTable* itemsTable_;
+    Wt::WContainerWidget* headerContainer_;
+    
+    // Menu data cache
+    std::vector<std::shared_ptr<MenuItem>> menuItems_;
+    std::vector<std::string> categories_;
+    std::map<std::string, std::vector<std::shared_ptr<MenuItem>>> itemsByCategory_;
     
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
     
     // Event handlers
     void handleMenuUpdated(const std::any& eventData);
+    void handleCurrentOrderChanged(const std::any& eventData);
     void handleThemeChanged(const std::any& eventData);
     
     // UI action handlers
-    void onMenuItemSelected(std::shared_ptr<MenuItem> item);
-    void onCategoryTileClicked(MenuItem::Category category);
+    void onCategoryChanged();
+    void onAddToOrderClicked(const std::shared_ptr<MenuItem>& item, int quantity, const std::string& instructions);
+    void onItemRowClicked(const std::shared_ptr<MenuItem>& item);
     
-    // ADDED: Missing method declaration
-    void addMenuItemToTable(std::shared_ptr<MenuItem> item, int row);
+    // Business logic methods
+    void addItemToCurrentOrder(const MenuItem& item, int quantity, const std::string& instructions);
+    bool canAddToOrder() const;
+    void showAddToOrderDialog(const std::shared_ptr<MenuItem>& item);
+    
+    // Data management methods
+    void loadMenuItems();
+    void organizeItemsByCategory();
+    void populateCategoryCombo();
+    std::vector<std::shared_ptr<MenuItem>> getFilteredItems() const;
     
     // Helper methods
-    std::vector<std::shared_ptr<MenuItem>> getFilteredMenuItems() const;
-    std::map<MenuItem::Category, std::vector<std::shared_ptr<MenuItem>>> groupMenuItemsByCategory() const;
-    std::string getCategoryIcon(MenuItem::Category category) const;
-    std::string getCategoryDisplayName(MenuItem::Category category) const;
-    void updateMenuTable();
-    void updateCategoryTiles();
-    void clearMenuContainer();
-    
-    // Formatting helpers
     std::string formatCurrency(double amount) const;
     std::string formatItemDescription(const std::shared_ptr<MenuItem>& item) const;
+    void updateItemCount();
+    void showMessage(const std::string& message, const std::string& type = "info");
+    
+    // Validation methods
+    bool validateQuantity(int quantity) const;
+    bool validateSpecialInstructions(const std::string& instructions) const;
+    
+    // Styling methods
+    void applyTheme();
+    void applyTableStyling();
+    void applyHeaderStyling();
+    void updateRowStyling(int row, bool isEven);
+    void applyItemRowStyling(int row, const std::shared_ptr<MenuItem>& item);
+    
+    // Constants
+    static constexpr int MAX_QUANTITY = 99;
+    static constexpr int MAX_INSTRUCTIONS_LENGTH = 200;
+    static constexpr const char* ALL_CATEGORIES = "All Categories";
 };
 
 #endif // MENUDISPLAY_H

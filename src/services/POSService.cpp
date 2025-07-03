@@ -93,19 +93,17 @@ std::shared_ptr<Order> POSService::getCurrentOrder() const {
 }
 
 void POSService::setCurrentOrder(std::shared_ptr<Order> order) {
+    auto previousOrder = currentOrder_;
     currentOrder_ = order;
     
     if (eventManager_) {
-        // Create a simple JSON object for current order changed event
-        Wt::Json::Object eventData;
-        if (order) {
-            eventData["orderId"] = Wt::Json::Value(order->getOrderId());
-            eventData["tableNumber"] = Wt::Json::Value(order->getTableNumber());
-        } else {
-            eventData["orderId"] = Wt::Json::Value(-1);
-            eventData["tableNumber"] = Wt::Json::Value(-1);
-        }
-        eventManager_->publish("CURRENT_ORDER_CHANGED", eventData);
+        // FIXED: Use proper POSEvents constant and create proper event data
+        auto eventData = POSEvents::createCurrentOrderChangedEvent(
+            order, 
+            previousOrder, 
+            order ? "order_set" : "order_cleared"
+        );
+        eventManager_->publish(POSEvents::CURRENT_ORDER_CHANGED, eventData);
     }
 }
 
@@ -119,7 +117,7 @@ bool POSService::cancelOrder(int orderId) {
     if (success) {
         // Clear current order if it's the one being cancelled
         if (currentOrder_ && currentOrder_->getOrderId() == orderId) {
-            currentOrder_ = nullptr;
+            setCurrentOrder(nullptr); // This will trigger CURRENT_ORDER_CHANGED event
         }
         
         if (eventManager_) {
@@ -147,12 +145,18 @@ bool POSService::isValidTableIdentifier(const std::string& tableIdentifier) cons
 }
 
 // =====================================================================
-// Current Order Management
+// Current Order Management (ENHANCED to support quantity and instructions)
 // =====================================================================
 
 bool POSService::addItemToCurrentOrder(std::shared_ptr<MenuItem> item) {
-    if (!item || !item->isAvailable()) {
-        std::cerr << "Invalid or unavailable menu item" << std::endl;
+    // Legacy method - call enhanced version with default quantity and no instructions
+    return addItemToCurrentOrder(*item, 1, "");
+}
+
+// ADDED: Enhanced method that supports quantity and special instructions
+bool POSService::addItemToCurrentOrder(const MenuItem& item, int quantity, const std::string& instructions) {
+    if (!item.isAvailable()) {
+        std::cerr << "Menu item is not available: " << item.getName() << std::endl;
         return false;
     }
     
@@ -161,9 +165,18 @@ bool POSService::addItemToCurrentOrder(std::shared_ptr<MenuItem> item) {
         return false;
     }
     
+    if (quantity <= 0 || quantity > 99) {
+        std::cerr << "Invalid quantity: " << quantity << std::endl;
+        return false;
+    }
+    
     try {
-        // Create OrderItem with the MenuItem and add to order
-        OrderItem orderItem(*item, 1); // quantity = 1
+        // Create OrderItem with the MenuItem, quantity, and special instructions
+        OrderItem orderItem(item, quantity);
+        if (!instructions.empty()) {
+            orderItem.setSpecialInstructions(instructions);
+        }
+        
         currentOrder_->addItem(orderItem);
         
         if (eventManager_) {
@@ -176,7 +189,12 @@ bool POSService::addItemToCurrentOrder(std::shared_ptr<MenuItem> item) {
             }
         }
         
-        std::cout << "Added " << item->getName() << " to current order" << std::endl;
+        std::cout << "Added " << quantity << "x " << item.getName() << " to current order";
+        if (!instructions.empty()) {
+            std::cout << " (Note: " << instructions << ")";
+        }
+        std::cout << std::endl;
+        
         return true;
         
     } catch (const std::exception& e) {
@@ -274,7 +292,7 @@ bool POSService::sendCurrentOrderToKitchen() {
             std::cout << "Order #" << currentOrder_->getOrderId() << " sent to kitchen" << std::endl;
             
             // Clear current order after sending to kitchen
-            currentOrder_ = nullptr;
+            setCurrentOrder(nullptr); // This will trigger CURRENT_ORDER_CHANGED event
         }
         
         return success;
@@ -317,7 +335,7 @@ Wt::Json::Object POSService::getKitchenQueueStatus() const {
 }
 
 // =====================================================================
-// Menu Management Methods
+// Menu Management Methods (ENHANCED with event publishing)
 // =====================================================================
 
 std::vector<std::shared_ptr<MenuItem>> POSService::getMenuItems() const {
@@ -334,6 +352,31 @@ std::vector<std::shared_ptr<MenuItem>> POSService::getMenuItemsByCategory(MenuIt
     }
     
     return categoryItems;
+}
+
+// ADDED: Method to find menu item by ID (useful for MenuDisplay)
+std::shared_ptr<MenuItem> POSService::getMenuItemById(int itemId) const {
+    auto it = std::find_if(menuItems_.begin(), menuItems_.end(),
+        [itemId](const std::shared_ptr<MenuItem>& item) {
+            return item && item->getId() == itemId;
+        });
+    
+    return (it != menuItems_.end()) ? *it : nullptr;
+}
+
+// ADDED: Method to refresh menu and publish event
+void POSService::refreshMenu() {
+    // In a real implementation, this would reload from database
+    // For now, just trigger the event
+    if (eventManager_) {
+        auto eventData = POSEvents::createMenuUpdatedEvent(
+            static_cast<int>(menuItems_.size()), 
+            "refresh"
+        );
+        eventManager_->publish(POSEvents::MENU_UPDATED, eventData);
+    }
+    
+    std::cout << "Menu refreshed with " << menuItems_.size() << " items" << std::endl;
 }
 
 // =====================================================================
@@ -392,6 +435,7 @@ std::vector<double> POSService::getTipSuggestions() const {
 void POSService::initializeMenu() {
     // This method is called by RestaurantPOSApp to initialize the menu
     initializeMenuItems();
+    refreshMenu(); // Trigger menu updated event
     std::cout << "Menu initialized via initializeMenu() call" << std::endl;
 }
 
@@ -425,4 +469,3 @@ std::vector<std::string> POSService::convertOrderItemsToStringList(const std::ve
     
     return itemList;
 }
-

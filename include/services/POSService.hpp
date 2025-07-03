@@ -23,7 +23,7 @@
  * OrderManager, KitchenInterface, PaymentProcessor, and EventManager.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0 - Updated to match actual class interfaces
+ * @version 2.1.0 - Enhanced with quantity/instructions support and proper events
  */
 
 /**
@@ -111,15 +111,24 @@ public:
     bool isValidTableIdentifier(const std::string& tableIdentifier) const;
     
     // =====================================================================
-    // Current Order Management
+    // Current Order Management (ENHANCED)
     // =====================================================================
     
     /**
-     * @brief Adds an item to the current order
+     * @brief Adds an item to the current order (legacy method)
      * @param item Menu item to add
      * @return True if successful
      */
     bool addItemToCurrentOrder(std::shared_ptr<MenuItem> item);
+    
+    /**
+     * @brief Adds an item to the current order with quantity and instructions
+     * @param item Menu item to add
+     * @param quantity Number of items to add
+     * @param instructions Special preparation instructions
+     * @return True if successful
+     */
+    bool addItemToCurrentOrder(const MenuItem& item, int quantity = 1, const std::string& instructions = "");
     
     /**
      * @brief Removes an item from current order by index
@@ -165,7 +174,7 @@ public:
     Wt::Json::Object getKitchenQueueStatus() const;
     
     // =====================================================================
-    // Menu Management Methods
+    // Menu Management Methods (ENHANCED)
     // =====================================================================
     
     /**
@@ -180,6 +189,18 @@ public:
      * @return Vector of menu items in category
      */
     std::vector<std::shared_ptr<MenuItem>> getMenuItemsByCategory(MenuItem::Category category) const;
+    
+    /**
+     * @brief Gets a menu item by its ID
+     * @param itemId ID of the menu item to find
+     * @return Shared pointer to menu item, or nullptr if not found
+     */
+    std::shared_ptr<MenuItem> getMenuItemById(int itemId) const;
+    
+    /**
+     * @brief Refreshes the menu and publishes update event
+     */
+    void refreshMenu();
     
     // =====================================================================
     // Payment Processing Methods
@@ -221,7 +242,7 @@ public:
      */
     std::vector<double> getTipSuggestions() const;
 
-        /**
+    /**
      * @brief Initializes the menu items (called by RestaurantPOSApp)
      */
     void initializeMenu();
@@ -251,15 +272,14 @@ private:
     // Menu items storage
     std::vector<std::shared_ptr<MenuItem>> menuItems_;
     
+    // UI callback functions
+    std::function<void(std::shared_ptr<Order>)> orderCreatedCallback_;
+    std::function<void(std::shared_ptr<Order>)> orderModifiedCallback_;
+    
     // Helper methods
     void initializeMenuItems();
     void initializeSubsystems();
     std::vector<std::string> convertOrderItemsToStringList(const std::vector<OrderItem>& items) const;
-
-        // UI callback functions
-    std::function<void(std::shared_ptr<Order>)> orderCreatedCallback_;
-    std::function<void(std::shared_ptr<Order>)> orderModifiedCallback_;
-    
 };
 
 #endif // POSSERVICE_H

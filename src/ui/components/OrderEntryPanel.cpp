@@ -7,6 +7,7 @@
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
+#include <Wt/WBorderLayout.h>
 #include <iostream>
 
 OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
@@ -46,8 +47,14 @@ void OrderEntryPanel::refresh() {
     updateTableStatus();
     refreshAvailableIdentifiers();
     
-    // Note: MenuDisplay and CurrentOrderDisplay will be added later
-    // For now, focus on getting the basic structure working
+    // Refresh child components
+    if (menuDisplay_) {
+        menuDisplay_->refresh();
+    }
+    
+    if (currentOrderDisplay_) {
+        currentOrderDisplay_->refresh();
+    }
 }
 
 void OrderEntryPanel::setTableIdentifier(const std::string& tableIdentifier) {
@@ -93,6 +100,11 @@ void OrderEntryPanel::setOrderEntryEnabled(bool enabled) {
     if (sendToKitchenButton_) sendToKitchenButton_->setEnabled(enabled);
     if (processPaymentButton_) processPaymentButton_->setEnabled(enabled);
     if (tableIdentifierCombo_) tableIdentifierCombo_->setEnabled(enabled);
+    
+    // Enable/disable menu selection
+    if (menuDisplay_) {
+        menuDisplay_->setSelectionEnabled(enabled);
+    }
 }
 
 void OrderEntryPanel::setAvailableTableIdentifiers(const std::vector<std::string>& identifiers) {
@@ -110,58 +122,145 @@ std::string OrderEntryPanel::getSelectedTableIdentifier() const {
 }
 
 void OrderEntryPanel::initializeUI() {
-    // Create main layout
-    auto mainLayout = std::make_unique<Wt::WVBoxLayout>();
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    // Create main layout using border layout for better organization
+    auto mainLayout = std::make_unique<Wt::WBorderLayout>();
     
-    // Create table selection section directly
-    tableSelectionGroup_ = addNew<Wt::WGroupBox>("Table Selection");
+    // Top section: Table selection and order controls
+    auto topSection = std::make_unique<Wt::WContainerWidget>();
+    topSection->addStyleClass("order-entry-top-section");
+    
+    setupTableSelectionSection(topSection.get());
+    setupOrderActionsSection(topSection.get());
+    
+    mainLayout->addWidget(std::move(topSection), Wt::LayoutPosition::North);
+    
+    // Center section: Menu and current order displays
+    auto centerSection = std::make_unique<Wt::WContainerWidget>();
+    centerSection->addStyleClass("order-entry-center-section");
+    
+    setupMenuAndOrderDisplays(centerSection.get());
+    
+    mainLayout->addWidget(std::move(centerSection), Wt::LayoutPosition::Center);
+    
+    setLayout(std::move(mainLayout));
+    
+    // Apply styling
+    applyTableSelectionStyling();
+    
+    std::cout << "[OrderEntryPanel] UI initialized with complete layout" << std::endl;
+}
+
+void OrderEntryPanel::setupTableSelectionSection(Wt::WContainerWidget* parent) {
+    // Create table selection group
+    tableSelectionGroup_ = parent->addNew<Wt::WGroupBox>("Table Selection");
     tableSelectionGroup_->addStyleClass("table-selection-group");
     
+    auto groupLayout = std::make_unique<Wt::WVBoxLayout>();
+    
     // Table identifier label and combo
-    tableIdentifierLabel_ = tableSelectionGroup_->addNew<Wt::WLabel>("Select Table/Location:");
+    auto selectorContainer = std::make_unique<Wt::WContainerWidget>();
+    selectorContainer->addStyleClass("table-selector-container");
+    
+    tableIdentifierLabel_ = selectorContainer->addNew<Wt::WLabel>("Select Table/Location:");
     tableIdentifierLabel_->addStyleClass("form-label");
     
-    createTableIdentifierCombo();
+    createTableIdentifierCombo(selectorContainer.get());
+    
+    groupLayout->addWidget(std::move(selectorContainer));
     
     // Table status text
     tableStatusText_ = tableSelectionGroup_->addNew<Wt::WText>("Select a table/location");
     tableStatusText_->addStyleClass("table-status-text text-muted small");
     
-    // Create order actions section directly
-    auto actionsContainer = addNew<Wt::WContainerWidget>();
-    actionsContainer->addStyleClass("order-actions-section");
+    tableSelectionGroup_->setLayout(std::move(groupLayout));
+}
+
+void OrderEntryPanel::setupOrderActionsSection(Wt::WContainerWidget* parent) {
+    // Create order actions container
+    auto actionsContainer = parent->addNew<Wt::WContainerWidget>();
+    actionsContainer->addStyleClass("order-actions-section mt-3");
+    
+    auto actionsLayout = std::make_unique<Wt::WHBoxLayout>();
     
     // New order button
-    newOrderButton_ = actionsContainer->addNew<Wt::WPushButton>("Start New Order");
-    newOrderButton_->addStyleClass("btn btn-success btn-lg mb-2");
+    newOrderButton_ = actionsContainer->addNew<Wt::WPushButton>("🆕 Start New Order");
+    newOrderButton_->addStyleClass("btn btn-success btn-lg me-2");
     newOrderButton_->setEnabled(false);
+    actionsLayout->addWidget(std::unique_ptr<Wt::WPushButton>(newOrderButton_));
     
     // Send to kitchen button
-    sendToKitchenButton_ = actionsContainer->addNew<Wt::WPushButton>("Send to Kitchen");
-    sendToKitchenButton_->addStyleClass("btn btn-primary mb-2");
+    sendToKitchenButton_ = actionsContainer->addNew<Wt::WPushButton>("🍳 Send to Kitchen");
+    sendToKitchenButton_->addStyleClass("btn btn-primary btn-lg me-2");
     sendToKitchenButton_->setEnabled(false);
+    actionsLayout->addWidget(std::unique_ptr<Wt::WPushButton>(sendToKitchenButton_));
     
     // Process payment button
-    processPaymentButton_ = actionsContainer->addNew<Wt::WPushButton>("Process Payment");
-    processPaymentButton_->addStyleClass("btn btn-warning");
+    processPaymentButton_ = actionsContainer->addNew<Wt::WPushButton>("💳 Process Payment");
+    processPaymentButton_->addStyleClass("btn btn-warning btn-lg");
     processPaymentButton_->setEnabled(false);
+    actionsLayout->addWidget(std::unique_ptr<Wt::WPushButton>(processPaymentButton_));
     
-    // TODO: Add MenuDisplay and CurrentOrderDisplay later
-    // For now, create placeholder texts
-    auto menuPlaceholder = addNew<Wt::WText>("Menu Display will be added here");
-    menuPlaceholder->addStyleClass("text-muted p-3 border");
+    actionsContainer->setLayout(std::move(actionsLayout));
+}
+
+void OrderEntryPanel::setupMenuAndOrderDisplays(Wt::WContainerWidget* parent) {
+    // Create horizontal layout for menu and current order
+    auto displayLayout = std::make_unique<Wt::WHBoxLayout>();
+    displayLayout->setContentsMargins(0, 0, 0, 0);
     
-    auto orderPlaceholder = addNew<Wt::WText>("Current Order Display will be added here");
-    orderPlaceholder->addStyleClass("text-muted p-3 border");
+    // Left side: Menu display
+    auto menuContainer = std::make_unique<Wt::WContainerWidget>();
+    menuContainer->addStyleClass("menu-display-container");
     
-    // Apply styling
-    applyTableSelectionStyling();
+    // Create menu display component
+    menuDisplay_ = menuContainer->addNew<MenuDisplay>(posService_, eventManager_);
+    menuDisplay_->setSelectionEnabled(false); // Initially disabled until order is created
+    
+    displayLayout->addWidget(std::move(menuContainer), 2); // 2/3 of width
+    
+    // Right side: Current order display
+    auto orderContainer = std::make_unique<Wt::WContainerWidget>();
+    orderContainer->addStyleClass("current-order-container");
+    
+    // Create current order display component
+    currentOrderDisplay_ = orderContainer->addNew<CurrentOrderDisplay>(posService_, eventManager_);
+    currentOrderDisplay_->setEditable(true);
+    
+    displayLayout->addWidget(std::move(orderContainer), 1); // 1/3 of width
+    
+    parent->setLayout(std::move(displayLayout));
+    
+    std::cout << "[OrderEntryPanel] Menu and order displays setup complete" << std::endl;
 }
 
 void OrderEntryPanel::setupEventListeners() {
-    // For now, simplified event handling
-    std::cout << "[OrderEntryPanel] Event listeners setup (simplified)" << std::endl;
+    if (!eventManager_) {
+        std::cout << "[OrderEntryPanel] No EventManager available" << std::endl;
+        return;
+    }
+    
+    // Subscribe to order events
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CREATED,
+            [this](const std::any& data) { handleOrderCreated(data); }));
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
+            [this](const std::any& data) { handleOrderModified(data); }));
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED,
+            [this](const std::any& data) { handleCurrentOrderChanged(data); }));
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_ITEM_ADDED,
+            [this](const std::any& data) { handleOrderModified(data); }));
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_ITEM_REMOVED,
+            [this](const std::any& data) { handleOrderModified(data); }));
+    
+    std::cout << "[OrderEntryPanel] Event listeners setup complete" << std::endl;
 }
 
 void OrderEntryPanel::setupEventHandlers() {
@@ -190,10 +289,12 @@ void OrderEntryPanel::setupEventHandlers() {
             onProcessPaymentClicked();
         });
     }
+    
+    std::cout << "[OrderEntryPanel] Event handlers setup complete" << std::endl;
 }
 
-void OrderEntryPanel::createTableIdentifierCombo() {
-    tableIdentifierCombo_ = tableSelectionGroup_->addNew<Wt::WComboBox>();
+void OrderEntryPanel::createTableIdentifierCombo(Wt::WContainerWidget* parent) {
+    tableIdentifierCombo_ = parent->addNew<Wt::WComboBox>();
     tableIdentifierCombo_->addStyleClass("form-select table-identifier-combo");
     populateTableIdentifierCombo();
 }
@@ -217,17 +318,48 @@ void OrderEntryPanel::populateTableIdentifierCombo() {
     tableIdentifierCombo_->setCurrentIndex(0);
 }
 
+// Event handlers
 void OrderEntryPanel::handleOrderCreated(const std::any& eventData) {
-    refresh();
+    std::cout << "[OrderEntryPanel] Order created event received" << std::endl;
+    
+    // Enable menu selection now that we have an order
+    if (menuDisplay_) {
+        menuDisplay_->setSelectionEnabled(true);
+    }
+    
+    // Update button states
     updateOrderActionButtons();
+    
+    // Update table status
+    updateTableStatus();
+    
+    // Show success message
+    showOrderValidationMessage("✅ Order created successfully! You can now add items from the menu.", "success");
 }
 
 void OrderEntryPanel::handleOrderModified(const std::any& eventData) {
+    std::cout << "[OrderEntryPanel] Order modified event received" << std::endl;
     updateOrderActionButtons();
 }
 
 void OrderEntryPanel::handleCurrentOrderChanged(const std::any& eventData) {
+    std::cout << "[OrderEntryPanel] Current order changed event received" << std::endl;
+    
+    bool hasOrder = hasCurrentOrder();
+    
+    // Enable/disable menu selection based on order availability
+    if (menuDisplay_) {
+        menuDisplay_->setSelectionEnabled(hasOrder);
+    }
+    
+    // Update button states
     updateOrderActionButtons();
+    
+    // Clear table selection if no order
+    if (!hasOrder) {
+        tableIdentifierCombo_->setCurrentIndex(0);
+        showOrderValidationMessage("Order cleared. Select a table/location to start a new order.", "info");
+    }
 }
 
 void OrderEntryPanel::onNewOrderClicked() {
@@ -246,6 +378,12 @@ void OrderEntryPanel::onSendToKitchenClicked() {
         return;
     }
     
+    auto currentOrder = posService_->getCurrentOrder();
+    if (!currentOrder || currentOrder->getItems().empty()) {
+        showOrderValidationError("Cannot send empty order to kitchen. Please add items first.");
+        return;
+    }
+    
     sendCurrentOrderToKitchen();
 }
 
@@ -255,7 +393,14 @@ void OrderEntryPanel::onProcessPaymentClicked() {
         return;
     }
     
-    std::cout << "[OrderEntryPanel] Process payment clicked" << std::endl;
+    auto currentOrder = posService_->getCurrentOrder();
+    if (!currentOrder || currentOrder->getItems().empty()) {
+        showOrderValidationError("Cannot process payment for empty order");
+        return;
+    }
+    
+    std::cout << "[OrderEntryPanel] Process payment clicked for order: " << currentOrder->getOrderId() << std::endl;
+    showOrderValidationMessage("Payment processing not yet implemented", "info");
 }
 
 void OrderEntryPanel::onTableIdentifierChanged() {
@@ -265,10 +410,17 @@ void OrderEntryPanel::onTableIdentifierChanged() {
 
 void OrderEntryPanel::createNewOrder(const std::string& tableIdentifier) {
     try {
+        // Check if table is already in use
+        if (!isTableIdentifierAvailable(tableIdentifier)) {
+            showOrderValidationError("Table/location is already in use");
+            return;
+        }
+        
         auto order = posService_->createOrder(tableIdentifier);
         if (order) {
             posService_->setCurrentOrder(order);
-            std::cout << "[OrderEntryPanel] Created new order for " << tableIdentifier << std::endl;
+            std::cout << "[OrderEntryPanel] Created new order #" << order->getOrderId() 
+                     << " for " << tableIdentifier << std::endl;
         } else {
             showOrderValidationError("Failed to create order for " + tableIdentifier);
         }
@@ -285,9 +437,34 @@ void OrderEntryPanel::createNewOrder(int tableNumber) {
 
 void OrderEntryPanel::sendCurrentOrderToKitchen() {
     try {
+        auto currentOrder = posService_->getCurrentOrder();
+        if (!currentOrder) {
+            showOrderValidationError("No current order to send");
+            return;
+        }
+        
+        // Validate order has items
+        if (currentOrder->getItems().empty()) {
+            showOrderValidationError("Cannot send empty order to kitchen");
+            return;
+        }
+        
         bool success = posService_->sendCurrentOrderToKitchen();
         if (success) {
-            std::cout << "[OrderEntryPanel] Order sent to kitchen successfully" << std::endl;
+            showOrderValidationMessage("✅ Order #" + std::to_string(currentOrder->getOrderId()) + 
+                                     " sent to kitchen successfully!", "success");
+            
+            // Clear current order after sending to kitchen
+            posService_->setCurrentOrder(nullptr);
+            
+            // Disable menu selection
+            if (menuDisplay_) {
+                menuDisplay_->setSelectionEnabled(false);
+            }
+            
+            // Reset table selection
+            tableIdentifierCombo_->setCurrentIndex(0);
+            
         } else {
             showOrderValidationError("Failed to send order to kitchen");
         }
@@ -299,21 +476,47 @@ void OrderEntryPanel::sendCurrentOrderToKitchen() {
 void OrderEntryPanel::updateOrderActionButtons() {
     bool hasCurrentOrder = this->hasCurrentOrder();
     bool validTableSelection = validateTableIdentifierSelection();
+    bool hasOrderItems = hasCurrentOrder && hasOrderWithItems();
     
-    // New order button
+    // New order button - enabled when valid table selected and no current order
     if (newOrderButton_) {
         newOrderButton_->setEnabled(validTableSelection && !hasCurrentOrder);
+        
+        if (hasCurrentOrder) {
+            newOrderButton_->setText("🆕 Order In Progress");
+        } else {
+            newOrderButton_->setText("🆕 Start New Order");
+        }
     }
     
-    // Send to kitchen button
+    // Send to kitchen button - enabled when order has items
     if (sendToKitchenButton_) {
-        sendToKitchenButton_->setEnabled(hasCurrentOrder);
+        sendToKitchenButton_->setEnabled(hasOrderItems);
+        
+        if (hasOrderItems) {
+            auto currentOrder = posService_->getCurrentOrder();
+            int itemCount = currentOrder->getItems().size();
+            sendToKitchenButton_->setText("🍳 Send to Kitchen (" + std::to_string(itemCount) + " items)");
+        } else {
+            sendToKitchenButton_->setText("🍳 Send to Kitchen");
+        }
     }
     
-    // Process payment button
+    // Process payment button - enabled when order has items
     if (processPaymentButton_) {
-        processPaymentButton_->setEnabled(hasCurrentOrder);
+        processPaymentButton_->setEnabled(hasOrderItems);
+        
+        if (hasOrderItems) {
+            auto currentOrder = posService_->getCurrentOrder();
+            double total = currentOrder->getTotal();
+            processPaymentButton_->setText("💳 Payment ($" + std::to_string((int)total) + ")");
+        } else {
+            processPaymentButton_->setText("💳 Process Payment");
+        }
     }
+    
+    std::cout << "[OrderEntryPanel] Button states updated - HasOrder: " << hasCurrentOrder 
+              << ", HasItems: " << hasOrderItems << std::endl;
 }
 
 bool OrderEntryPanel::validateCurrentOrder() {
@@ -331,12 +534,42 @@ bool OrderEntryPanel::hasCurrentOrder() const {
     return currentOrder != nullptr;
 }
 
+bool OrderEntryPanel::hasOrderWithItems() const {
+    auto currentOrder = posService_->getCurrentOrder();
+    return currentOrder && !currentOrder->getItems().empty();
+}
+
 void OrderEntryPanel::showOrderValidationError(const std::string& message) {
     std::cerr << "[OrderEntryPanel] Validation Error: " << message << std::endl;
     
     if (tableStatusText_) {
-        tableStatusText_->setText("Error: " + message);
+        tableStatusText_->setText("❌ " + message);
+        tableStatusText_->removeStyleClass("text-success text-muted text-info");
         tableStatusText_->addStyleClass("text-danger");
+    }
+}
+
+void OrderEntryPanel::showOrderValidationMessage(const std::string& message, const std::string& type) {
+    std::cout << "[OrderEntryPanel] " << type << ": " << message << std::endl;
+    
+    if (tableStatusText_) {
+        std::string icon = "ℹ️";
+        std::string cssClass = "text-info";
+        
+        if (type == "success") {
+            icon = "✅";
+            cssClass = "text-success";
+        } else if (type == "warning") {
+            icon = "⚠️";
+            cssClass = "text-warning";
+        } else if (type == "error") {
+            icon = "❌";
+            cssClass = "text-danger";
+        }
+        
+        tableStatusText_->setText(icon + " " + message);
+        tableStatusText_->removeStyleClass("text-success text-danger text-warning text-info text-muted");
+        tableStatusText_->addStyleClass(cssClass);
     }
 }
 
@@ -345,21 +578,22 @@ void OrderEntryPanel::updateTableStatus() {
     
     std::string identifier = getSelectedTableIdentifier();
     if (identifier.empty()) {
-        tableStatusText_->setText("Select a table/location");
-        tableStatusText_->removeStyleClass("text-danger text-success");
-        tableStatusText_->addStyleClass("text-muted");
+        showOrderValidationMessage("Select a table/location to start ordering", "info");
         return;
     }
     
     bool isAvailable = isTableIdentifierAvailable(identifier);
     if (isAvailable) {
-        tableStatusText_->setText("✓ " + formatTableIdentifier(identifier) + " is available");
-        tableStatusText_->removeStyleClass("text-danger text-muted");
-        tableStatusText_->addStyleClass("text-success");
+        if (hasCurrentOrder()) {
+            auto currentOrder = posService_->getCurrentOrder();
+            int itemCount = currentOrder->getItems().size();
+            showOrderValidationMessage("Order #" + std::to_string(currentOrder->getOrderId()) + 
+                                     " active (" + std::to_string(itemCount) + " items)", "success");
+        } else {
+            showOrderValidationMessage(formatTableIdentifier(identifier) + " is available", "success");
+        }
     } else {
-        tableStatusText_->setText("⚠ " + formatTableIdentifier(identifier) + " is in use");
-        tableStatusText_->removeStyleClass("text-success text-muted");
-        tableStatusText_->addStyleClass("text-danger");
+        showOrderValidationMessage(formatTableIdentifier(identifier) + " is currently in use", "warning");
     }
 }
 

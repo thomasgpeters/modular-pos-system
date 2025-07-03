@@ -19,7 +19,7 @@
  * and provides helper functions for creating and handling these events.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0 - Added missing events for complete workflow
  */
 
 /**
@@ -40,6 +40,11 @@ namespace POSEvents {
     extern const std::string ORDER_COMPLETED;
     extern const std::string ORDER_CANCELLED;
     extern const std::string ORDER_STATUS_CHANGED;
+    extern const std::string CURRENT_ORDER_CHANGED;      // ADDED: For when current order is set/cleared
+    
+    // Menu Events
+    extern const std::string MENU_UPDATED;               // ADDED: For when menu items change
+    extern const std::string MENU_ITEM_AVAILABILITY_CHANGED; // ADDED: For when items become available/unavailable
     
     // Kitchen Events
     extern const std::string ORDER_SENT_TO_KITCHEN;
@@ -93,6 +98,34 @@ namespace POSEvents {
         OrderItemEventData(std::shared_ptr<Order> ord, size_t idx, 
                           const std::string& name, int qty)
             : order(ord), itemIndex(idx), itemName(name), quantity(qty) {}
+    };
+    
+    /**
+     * @struct CurrentOrderEventData
+     * @brief Data structure for current order change events
+     */
+    struct CurrentOrderEventData {
+        std::shared_ptr<Order> newOrder;
+        std::shared_ptr<Order> previousOrder;
+        std::string reason; // "created", "cleared", "changed"
+        
+        CurrentOrderEventData(std::shared_ptr<Order> newOrd, 
+                             std::shared_ptr<Order> prevOrd = nullptr,
+                             const std::string& rsn = "")
+            : newOrder(newOrd), previousOrder(prevOrd), reason(rsn) {}
+    };
+    
+    /**
+     * @struct MenuEventData
+     * @brief Data structure for menu-related events
+     */
+    struct MenuEventData {
+        std::string menuVersion;
+        int itemCount;
+        std::string updateReason; // "refresh", "item_added", "item_removed", "availability_changed"
+        
+        MenuEventData(const std::string& version = "", int count = 0, const std::string& reason = "")
+            : menuVersion(version), itemCount(count), updateReason(reason) {}
     };
     
     /**
@@ -175,6 +208,29 @@ namespace POSEvents {
      */
     inline OrderEventData createOrderCreatedData(std::shared_ptr<Order> order) {
         return OrderEventData(order, "Order created for table " + std::to_string(order->getTableNumber()));
+    }
+    
+    /**
+     * @brief Creates a current order changed event data
+     * @param newOrder The new current order (can be nullptr)
+     * @param previousOrder The previous current order (can be nullptr)
+     * @param reason Reason for the change
+     * @return CurrentOrderEventData for the event
+     */
+    inline CurrentOrderEventData createCurrentOrderChangedData(std::shared_ptr<Order> newOrder,
+                                                               std::shared_ptr<Order> previousOrder = nullptr,
+                                                               const std::string& reason = "") {
+        return CurrentOrderEventData(newOrder, previousOrder, reason);
+    }
+    
+    /**
+     * @brief Creates a menu updated event data
+     * @param itemCount Number of items in the updated menu
+     * @param reason Reason for the menu update
+     * @return MenuEventData for the event
+     */
+    inline MenuEventData createMenuUpdatedData(int itemCount, const std::string& reason = "refresh") {
+        return MenuEventData("1.0", itemCount, reason);
     }
     
     /**
@@ -270,11 +326,12 @@ namespace POSEvents {
         Wt::Json::Object event;
         event["orderId"] = Wt::Json::Value(order->getOrderId());
         event["tableNumber"] = Wt::Json::Value(order->getTableNumber());
+        event["tableIdentifier"] = Wt::Json::Value(order->getTableIdentifier());
         event["status"] = Wt::Json::Value(static_cast<int>(order->getStatus()));
         event["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
             std::chrono::system_clock::to_time_t(order->getTimestamp())));
         event["orderData"] = order->toJson();
-        event["message"] = Wt::Json::Value("Order created for table " + std::to_string(order->getTableNumber()));
+        event["message"] = Wt::Json::Value("Order created for " + order->getTableIdentifier());
         return event;
     }
     
@@ -287,11 +344,65 @@ namespace POSEvents {
         Wt::Json::Object event;
         event["orderId"] = Wt::Json::Value(order->getOrderId());
         event["tableNumber"] = Wt::Json::Value(order->getTableNumber());
+        event["tableIdentifier"] = Wt::Json::Value(order->getTableIdentifier());
         event["status"] = Wt::Json::Value(static_cast<int>(order->getStatus()));
         event["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
             std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
         event["orderData"] = order->toJson();
         event["message"] = Wt::Json::Value("Order " + std::to_string(order->getOrderId()) + " modified");
+        return event;
+    }
+    
+    /**
+     * @brief Creates a JSON object for current order changed events
+     * @param newOrder The new current order (can be nullptr)
+     * @param previousOrder The previous current order (can be nullptr)
+     * @param reason Reason for the change
+     * @return JSON object suitable for EventManager
+     */
+    inline Wt::Json::Object createCurrentOrderChangedEvent(std::shared_ptr<Order> newOrder,
+                                                           std::shared_ptr<Order> previousOrder = nullptr,
+                                                           const std::string& reason = "") {
+        Wt::Json::Object event;
+        
+        if (newOrder) {
+            event["orderId"] = Wt::Json::Value(newOrder->getOrderId());
+            event["tableNumber"] = Wt::Json::Value(newOrder->getTableNumber());
+            event["tableIdentifier"] = Wt::Json::Value(newOrder->getTableIdentifier());
+            event["hasCurrentOrder"] = Wt::Json::Value(true);
+        } else {
+            event["orderId"] = Wt::Json::Value(-1);
+            event["tableNumber"] = Wt::Json::Value(-1);
+            event["tableIdentifier"] = Wt::Json::Value("");
+            event["hasCurrentOrder"] = Wt::Json::Value(false);
+        }
+        
+        if (previousOrder) {
+            event["previousOrderId"] = Wt::Json::Value(previousOrder->getOrderId());
+        }
+        
+        event["reason"] = Wt::Json::Value(reason);
+        event["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
+            std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
+        event["message"] = Wt::Json::Value("Current order changed: " + reason);
+        
+        return event;
+    }
+    
+    /**
+     * @brief Creates a JSON object for menu updated events
+     * @param itemCount Number of items in the updated menu
+     * @param reason Reason for the menu update
+     * @return JSON object suitable for EventManager
+     */
+    inline Wt::Json::Object createMenuUpdatedEvent(int itemCount, const std::string& reason = "refresh") {
+        Wt::Json::Object event;
+        event["itemCount"] = Wt::Json::Value(itemCount);
+        event["reason"] = Wt::Json::Value(reason);
+        event["menuVersion"] = Wt::Json::Value("1.0");
+        event["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
+            std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
+        event["message"] = Wt::Json::Value("Menu updated: " + reason + " (" + std::to_string(itemCount) + " items)");
         return event;
     }
     
