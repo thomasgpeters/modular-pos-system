@@ -7,7 +7,6 @@
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
-#include <Wt/WBorderLayout.h>
 #include <iostream>
 
 OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
@@ -19,17 +18,16 @@ OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
     , tableIdentifierLabel_(nullptr)
     , tableIdentifierCombo_(nullptr)
     , tableStatusText_(nullptr)
+    , actionsContainer_(nullptr)
     , newOrderButton_(nullptr)
     , sendToKitchenButton_(nullptr)
     , processPaymentButton_(nullptr)
-    , menuDisplay_(nullptr)
-    , currentOrderDisplay_(nullptr)
 {
     if (!posService_ || !eventManager_) {
         throw std::invalid_argument("OrderEntryPanel requires valid POSService and EventManager");
     }
     
-    addStyleClass("order-entry-panel");
+    addStyleClass("order-entry-panel simplified-version");
     
     // Initialize UI and event handling
     initializeUI();
@@ -39,198 +37,95 @@ OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
     // Initial refresh
     refresh();
     
-    std::cout << "[OrderEntryPanel] Initialized successfully" << std::endl;
-}
-
-void OrderEntryPanel::refresh() {
-    updateOrderActionButtons();
-    updateTableStatus();
-    refreshAvailableIdentifiers();
-    
-    // Refresh child components
-    if (menuDisplay_) {
-        menuDisplay_->refresh();
-    }
-    
-    if (currentOrderDisplay_) {
-        currentOrderDisplay_->refresh();
-    }
-}
-
-void OrderEntryPanel::setTableIdentifier(const std::string& tableIdentifier) {
-    if (!tableIdentifierCombo_) return;
-    
-    // Find the identifier in the combo box and select it
-    for (int i = 0; i < tableIdentifierCombo_->count(); ++i) {
-        std::string itemText = tableIdentifierCombo_->itemText(i).toUTF8();
-        std::string cleanIdentifier = extractTableIdentifierFromDisplayText(itemText);
-        if (cleanIdentifier == tableIdentifier) {
-            tableIdentifierCombo_->setCurrentIndex(i);
-            onTableIdentifierChanged();
-            break;
-        }
-    }
-}
-
-std::string OrderEntryPanel::getTableIdentifier() const {
-    return getSelectedTableIdentifier();
-}
-
-void OrderEntryPanel::setTableNumber(int tableNumber) {
-    // Legacy compatibility
-    std::string tableIdentifier = "table " + std::to_string(tableNumber);
-    setTableIdentifier(tableIdentifier);
-}
-
-int OrderEntryPanel::getTableNumber() const {
-    std::string identifier = getTableIdentifier();
-    if (identifier.find("table") == 0) {
-        try {
-            std::string numberStr = identifier.substr(6); // Remove "table "
-            return std::stoi(numberStr);
-        } catch (const std::exception&) {
-            return 0;
-        }
-    }
-    return 0; // Non-table orders return 0
-}
-
-void OrderEntryPanel::setOrderEntryEnabled(bool enabled) {
-    if (newOrderButton_) newOrderButton_->setEnabled(enabled);
-    if (sendToKitchenButton_) sendToKitchenButton_->setEnabled(enabled);
-    if (processPaymentButton_) processPaymentButton_->setEnabled(enabled);
-    if (tableIdentifierCombo_) tableIdentifierCombo_->setEnabled(enabled);
-    
-    // Enable/disable menu selection
-    if (menuDisplay_) {
-        menuDisplay_->setSelectionEnabled(enabled);
-    }
-}
-
-void OrderEntryPanel::setAvailableTableIdentifiers(const std::vector<std::string>& identifiers) {
-    availableTableIdentifiers_ = identifiers;
-    populateTableIdentifierCombo();
-}
-
-std::string OrderEntryPanel::getSelectedTableIdentifier() const {
-    if (!tableIdentifierCombo_ || tableIdentifierCombo_->currentIndex() <= 0) {
-        return "";
-    }
-    
-    std::string displayText = tableIdentifierCombo_->currentText().toUTF8();
-    return extractTableIdentifierFromDisplayText(displayText);
+    std::cout << "[OrderEntryPanel] Simplified version initialized successfully" << std::endl;
 }
 
 void OrderEntryPanel::initializeUI() {
-    // Create main layout using border layout for better organization
-    auto mainLayout = std::make_unique<Wt::WBorderLayout>();
+    // NO LAYOUTS - Direct widget addition only
+    addStyleClass("order-entry-panel simplified-version");
     
-    // Top section: Table selection and order controls
-    auto topSection = std::make_unique<Wt::WContainerWidget>();
-    topSection->addStyleClass("order-entry-top-section");
+    // Setup table selection section (direct children)
+    setupTableSelectionSection();
     
-    setupTableSelectionSection(topSection.get());
-    setupOrderActionsSection(topSection.get());
-    
-    mainLayout->addWidget(std::move(topSection), Wt::LayoutPosition::North);
-    
-    // Center section: Menu and current order displays
-    auto centerSection = std::make_unique<Wt::WContainerWidget>();
-    centerSection->addStyleClass("order-entry-center-section");
-    
-    setupMenuAndOrderDisplays(centerSection.get());
-    
-    mainLayout->addWidget(std::move(centerSection), Wt::LayoutPosition::Center);
-    
-    setLayout(std::move(mainLayout));
+    // Setup order actions section (direct children)
+    setupOrderActionsSection();
     
     // Apply styling
     applyTableSelectionStyling();
     
-    std::cout << "[OrderEntryPanel] UI initialized with complete layout" << std::endl;
+    std::cout << "[OrderEntryPanel] Ultra-simplified UI initialized (no layouts)" << std::endl;
 }
 
-void OrderEntryPanel::setupTableSelectionSection(Wt::WContainerWidget* parent) {
-    // Create table selection group
-    tableSelectionGroup_ = parent->addNew<Wt::WGroupBox>("Table Selection");
-    tableSelectionGroup_->addStyleClass("table-selection-group");
+void OrderEntryPanel::setupTableSelectionSection() {
+    // Create table selection group (direct child of this container)
+    tableSelectionGroup_ = addNew<Wt::WGroupBox>("Table/Location Selection");
+    tableSelectionGroup_->addStyleClass("table-selection-group mb-3");
     
-    auto groupLayout = std::make_unique<Wt::WVBoxLayout>();
+    // NO LAYOUT - Direct children of the group box
     
-    // Table identifier label and combo
-    auto selectorContainer = std::make_unique<Wt::WContainerWidget>();
-    selectorContainer->addStyleClass("table-selector-container");
+    // Table identifier label (direct child of group)
+    tableIdentifierLabel_ = tableSelectionGroup_->addNew<Wt::WLabel>("Select Table/Location:");
+    tableIdentifierLabel_->addStyleClass("form-label fw-bold d-block mb-2");
     
-    tableIdentifierLabel_ = selectorContainer->addNew<Wt::WLabel>("Select Table/Location:");
-    tableIdentifierLabel_->addStyleClass("form-label");
+    // Table identifier combo (direct child of group)  
+    createTableIdentifierCombo();
     
-    createTableIdentifierCombo(selectorContainer.get());
+    // Table status text (direct child of group)
+    tableStatusText_ = tableSelectionGroup_->addNew<Wt::WText>("Select a table/location to start");
+    tableStatusText_->addStyleClass("table-status-text text-muted small d-block mt-2");
     
-    groupLayout->addWidget(std::move(selectorContainer));
-    
-    // Table status text
-    tableStatusText_ = tableSelectionGroup_->addNew<Wt::WText>("Select a table/location");
-    tableStatusText_->addStyleClass("table-status-text text-muted small");
-    
-    tableSelectionGroup_->setLayout(std::move(groupLayout));
+    std::cout << "[OrderEntryPanel] Table selection section setup (no layouts)" << std::endl;
 }
 
-void OrderEntryPanel::setupOrderActionsSection(Wt::WContainerWidget* parent) {
-    // Create order actions container
-    auto actionsContainer = parent->addNew<Wt::WContainerWidget>();
-    actionsContainer->addStyleClass("order-actions-section mt-3");
+void OrderEntryPanel::setupOrderActionsSection() {
+    // Create order actions container (direct child of this container)
+    actionsContainer_ = addNew<Wt::WContainerWidget>();
+    actionsContainer_->addStyleClass("order-actions-section mt-3");
     
-    auto actionsLayout = std::make_unique<Wt::WHBoxLayout>();
+    // NO LAYOUT - Direct children using Bootstrap classes for spacing
     
-    // New order button
-    newOrderButton_ = actionsContainer->addNew<Wt::WPushButton>("🆕 Start New Order");
-    newOrderButton_->addStyleClass("btn btn-success btn-lg me-2");
+    // New order button (direct child)
+    newOrderButton_ = actionsContainer_->addNew<Wt::WPushButton>("🆕 Start New Order");
+    newOrderButton_->addStyleClass("btn btn-success btn-lg me-2 mb-2 d-inline-block");
     newOrderButton_->setEnabled(false);
-    actionsLayout->addWidget(std::unique_ptr<Wt::WPushButton>(newOrderButton_));
     
-    // Send to kitchen button
-    sendToKitchenButton_ = actionsContainer->addNew<Wt::WPushButton>("🍳 Send to Kitchen");
-    sendToKitchenButton_->addStyleClass("btn btn-primary btn-lg me-2");
+    // Send to kitchen button (direct child)
+    sendToKitchenButton_ = actionsContainer_->addNew<Wt::WPushButton>("🍳 Send to Kitchen");
+    sendToKitchenButton_->addStyleClass("btn btn-primary btn-lg me-2 mb-2 d-inline-block");
     sendToKitchenButton_->setEnabled(false);
-    actionsLayout->addWidget(std::unique_ptr<Wt::WPushButton>(sendToKitchenButton_));
     
-    // Process payment button
-    processPaymentButton_ = actionsContainer->addNew<Wt::WPushButton>("💳 Process Payment");
-    processPaymentButton_->addStyleClass("btn btn-warning btn-lg");
+    // Process payment button (direct child)
+    processPaymentButton_ = actionsContainer_->addNew<Wt::WPushButton>("💳 Process Payment");
+    processPaymentButton_->addStyleClass("btn btn-warning btn-lg mb-2 d-inline-block");
     processPaymentButton_->setEnabled(false);
-    actionsLayout->addWidget(std::unique_ptr<Wt::WPushButton>(processPaymentButton_));
     
-    actionsContainer->setLayout(std::move(actionsLayout));
+    std::cout << "[OrderEntryPanel] Order actions section setup (no layouts)" << std::endl;
 }
 
-void OrderEntryPanel::setupMenuAndOrderDisplays(Wt::WContainerWidget* parent) {
-    // Create horizontal layout for menu and current order
-    auto displayLayout = std::make_unique<Wt::WHBoxLayout>();
-    displayLayout->setContentsMargins(0, 0, 0, 0);
+void OrderEntryPanel::createTableIdentifierCombo() {
+    // Create combo as direct child of the table selection group
+    tableIdentifierCombo_ = tableSelectionGroup_->addNew<Wt::WComboBox>();
+    tableIdentifierCombo_->addStyleClass("form-select table-identifier-combo d-block mb-2");
+    populateTableIdentifierCombo();
+}
+
+void OrderEntryPanel::populateTableIdentifierCombo() {
+    if (!tableIdentifierCombo_) return;
     
-    // Left side: Menu display
-    auto menuContainer = std::make_unique<Wt::WContainerWidget>();
-    menuContainer->addStyleClass("menu-display-container");
+    tableIdentifierCombo_->clear();
+    tableIdentifierCombo_->addItem("-- Select Table/Location --");
     
-    // Create menu display component
-    menuDisplay_ = menuContainer->addNew<MenuDisplay>(posService_, eventManager_);
-    menuDisplay_->setSelectionEnabled(false); // Initially disabled until order is created
+    // Use available identifiers if set, otherwise use defaults
+    std::vector<std::string> identifiers = availableTableIdentifiers_.empty() 
+        ? getDefaultTableIdentifiers() 
+        : availableTableIdentifiers_;
     
-    displayLayout->addWidget(std::move(menuContainer), 2); // 2/3 of width
+    for (const auto& identifier : identifiers) {
+        std::string displayText = formatTableIdentifierForDisplay(identifier);
+        tableIdentifierCombo_->addItem(displayText);
+    }
     
-    // Right side: Current order display
-    auto orderContainer = std::make_unique<Wt::WContainerWidget>();
-    orderContainer->addStyleClass("current-order-container");
-    
-    // Create current order display component
-    currentOrderDisplay_ = orderContainer->addNew<CurrentOrderDisplay>(posService_, eventManager_);
-    currentOrderDisplay_->setEditable(true);
-    
-    displayLayout->addWidget(std::move(orderContainer), 1); // 1/3 of width
-    
-    parent->setLayout(std::move(displayLayout));
-    
-    std::cout << "[OrderEntryPanel] Menu and order displays setup complete" << std::endl;
+    tableIdentifierCombo_->setCurrentIndex(0);
 }
 
 void OrderEntryPanel::setupEventListeners() {
@@ -293,48 +188,18 @@ void OrderEntryPanel::setupEventHandlers() {
     std::cout << "[OrderEntryPanel] Event handlers setup complete" << std::endl;
 }
 
-void OrderEntryPanel::createTableIdentifierCombo(Wt::WContainerWidget* parent) {
-    tableIdentifierCombo_ = parent->addNew<Wt::WComboBox>();
-    tableIdentifierCombo_->addStyleClass("form-select table-identifier-combo");
-    populateTableIdentifierCombo();
-}
-
-void OrderEntryPanel::populateTableIdentifierCombo() {
-    if (!tableIdentifierCombo_) return;
-    
-    tableIdentifierCombo_->clear();
-    tableIdentifierCombo_->addItem("-- Select Table/Location --");
-    
-    // Use available identifiers if set, otherwise use defaults
-    std::vector<std::string> identifiers = availableTableIdentifiers_.empty() 
-        ? getDefaultTableIdentifiers() 
-        : availableTableIdentifiers_;
-    
-    for (const auto& identifier : identifiers) {
-        std::string displayText = formatTableIdentifierForDisplay(identifier);
-        tableIdentifierCombo_->addItem(displayText);
-    }
-    
-    tableIdentifierCombo_->setCurrentIndex(0);
+void OrderEntryPanel::refresh() {
+    updateOrderActionButtons();
+    updateTableStatus();
+    refreshAvailableIdentifiers();
 }
 
 // Event handlers
 void OrderEntryPanel::handleOrderCreated(const std::any& eventData) {
     std::cout << "[OrderEntryPanel] Order created event received" << std::endl;
-    
-    // Enable menu selection now that we have an order
-    if (menuDisplay_) {
-        menuDisplay_->setSelectionEnabled(true);
-    }
-    
-    // Update button states
     updateOrderActionButtons();
-    
-    // Update table status
     updateTableStatus();
-    
-    // Show success message
-    showOrderValidationMessage("✅ Order created successfully! You can now add items from the menu.", "success");
+    showOrderValidationMessage("✅ Order created successfully! Add items using the menu display.", "success");
 }
 
 void OrderEntryPanel::handleOrderModified(const std::any& eventData) {
@@ -345,23 +210,15 @@ void OrderEntryPanel::handleOrderModified(const std::any& eventData) {
 void OrderEntryPanel::handleCurrentOrderChanged(const std::any& eventData) {
     std::cout << "[OrderEntryPanel] Current order changed event received" << std::endl;
     
-    bool hasOrder = hasCurrentOrder();
-    
-    // Enable/disable menu selection based on order availability
-    if (menuDisplay_) {
-        menuDisplay_->setSelectionEnabled(hasOrder);
-    }
-    
-    // Update button states
     updateOrderActionButtons();
     
-    // Clear table selection if no order
-    if (!hasOrder) {
+    if (!hasCurrentOrder()) {
         tableIdentifierCombo_->setCurrentIndex(0);
         showOrderValidationMessage("Order cleared. Select a table/location to start a new order.", "info");
     }
 }
 
+// UI action handlers
 void OrderEntryPanel::onNewOrderClicked() {
     if (!validateTableIdentifierSelection()) {
         showOrderValidationError("Please select a valid table/location");
@@ -408,9 +265,9 @@ void OrderEntryPanel::onTableIdentifierChanged() {
     updateOrderActionButtons();
 }
 
+// Business logic methods
 void OrderEntryPanel::createNewOrder(const std::string& tableIdentifier) {
     try {
-        // Check if table is already in use
         if (!isTableIdentifierAvailable(tableIdentifier)) {
             showOrderValidationError("Table/location is already in use");
             return;
@@ -430,7 +287,6 @@ void OrderEntryPanel::createNewOrder(const std::string& tableIdentifier) {
 }
 
 void OrderEntryPanel::createNewOrder(int tableNumber) {
-    // Legacy compatibility
     std::string tableIdentifier = "table " + std::to_string(tableNumber);
     createNewOrder(tableIdentifier);
 }
@@ -443,7 +299,6 @@ void OrderEntryPanel::sendCurrentOrderToKitchen() {
             return;
         }
         
-        // Validate order has items
         if (currentOrder->getItems().empty()) {
             showOrderValidationError("Cannot send empty order to kitchen");
             return;
@@ -456,11 +311,6 @@ void OrderEntryPanel::sendCurrentOrderToKitchen() {
             
             // Clear current order after sending to kitchen
             posService_->setCurrentOrder(nullptr);
-            
-            // Disable menu selection
-            if (menuDisplay_) {
-                menuDisplay_->setSelectionEnabled(false);
-            }
             
             // Reset table selection
             tableIdentifierCombo_->setCurrentIndex(0);
@@ -519,6 +369,65 @@ void OrderEntryPanel::updateOrderActionButtons() {
               << ", HasItems: " << hasOrderItems << std::endl;
 }
 
+// Public interface methods
+void OrderEntryPanel::setTableIdentifier(const std::string& tableIdentifier) {
+    if (!tableIdentifierCombo_) return;
+    
+    for (int i = 0; i < tableIdentifierCombo_->count(); ++i) {
+        std::string itemText = tableIdentifierCombo_->itemText(i).toUTF8();
+        std::string cleanIdentifier = extractTableIdentifierFromDisplayText(itemText);
+        if (cleanIdentifier == tableIdentifier) {
+            tableIdentifierCombo_->setCurrentIndex(i);
+            onTableIdentifierChanged();
+            break;
+        }
+    }
+}
+
+std::string OrderEntryPanel::getTableIdentifier() const {
+    return getSelectedTableIdentifier();
+}
+
+void OrderEntryPanel::setTableNumber(int tableNumber) {
+    std::string tableIdentifier = "table " + std::to_string(tableNumber);
+    setTableIdentifier(tableIdentifier);
+}
+
+int OrderEntryPanel::getTableNumber() const {
+    std::string identifier = getTableIdentifier();
+    if (identifier.find("table") == 0) {
+        try {
+            std::string numberStr = identifier.substr(6);
+            return std::stoi(numberStr);
+        } catch (const std::exception&) {
+            return 0;
+        }
+    }
+    return 0;
+}
+
+void OrderEntryPanel::setOrderEntryEnabled(bool enabled) {
+    if (newOrderButton_) newOrderButton_->setEnabled(enabled);
+    if (sendToKitchenButton_) sendToKitchenButton_->setEnabled(enabled);
+    if (processPaymentButton_) processPaymentButton_->setEnabled(enabled);
+    if (tableIdentifierCombo_) tableIdentifierCombo_->setEnabled(enabled);
+}
+
+void OrderEntryPanel::setAvailableTableIdentifiers(const std::vector<std::string>& identifiers) {
+    availableTableIdentifiers_ = identifiers;
+    populateTableIdentifierCombo();
+}
+
+std::string OrderEntryPanel::getSelectedTableIdentifier() const {
+    if (!tableIdentifierCombo_ || tableIdentifierCombo_->currentIndex() <= 0) {
+        return "";
+    }
+    
+    std::string displayText = tableIdentifierCombo_->currentText().toUTF8();
+    return extractTableIdentifierFromDisplayText(displayText);
+}
+
+// Helper methods
 bool OrderEntryPanel::validateCurrentOrder() {
     auto currentOrder = posService_->getCurrentOrder();
     return currentOrder && !currentOrder->getItems().empty();
@@ -598,18 +507,18 @@ void OrderEntryPanel::updateTableStatus() {
 }
 
 std::string OrderEntryPanel::formatTableIdentifier(const std::string& identifier) const {
-    return identifier; // Simple format for now
+    return identifier;
 }
 
 std::string OrderEntryPanel::getTableIdentifierIcon(const std::string& identifier) const {
     if (identifier.find("table") == 0) {
-        return "🪑"; // Chair icon for dine-in
+        return "🪑";
     } else if (identifier == "grubhub" || identifier == "ubereats") {
-        return "🚗"; // Car icon for delivery
+        return "🚗";
     } else if (identifier == "walk-in") {
-        return "🚶"; // Walking icon for walk-in
+        return "🚶";
     }
-    return "📋"; // Default clipboard icon
+    return "📋";
 }
 
 bool OrderEntryPanel::isTableIdentifierAvailable(const std::string& identifier) const {
@@ -617,12 +526,10 @@ bool OrderEntryPanel::isTableIdentifierAvailable(const std::string& identifier) 
 }
 
 void OrderEntryPanel::refreshAvailableIdentifiers() {
-    // Update available identifiers based on current state
     populateTableIdentifierCombo();
 }
 
 std::string OrderEntryPanel::extractTableIdentifierFromDisplayText(const std::string& displayText) const {
-    // Remove icon prefix if present (e.g., "🪑 table 5" -> "table 5")
     size_t spacePos = displayText.find(' ');
     if (spacePos != std::string::npos && spacePos < 3) {
         return displayText.substr(spacePos + 1);
@@ -637,12 +544,10 @@ std::string OrderEntryPanel::formatTableIdentifierForDisplay(const std::string& 
 std::vector<std::string> OrderEntryPanel::getDefaultTableIdentifiers() const {
     std::vector<std::string> identifiers;
     
-    // Add table numbers 1-20
     for (int i = 1; i <= 20; ++i) {
         identifiers.push_back("table " + std::to_string(i));
     }
     
-    // Add special locations
     identifiers.push_back("walk-in");
     identifiers.push_back("grubhub");
     identifiers.push_back("ubereats");
@@ -661,7 +566,6 @@ void OrderEntryPanel::applyTableSelectionStyling() {
 }
 
 void OrderEntryPanel::updateTableIdentifierStyling() {
-    // Apply styling based on current selection
     std::string identifier = getSelectedTableIdentifier();
     
     if (tableIdentifierCombo_) {

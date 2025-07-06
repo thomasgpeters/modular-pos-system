@@ -1,14 +1,12 @@
+
 #include "../../../include/ui/components/OrderStatusPanel.hpp"
 
-#include <Wt/WVBoxLayout.h>
-#include <Wt/WHBoxLayout.h>
-#include <Wt/WBorderLayout.h>
 #include <Wt/WApplication.h>
-
 #include <iostream>
+#include <chrono>
 #include <iomanip>
 #include <sstream>
-#include <chrono>
+#include <ctime>
 
 OrderStatusPanel::OrderStatusPanel(std::shared_ptr<POSService> posService,
                                   std::shared_ptr<EventManager> eventManager)
@@ -19,45 +17,90 @@ OrderStatusPanel::OrderStatusPanel(std::shared_ptr<POSService> posService,
     , statusTitleText_(nullptr)
     , lastUpdateText_(nullptr)
     , statusSummaryContainer_(nullptr)
-    , activeOrdersDisplay_(nullptr)      // FIXED: Initialize to nullptr
-    , kitchenStatusDisplay_(nullptr)     // FIXED: Initialize to nullptr
-    , refreshTimer_(nullptr) {           // FIXED: Initialize unique_ptr to nullptr
+    , activeOrdersDisplay_(nullptr)
+    , kitchenStatusDisplay_(nullptr)
+    , refreshTimer_(nullptr) {
+    
+    if (!posService_) {
+        throw std::invalid_argument("OrderStatusPanel requires valid POSService");
+    }
+    
+    addStyleClass("order-status-panel");
     
     initializeUI();
     setupEventListeners();
     setupAutoRefresh();
     refresh();
+    
+    std::cout << "[OrderStatusPanel] Initialized successfully" << std::endl;
 }
 
 void OrderStatusPanel::initializeUI() {
-    addStyleClass("order-status-panel");
+    // Create main layout container
+    auto mainContainer = addNew<Wt::WContainerWidget>();
+    mainContainer->addStyleClass("order-status-main");
     
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
-    
-    // Panel header
+    // Create panel header
     auto header = createPanelHeader();
-    layout->addWidget(std::move(header));
+    mainContainer->addWidget(std::move(header));
     
-    // Status summary
+    // Create status summary
     auto summary = createStatusSummary();
-    layout->addWidget(std::move(summary));
+    mainContainer->addWidget(std::move(summary));
     
-    // FIXED: Active orders display - proper Wt pattern
-    activeOrdersDisplay_ = layout->addWidget(
-        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_), 1);
+    // Create active orders display directly in main container
+    try {
+        activeOrdersDisplay_ = mainContainer->addNew<ActiveOrdersDisplay>(posService_, eventManager_);
+        activeOrdersDisplay_->addStyleClass("order-status-active-orders");
+        std::cout << "✓ ActiveOrdersDisplay created and added" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to create ActiveOrdersDisplay: " << e.what() << std::endl;
+        activeOrdersDisplay_ = nullptr;
+    }
     
-    // FIXED: Kitchen status display - proper Wt pattern
-    kitchenStatusDisplay_ = layout->addWidget(
-        std::make_unique<KitchenStatusDisplay>(posService_, eventManager_));
+    // Create kitchen status display directly in main container
+    try {
+        kitchenStatusDisplay_ = mainContainer->addNew<KitchenStatusDisplay>(posService_, eventManager_);
+        kitchenStatusDisplay_->addStyleClass("order-status-kitchen");
+        std::cout << "✓ KitchenStatusDisplay created and added" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to create KitchenStatusDisplay: " << e.what() << std::endl;
+        kitchenStatusDisplay_ = nullptr;
+    }
     
-    setLayout(std::move(layout));
+    std::cout << "[OrderStatusPanel] UI initialized" << std::endl;
+}
+
+std::unique_ptr<Wt::WWidget> OrderStatusPanel::createPanelHeader() {
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->addStyleClass("order-status-header mb-3");
     
-    std::cout << "✓ OrderStatusPanel UI initialized" << std::endl;
+    // Title
+    statusTitleText_ = header->addNew<Wt::WText>("📊 Order Status Dashboard");
+    statusTitleText_->addStyleClass("h4 mb-2");
+    
+    // Last update time
+    lastUpdateText_ = header->addNew<Wt::WText>("Last updated: Loading...");
+    lastUpdateText_->addStyleClass("text-muted small");
+    
+    return std::move(header);
+}
+
+std::unique_ptr<Wt::WWidget> OrderStatusPanel::createStatusSummary() {
+    auto summary = std::make_unique<Wt::WContainerWidget>();
+    summary->addStyleClass("order-status-summary mb-3 p-3 border rounded");
+    statusSummaryContainer_ = summary.get();
+    
+    // Summary will be populated by updateStatusSummary()
+    auto summaryText = summary->addNew<Wt::WText>("Loading status summary...");
+    summaryText->addStyleClass("text-muted");
+    
+    return std::move(summary);
 }
 
 void OrderStatusPanel::setupEventListeners() {
     if (!eventManager_) {
-        std::cerr << "Warning: EventManager not available for OrderStatusPanel" << std::endl;
+        std::cout << "[OrderStatusPanel] No EventManager available" << std::endl;
         return;
     }
     
@@ -83,98 +126,186 @@ void OrderStatusPanel::setupEventListeners() {
         eventManager_->subscribe(POSEvents::KITCHEN_STATUS_CHANGED,
             [this](const std::any& data) { handleKitchenStatusChanged(data); }));
     
-    std::cout << "✓ OrderStatusPanel event listeners setup complete" << std::endl;
+    std::cout << "[OrderStatusPanel] Event listeners setup complete" << std::endl;
 }
 
 void OrderStatusPanel::setupAutoRefresh() {
-    if (!Wt::WApplication::instance()) {
-        std::cerr << "Warning: No WApplication instance for auto-refresh timer" << std::endl;
+    if (!autoRefreshEnabled_ || autoRefreshInterval_ <= 0) {
         return;
     }
     
-    // FIXED: Create timer as a standalone object using unique_ptr
-    refreshTimer_ = std::make_unique<Wt::WTimer>();
-    refreshTimer_->setInterval(std::chrono::seconds(autoRefreshInterval_));
-    refreshTimer_->timeout().connect([this] { onAutoRefreshTimer(); });
-    
-    if (autoRefreshEnabled_) {
+    try {
+        // Create timer as unique_ptr (not managed by Wt widget tree)
+        refreshTimer_ = std::make_unique<Wt::WTimer>();
+        refreshTimer_->setInterval(std::chrono::seconds(autoRefreshInterval_));
+        refreshTimer_->timeout().connect([this] { onAutoRefreshTimer(); });
         refreshTimer_->start();
+        
+        std::cout << "[OrderStatusPanel] Auto-refresh setup: " << autoRefreshInterval_ << " seconds" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Auto-refresh setup failed: " << e.what() << std::endl;
+        refreshTimer_ = nullptr;
     }
-    
-    std::cout << "✓ Auto-refresh timer setup (interval: " << autoRefreshInterval_ << "s)" << std::endl;
-}
-
-std::unique_ptr<Wt::WWidget> OrderStatusPanel::createPanelHeader() {
-    auto header = std::make_unique<Wt::WContainerWidget>();
-    header->addStyleClass("order-status-header bg-primary text-white p-3");
-    
-    auto layout = std::make_unique<Wt::WHBoxLayout>();
-    
-    // Title section
-    auto titleContainer = std::make_unique<Wt::WContainerWidget>();
-    auto titleLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    // FIXED: Create and add title text properly
-    statusTitleText_ = titleLayout->addWidget(std::make_unique<Wt::WText>("Order Status"));
-    statusTitleText_->addStyleClass("h4 mb-1 text-white");
-    
-    // FIXED: Create and add last update text properly
-    lastUpdateText_ = titleLayout->addWidget(std::make_unique<Wt::WText>(""));
-    lastUpdateText_->addStyleClass("small text-light");
-    
-    titleContainer->setLayout(std::move(titleLayout));
-    layout->addWidget(std::move(titleContainer), 1);
-    
-    // Refresh indicator
-    auto refreshIndicator = std::make_unique<Wt::WText>("🔄");
-    refreshIndicator->addStyleClass("refresh-indicator");
-    refreshIndicator->setToolTip("Auto-refresh enabled");
-    layout->addWidget(std::move(refreshIndicator));
-    
-    header->setLayout(std::move(layout));
-    return std::move(header);
-}
-
-std::unique_ptr<Wt::WWidget> OrderStatusPanel::createStatusSummary() {
-    auto summary = std::make_unique<Wt::WContainerWidget>();
-    summary->addStyleClass("status-summary bg-light p-2 border-bottom");
-    statusSummaryContainer_ = summary.get();
-    
-    updateStatusSummary();
-    
-    return std::move(summary);
 }
 
 void OrderStatusPanel::refresh() {
     if (!posService_) {
-        std::cerr << "Error: POSService not available for status refresh" << std::endl;
+        std::cerr << "[OrderStatusPanel] POSService not available for refresh" << std::endl;
         return;
     }
     
-    // Refresh child components
-    if (activeOrdersDisplay_) {
-        activeOrdersDisplay_->refresh();
+    try {
+        // Refresh child components
+        if (activeOrdersDisplay_) {
+            activeOrdersDisplay_->refresh();
+        }
+        
+        if (kitchenStatusDisplay_) {
+            kitchenStatusDisplay_->refresh();
+        }
+        
+        // Update status summary and timestamp
+        updateStatusSummary();
+        updateLastUpdateTime();
+        
+        std::cout << "[OrderStatusPanel] Refreshed successfully" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Refresh failed: " << e.what() << std::endl;
     }
-    
-    if (kitchenStatusDisplay_) {
-        kitchenStatusDisplay_->refresh();
-    }
-    
-    // Update summary and last update time
-    updateStatusSummary();
-    updateLastUpdateTime();
-    
-    std::cout << "OrderStatusPanel refreshed" << std::endl;
 }
 
+void OrderStatusPanel::updateStatusSummary() {
+    if (!statusSummaryContainer_ || !posService_) {
+        return;
+    }
+    
+    try {
+        // Clear existing content
+        statusSummaryContainer_->clear();
+        
+        // Create new summary content
+        auto summaryText = statusSummaryContainer_->addNew<Wt::WText>(getKitchenStatusSummary());
+        summaryText->addStyleClass("small font-monospace");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Failed to update status summary: " << e.what() << std::endl;
+    }
+}
+
+void OrderStatusPanel::updateLastUpdateTime() {
+    if (!lastUpdateText_) {
+        return;
+    }
+    
+    try {
+        std::string updateTime = formatLastUpdateTime();
+        lastUpdateText_->setText("Last updated: " + updateTime);
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Failed to update timestamp: " << e.what() << std::endl;
+    }
+}
+
+// Event handlers
+void OrderStatusPanel::handleOrderCreated(const std::any& eventData) {
+    updateStatusSummary();
+    std::cout << "[OrderStatusPanel] Order created event handled" << std::endl;
+}
+
+void OrderStatusPanel::handleOrderModified(const std::any& eventData) {
+    updateStatusSummary();
+    std::cout << "[OrderStatusPanel] Order modified event handled" << std::endl;
+}
+
+void OrderStatusPanel::handleOrderSentToKitchen(const std::any& eventData) {
+    updateStatusSummary();
+    std::cout << "[OrderStatusPanel] Order sent to kitchen event handled" << std::endl;
+}
+
+void OrderStatusPanel::handleOrderCompleted(const std::any& eventData) {
+    updateStatusSummary();
+    std::cout << "[OrderStatusPanel] Order completed event handled" << std::endl;
+}
+
+void OrderStatusPanel::handleKitchenStatusChanged(const std::any& eventData) {
+    updateStatusSummary();
+    std::cout << "[OrderStatusPanel] Kitchen status changed event handled" << std::endl;
+}
+
+void OrderStatusPanel::onAutoRefreshTimer() {
+    try {
+        refresh();
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Auto-refresh timer error: " << e.what() << std::endl;
+    }
+}
+
+// Helper methods
+int OrderStatusPanel::getActiveOrderCount() const {
+    if (!posService_) {
+        return 0;
+    }
+    
+    try {
+        auto activeOrders = posService_->getActiveOrders();
+        return static_cast<int>(activeOrders.size());
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Error getting active order count: " << e.what() << std::endl;
+        return 0;
+    }
+}
+
+int OrderStatusPanel::getKitchenQueueSize() const {
+    if (!posService_) {
+        return 0;
+    }
+    
+    try {
+        auto tickets = posService_->getKitchenTickets();
+        return static_cast<int>(tickets.size());
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderStatusPanel] Error getting kitchen queue size: " << e.what() << std::endl;
+        return 0;
+    }
+}
+
+std::string OrderStatusPanel::getKitchenStatusSummary() const {
+    if (!posService_) {
+        return "⚠️ POS Service not available";
+    }
+    
+    try {
+        int activeCount = getActiveOrderCount();
+        int queueSize = getKitchenQueueSize();
+        int waitTime = posService_->getEstimatedWaitTime();
+        
+        std::string summary = "📊 Active Orders: " + std::to_string(activeCount) + " | ";
+        summary += "🍳 Kitchen Queue: " + std::to_string(queueSize) + " | ";
+        summary += "⏱️ Est. Wait: " + std::to_string(waitTime) + " min";
+        
+        return summary;
+        
+    } catch (const std::exception& e) {
+        return "❌ Error loading status: " + std::string(e.what());
+    }
+}
+
+std::string OrderStatusPanel::formatLastUpdateTime() const {
+    auto now = std::chrono::system_clock::now();
+    auto time_t = std::chrono::system_clock::to_time_t(now);
+    
+    std::ostringstream oss;
+    oss << std::put_time(std::localtime(&time_t), "%H:%M:%S");
+    return oss.str();
+}
+
+// Configuration methods
 void OrderStatusPanel::setAutoRefreshInterval(int intervalSeconds) {
     autoRefreshInterval_ = intervalSeconds;
     
-    if (refreshTimer_) {
+    if (refreshTimer_ && autoRefreshEnabled_) {
         refreshTimer_->setInterval(std::chrono::seconds(intervalSeconds));
     }
-    
-    std::cout << "Auto-refresh interval set to " << intervalSeconds << " seconds" << std::endl;
 }
 
 int OrderStatusPanel::getAutoRefreshInterval() const {
@@ -185,174 +316,10 @@ void OrderStatusPanel::setAutoRefreshEnabled(bool enabled) {
     autoRefreshEnabled_ = enabled;
     
     if (refreshTimer_) {
-        if (enabled) {
+        if (enabled && autoRefreshInterval_ > 0) {
             refreshTimer_->start();
         } else {
             refreshTimer_->stop();
         }
-    }
-    
-    std::cout << "Auto-refresh " << (enabled ? "enabled" : "disabled") << std::endl;
-}
-
-bool OrderStatusPanel::isAutoRefreshEnabled() const {
-    return autoRefreshEnabled_;
-}
-
-// =================================================================
-// Event Handlers
-// =================================================================
-
-void OrderStatusPanel::handleOrderCreated(const std::any& eventData) {
-    std::cout << "Order created event received in OrderStatusPanel" << std::endl;
-    updateStatusSummary();
-}
-
-void OrderStatusPanel::handleOrderModified(const std::any& eventData) {
-    std::cout << "Order modified event received in OrderStatusPanel" << std::endl;
-    updateStatusSummary();
-}
-
-void OrderStatusPanel::handleOrderSentToKitchen(const std::any& eventData) {
-    std::cout << "Order sent to kitchen event received in OrderStatusPanel" << std::endl;
-    refresh(); // Full refresh for kitchen orders
-}
-
-void OrderStatusPanel::handleOrderCompleted(const std::any& eventData) {
-    std::cout << "Order completed event received in OrderStatusPanel" << std::endl;
-    refresh(); // Full refresh for completed orders
-}
-
-void OrderStatusPanel::handleKitchenStatusChanged(const std::any& eventData) {
-    std::cout << "Kitchen status changed event received in OrderStatusPanel" << std::endl;
-    updateStatusSummary();
-}
-
-// =================================================================
-// Timer Handlers
-// =================================================================
-
-void OrderStatusPanel::onAutoRefreshTimer() {
-    if (autoRefreshEnabled_) {
-        refresh();
-    }
-}
-
-// =================================================================
-// Helper Methods
-// =================================================================
-
-void OrderStatusPanel::updateStatusSummary() {
-    if (!statusSummaryContainer_) {
-        return;
-    }
-    
-    statusSummaryContainer_->clear();
-    
-    auto layout = std::make_unique<Wt::WHBoxLayout>();
-    
-    // Active orders count
-    auto activeOrdersContainer = std::make_unique<Wt::WContainerWidget>();
-    activeOrdersContainer->addStyleClass("status-item text-center");
-    
-    auto activeOrdersLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto activeOrdersCount = std::make_unique<Wt::WText>(std::to_string(getActiveOrderCount()));
-    activeOrdersCount->addStyleClass("h3 mb-0 text-primary");
-    activeOrdersLayout->addWidget(std::move(activeOrdersCount));
-    
-    auto activeOrdersLabel = std::make_unique<Wt::WText>("Active Orders");
-    activeOrdersLabel->addStyleClass("small text-muted");
-    activeOrdersLayout->addWidget(std::move(activeOrdersLabel));
-    
-    activeOrdersContainer->setLayout(std::move(activeOrdersLayout));
-    layout->addWidget(std::move(activeOrdersContainer), 1);
-    
-    // Kitchen queue size
-    auto kitchenQueueContainer = std::make_unique<Wt::WContainerWidget>();
-    kitchenQueueContainer->addStyleClass("status-item text-center border-left");
-    
-    auto kitchenQueueLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto kitchenQueueCount = std::make_unique<Wt::WText>(std::to_string(getKitchenQueueSize()));
-    kitchenQueueCount->addStyleClass("h3 mb-0 text-warning");
-    kitchenQueueLayout->addWidget(std::move(kitchenQueueCount));
-    
-    auto kitchenQueueLabel = std::make_unique<Wt::WText>("In Kitchen");
-    kitchenQueueLabel->addStyleClass("small text-muted");
-    kitchenQueueLayout->addWidget(std::move(kitchenQueueLabel));
-    
-    kitchenQueueContainer->setLayout(std::move(kitchenQueueLayout));
-    layout->addWidget(std::move(kitchenQueueContainer), 1);
-    
-    // Kitchen status
-    auto kitchenStatusContainer = std::make_unique<Wt::WContainerWidget>();
-    kitchenStatusContainer->addStyleClass("status-item text-center border-left");
-    
-    auto kitchenStatusLayout = std::make_unique<Wt::WVBoxLayout>();
-    
-    auto kitchenStatusText = std::make_unique<Wt::WText>(getKitchenStatusSummary());
-    kitchenStatusText->addStyleClass("h6 mb-0 text-success");
-    kitchenStatusLayout->addWidget(std::move(kitchenStatusText));
-    
-    auto kitchenStatusLabel = std::make_unique<Wt::WText>("Kitchen Status");
-    kitchenStatusLabel->addStyleClass("small text-muted");
-    kitchenStatusLayout->addWidget(std::move(kitchenStatusLabel));
-    
-    kitchenStatusContainer->setLayout(std::move(kitchenStatusLayout));
-    layout->addWidget(std::move(kitchenStatusContainer), 1);
-    
-    statusSummaryContainer_->setLayout(std::move(layout));
-}
-
-void OrderStatusPanel::updateLastUpdateTime() {
-    if (lastUpdateText_) {
-        lastUpdateText_->setText("Last updated: " + formatLastUpdateTime());
-    }
-}
-
-std::string OrderStatusPanel::formatLastUpdateTime() const {
-    auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
-    
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time_t), "%H:%M:%S");
-    return ss.str();
-}
-
-int OrderStatusPanel::getActiveOrderCount() const {
-    if (!posService_) {
-        return 0;
-    }
-    
-    auto activeOrders = posService_->getActiveOrders();
-    return static_cast<int>(activeOrders.size());
-}
-
-int OrderStatusPanel::getKitchenQueueSize() const {
-    if (!posService_) {
-        return 0;
-    }
-    
-    auto kitchenTickets = posService_->getKitchenTickets();
-    return static_cast<int>(kitchenTickets.size());
-}
-
-std::string OrderStatusPanel::getKitchenStatusSummary() const {
-    if (!posService_) {
-        return "Unknown";
-    }
-    
-    int queueSize = getKitchenQueueSize();
-    int estimatedWaitTime = posService_->getEstimatedWaitTime();
-    
-    if (queueSize == 0) {
-        return "Ready";
-    } else if (queueSize < 5) {
-        return "Normal";
-    } else if (queueSize < 10) {
-        return "Busy";
-    } else {
-        return "Very Busy";
     }
 }

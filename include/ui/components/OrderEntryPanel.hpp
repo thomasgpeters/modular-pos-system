@@ -4,13 +4,10 @@
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
 #include "../../events/POSEvents.hpp"
-#include "MenuDisplay.hpp"
-#include "CurrentOrderDisplay.hpp"
 
 #include <Wt/WContainerWidget.h>
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
-#include <Wt/WBorderLayout.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
@@ -20,35 +17,32 @@
 #include <memory>
 
 /**
- * @file OrderEntryPanel.hpp
- * @brief Enhanced order entry UI component for the Restaurant POS System
+ * @file OrderEntryPanel.hpp - Simplified Version
+ * @brief Simple order entry controls without embedded components
  * 
- * This component handles the complete order workflow including table selection,
- * menu display, order building, and kitchen/payment processing.
- * Updated to support string-based table identifiers and complete order workflow.
+ * This simplified version focuses only on table selection and order actions.
+ * MenuDisplay and CurrentOrderDisplay are handled separately in the main app.
  * 
  * @author Restaurant POS Team
- * @version 2.2.0 - Enhanced with complete order workflow
+ * @version 2.3.0 - Simplified for flat architecture
  */
 
 /**
  * @class OrderEntryPanel
- * @brief UI component for complete order entry workflow
+ * @brief Simplified UI component for order entry controls only
  * 
- * The OrderEntryPanel manages the complete order creation workflow:
+ * The OrderEntryPanel now handles only:
  * 1. Table identifier selection
- * 2. Order creation
- * 3. Menu browsing and item selection
- * 4. Current order management
- * 5. Kitchen submission and payment processing
+ * 2. New order creation
+ * 3. Send to kitchen action
+ * 4. Process payment action
  * 
- * It coordinates with the POSService for business operations and uses
- * the event system for communication with other components.
+ * MenuDisplay and CurrentOrderDisplay are separate components.
  */
 class OrderEntryPanel : public Wt::WContainerWidget {
 public:
     /**
-     * @brief Constructs the order entry panel
+     * @brief Constructs the simplified order entry panel
      * @param posService Shared POS service for business operations
      * @param eventManager Shared event manager for component communication
      */
@@ -108,18 +102,6 @@ public:
      * @return Selected table identifier, empty string if none selected
      */
     std::string getSelectedTableIdentifier() const;
-    
-    /**
-     * @brief Gets the menu display component
-     * @return Pointer to menu display component
-     */
-    MenuDisplay* getMenuDisplay() const { return menuDisplay_; }
-    
-    /**
-     * @brief Gets the current order display component
-     * @return Pointer to current order display component
-     */
-    CurrentOrderDisplay* getCurrentOrderDisplay() const { return currentOrderDisplay_; }
 
 protected:
     /**
@@ -129,21 +111,13 @@ protected:
     
     /**
      * @brief Sets up the table selection section
-     * @param parent Parent container for the table selection UI
      */
-    void setupTableSelectionSection(Wt::WContainerWidget* parent);
+    void setupTableSelectionSection();
     
     /**
      * @brief Sets up the order action buttons section
-     * @param parent Parent container for the action buttons
      */
-    void setupOrderActionsSection(Wt::WContainerWidget* parent);
-    
-    /**
-     * @brief Sets up the menu and order display components
-     * @param parent Parent container for the display components
-     */
-    void setupMenuAndOrderDisplays(Wt::WContainerWidget* parent);
+    void setupOrderActionsSection();
     
     /**
      * @brief Sets up event listeners
@@ -157,9 +131,8 @@ protected:
     
     /**
      * @brief Creates the table identifier combo box
-     * @param parent Parent container for the combo box
      */
-    void createTableIdentifierCombo(Wt::WContainerWidget* parent);
+    void createTableIdentifierCombo();
     
     /**
      * @brief Populates the table identifier combo box
@@ -171,18 +144,16 @@ private:
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
     
-    // UI components
+    // UI components (raw pointers - Wt manages lifetime)
     Wt::WGroupBox* tableSelectionGroup_;
     Wt::WLabel* tableIdentifierLabel_;
     Wt::WComboBox* tableIdentifierCombo_;
     Wt::WText* tableStatusText_;
+    
+    Wt::WContainerWidget* actionsContainer_;
     Wt::WPushButton* newOrderButton_;
     Wt::WPushButton* sendToKitchenButton_;
     Wt::WPushButton* processPaymentButton_;
-    
-    // Child components (raw pointers - Wt manages lifetime)
-    MenuDisplay* menuDisplay_;
-    CurrentOrderDisplay* currentOrderDisplay_;
     
     // Available table identifiers
     std::vector<std::string> availableTableIdentifiers_;
@@ -202,64 +173,18 @@ private:
     void onTableIdentifierChanged();
     
     // Business logic methods
-    /**
-     * @brief Creates a new order for the specified table identifier
-     * @param tableIdentifier Table identifier for the new order
-     */
     void createNewOrder(const std::string& tableIdentifier);
-    
-    /**
-     * @brief Creates a new order for the specified table number (legacy)
-     * @deprecated Use createNewOrder(const std::string&) instead
-     * @param tableNumber Table number for the new order
-     */
-    void createNewOrder(int tableNumber);
-    
-    /**
-     * @brief Sends the current order to the kitchen
-     */
+    void createNewOrder(int tableNumber); // Legacy compatibility
     void sendCurrentOrderToKitchen();
     
     // Helper methods
     void updateOrderActionButtons();
-    
-    /**
-     * @brief Validates the current order state
-     * @return True if current order is valid, false otherwise
-     */
     bool validateCurrentOrder();
-    
-    /**
-     * @brief Validates the table identifier selection
-     * @return True if a valid table identifier is selected
-     */
     bool validateTableIdentifierSelection();
-    
-    /**
-     * @brief Checks if there is a current order
-     * @return True if there is a current order
-     */
     bool hasCurrentOrder() const;
-    
-    /**
-     * @brief Checks if current order has items
-     * @return True if current order exists and has items
-     */
     bool hasOrderWithItems() const;
-    
-    /**
-     * @brief Shows validation error message
-     * @param message Error message to display
-     */
     void showOrderValidationError(const std::string& message);
-    
-    /**
-     * @brief Shows validation message with specified type
-     * @param message Message to display
-     * @param type Message type ("success", "warning", "error", "info")
-     */
     void showOrderValidationMessage(const std::string& message, const std::string& type);
-    
     void updateTableStatus();
     std::string formatTableIdentifier(const std::string& identifier) const;
     std::string getTableIdentifierIcon(const std::string& identifier) const;
@@ -269,8 +194,6 @@ private:
     // Table identifier management
     std::string extractTableIdentifierFromDisplayText(const std::string& displayText) const;
     std::string formatTableIdentifierForDisplay(const std::string& identifier) const;
-    
-    // Default table identifiers
     std::vector<std::string> getDefaultTableIdentifiers() const;
     
     // Styling methods

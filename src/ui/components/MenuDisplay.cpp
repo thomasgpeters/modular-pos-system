@@ -53,13 +53,19 @@ void MenuDisplay::initializeUI() {
     auto header = createMenuHeader();
     groupLayout->addWidget(std::move(header));
     
-    // Create menu items table
-    createMenuItemsTable();
-    
-    // Add table to layout
+    // Create table container and add table directly to it
     auto tableContainer = std::make_unique<Wt::WContainerWidget>();
     tableContainer->addStyleClass("menu-table-container");
-    tableContainer->addWidget(std::unique_ptr<Wt::WTable>(itemsTable_));
+    
+    // FIXED: Create table directly in the container where it will live
+    itemsTable_ = tableContainer->addNew<Wt::WTable>();
+    itemsTable_->addStyleClass("table table-striped table-hover menu-items-table");
+    itemsTable_->setWidth(Wt::WLength("100%"));
+    
+    // Initialize table headers
+    initializeTableHeaders();
+    
+    // Add table container to layout
     groupLayout->addWidget(std::move(tableContainer), 1);
     
     menuGroup_->setLayout(std::move(groupLayout));
@@ -70,6 +76,29 @@ void MenuDisplay::initializeUI() {
     applyHeaderStyling();
     
     std::cout << "[MenuDisplay] UI initialized" << std::endl;
+}
+
+void MenuDisplay::initializeTableHeaders() {
+    if (!itemsTable_) {
+        return;
+    }
+    
+    // Create table headers
+    itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
+    itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Description"));
+    itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Price"));
+    
+    if (selectionEnabled_) {
+        itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Add to Order"));
+    }
+    
+    // Style headers
+    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
+        auto headerCell = itemsTable_->elementAt(0, col);
+        headerCell->addStyleClass("table-header bg-primary text-white");
+    }
+    
+    std::cout << "[MenuDisplay] Table headers initialized" << std::endl;
 }
 
 void MenuDisplay::setupEventListeners() {
@@ -144,28 +173,7 @@ std::unique_ptr<Wt::WWidget> MenuDisplay::createMenuHeader() {
     return std::move(header);
 }
 
-void MenuDisplay::createMenuItemsTable() {
-    itemsTable_ = menuGroup_->addNew<Wt::WTable>();
-    itemsTable_->addStyleClass("table table-striped table-hover menu-items-table");
-    itemsTable_->setWidth(Wt::WLength("100%"));
-    
-    // Create table headers
-    itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
-    itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Description"));
-    itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Price"));
-    
-    if (selectionEnabled_) {
-        itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Add to Order"));
-    }
-    
-    // Style headers
-    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
-        auto headerCell = itemsTable_->elementAt(0, col);
-        headerCell->addStyleClass("table-header bg-primary text-white");
-    }
-    
-    std::cout << "[MenuDisplay] Menu items table created" << std::endl;
-}
+// REMOVED: createMenuItemsTable() method - functionality moved to initializeUI()
 
 void MenuDisplay::refresh() {
     if (!posService_) {
@@ -271,7 +279,9 @@ void MenuDisplay::updateMenuItemsTable() {
 }
 
 void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t index) {
-    if (!item) return; // Skip null pointers
+    if (!item || !itemsTable_) {
+        return;
+    }
     
     int row = itemsTable_->rowCount();
     
@@ -342,9 +352,6 @@ void MenuDisplay::showAddToOrderDialog(const std::shared_ptr<MenuItem>& item) {
     
     auto itemPrice = itemInfo->addNew<Wt::WText>(formatCurrency(item->getPrice()));
     itemPrice->addStyleClass("text-success fw-bold");
-    
-    // Note: MenuItem doesn't have getDescription() method, so we'll skip it for now
-    // If you want to add description support, you'll need to add it to MenuItem class
     
     layout->addWidget(std::move(itemInfo));
     

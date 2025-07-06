@@ -4,6 +4,14 @@
 #include "../services/POSService.hpp"
 #include "../services/ThemeService.hpp"
 #include "../events/EventManager.hpp"
+#include "../core/ConfigurationManager.hpp"
+#include "../ui/factories/UIComponentFactory.hpp"
+
+// Include all the component headers
+#include "../ui/components/OrderEntryPanel.hpp"
+#include "../ui/components/OrderStatusPanel.hpp"
+#include "../ui/components/MenuDisplay.hpp"
+#include "../ui/components/CurrentOrderDisplay.hpp"
 
 #include <Wt/WApplication.h>
 #include <Wt/WContainerWidget.h>
@@ -20,16 +28,16 @@
 #include <memory>
 
 /**
- * @file RestaurantPOSApp.hpp (Enhanced with Theme Management)
- * @brief Main application with integrated theme switching capability
+ * @file RestaurantPOSApp.hpp (Flat Component Architecture)
+ * @brief Main application with flattened component hierarchy
  * 
  * @author Restaurant POS Team
- * @version 2.2.0 - Updated with ThemeService integration
+ * @version 2.3.0 - Flattened component architecture
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Main application orchestrator with enhanced theming support
+ * @brief Main application with individual components created via factory
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
@@ -49,40 +57,48 @@ private:
     std::shared_ptr<EventManager> eventManager_;
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<ThemeService> themeService_;
+    std::shared_ptr<ConfigurationManager> configManager_;
     
-    // UI components
+    // UI Component Factory
+    std::unique_ptr<UIComponentFactory> componentFactory_;
+    
+    // Main UI containers
     Wt::WContainerWidget* mainContainer_;
-    Wt::WContainerWidget* orderControlsContainer_;
-    Wt::WText* statusText_;
-
-    // Change this line - use raw pointer since it's managed by the widget tree now
-    Wt::WTimer* updateTimer_;
-    
-    // Header and theme controls
     Wt::WContainerWidget* headerContainer_;
+    Wt::WContainerWidget* contentContainer_;
+    Wt::WContainerWidget* statusBarContainer_;
+    
+    // Header components
     Wt::WContainerWidget* themeControlsContainer_;
     Wt::WComboBox* themeSelector_;
     Wt::WPushButton* themeToggleButton_;
     
-    // New order controls
-    Wt::WGroupBox* newOrderGroup_;
-    Wt::WComboBox* tableIdentifierCombo_;
-    Wt::WPushButton* newOrderButton_;
-    Wt::WText* currentOrderStatusText_;
+    // Individual components (raw pointers - Wt manages lifetime)
+    OrderEntryPanel* orderEntryPanel_;
+    MenuDisplay* menuDisplay_;
+    CurrentOrderDisplay* currentOrderDisplay_;
+    OrderStatusPanel* orderStatusPanel_;
     
-    // Application status controls
-    Wt::WContainerWidget* statusControlsContainer_;
-    Wt::WPushButton* refreshButton_;
-    Wt::WText* systemStatusText_;
+    // Status and timer
+    Wt::WText* statusText_;
+    Wt::WTimer* updateTimer_;
     
     // Initialization methods
     void initializeServices();
+    void initializeComponentFactory();
     void setupMainLayout();
+    void createAllComponents();
     void setupHeaderWithThemeControls();
-    void setupNewOrderControls();
-    void setupStatusControls();
+    void setupContentLayout();
+    void setupStatusBar();
     void setupEventListeners();
     void setupRealTimeUpdates();
+    
+    // Component creation methods
+    void createOrderEntryPanel();
+    void createMenuDisplay();
+    void createCurrentOrderDisplay();
+    void createOrderStatusPanel();
     
     // Theme management methods
     void initializeThemeService();
@@ -92,6 +108,8 @@ private:
     void onThemeToggleClicked();
     void onThemeSelectorChanged();
     void updateThemeControls();
+    void createThemeSelector();
+    void createThemeToggleButton();
     
     // CSS and styling methods
     void setupBootstrapTheme();
@@ -100,51 +118,19 @@ private:
     void setupMetaTags();
     void applyComponentStyling();
     void applyThemeToComponents();
+    void applyThemeTransition();
     
     // Event handlers
-    void onNewOrderButtonClicked();
-    void onTableIdentifierChanged();
-    void onRefreshButtonClicked();
     void onPeriodicUpdate();
-    
-    // Order management event handlers
     void onOrderCreated(std::shared_ptr<Order> order);
     void onOrderModified(std::shared_ptr<Order> order);
     void onCurrentOrderChanged();
     
-    // UI update methods
-    void updateCurrentOrderStatus();
-    void updateSystemStatus();
-    void updateOrderControls();
-    
-    // Helper methods
-    void populateTableIdentifierCombo();
+    // Utility methods
     void logApplicationStart();
     void updateStatus(const std::string& message);
-    std::string getCurrentTableIdentifier() const;
-    bool isValidTableSelection() const;
-    void showOrderCreationStatus(bool success, const std::string& tableIdentifier);
-    void resetOrderControls();
-    
-    // Validation methods
-    bool validateNewOrderInput() const;
-    void showValidationError(const std::string& message);
-    
-    // Status formatting methods
-    std::string formatOrderStatus(std::shared_ptr<Order> order) const;
-    std::string formatSystemStatus() const;
-    std::string getOrderTypeIcon(const std::string& tableIdentifier) const;
-    
-    // Table identifier management
-    std::vector<std::string> getAvailableTableIdentifiers() const;
-    std::string formatTableIdentifierDisplay(const std::string& identifier) const;
-    bool isTableIdentifierAvailable(const std::string& identifier) const;
-    
-    // Theme utility methods
-    void createThemeSelector();
-    void createThemeToggleButton();
     std::string getCurrentThemeDisplayName() const;
-    void applyThemeTransition();
+    void validateComponents() const;
 };
 
 /**

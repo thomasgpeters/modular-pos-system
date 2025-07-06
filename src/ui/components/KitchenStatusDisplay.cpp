@@ -1,16 +1,13 @@
 #include "../../../include/ui/components/KitchenStatusDisplay.hpp"
 
-#include <Wt/WVBoxLayout.h>
-#include <Wt/WHBoxLayout.h>
-#include <Wt/WGridLayout.h>
-
+#include <Wt/WApplication.h>
+#include <Wt/WGroupBox.h>
+#include <Wt/WLabel.h>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
 #include <algorithm>
 
 KitchenStatusDisplay::KitchenStatusDisplay(std::shared_ptr<POSService> posService,
-                                          std::shared_ptr<EventManager> eventManager)
+                                         std::shared_ptr<EventManager> eventManager)
     : posService_(posService)
     , eventManager_(eventManager)
     , showDetailedMetrics_(true)
@@ -22,36 +19,47 @@ KitchenStatusDisplay::KitchenStatusDisplay(std::shared_ptr<POSService> posServic
     , metricsContainer_(nullptr)
     , queueContainer_(nullptr) {
     
+    if (!posService_) {
+        throw std::invalid_argument("KitchenStatusDisplay requires valid POSService");
+    }
+    
+    addStyleClass("kitchen-status-display");
+    
     initializeUI();
     setupEventListeners();
     refresh();
+    
+    std::cout << "[KitchenStatusDisplay] Initialized successfully" << std::endl;
 }
 
 void KitchenStatusDisplay::initializeUI() {
-    addStyleClass("kitchen-status-display card");
+    // Create main kitchen status group
+    auto kitchenGroup = addNew<Wt::WGroupBox>("Kitchen Status");
+    kitchenGroup->addStyleClass("kitchen-status-group");
     
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
-    
-    // Status header
+    // Create status header
     auto header = createStatusHeader();
-    layout->addWidget(std::move(header));
+    kitchenGroup->addWidget(std::move(header));
     
-    // Kitchen metrics
-    auto metrics = createKitchenMetrics();
-    layout->addWidget(std::move(metrics));
+    // Create kitchen metrics section
+    if (showDetailedMetrics_) {
+        auto metrics = createKitchenMetrics();
+        kitchenGroup->addWidget(std::move(metrics));
+    }
     
-    // Queue status
+    // Create queue status section
     auto queue = createQueueStatus();
-    layout->addWidget(std::move(queue));
+    kitchenGroup->addWidget(std::move(queue));
     
-    setLayout(std::move(layout));
+    // Apply initial styling
+    updateStatusColors();
     
-    std::cout << "✓ KitchenStatusDisplay UI initialized" << std::endl;
+    std::cout << "[KitchenStatusDisplay] UI initialized" << std::endl;
 }
 
 void KitchenStatusDisplay::setupEventListeners() {
     if (!eventManager_) {
-        std::cerr << "Warning: EventManager not available for KitchenStatusDisplay" << std::endl;
+        std::cout << "[KitchenStatusDisplay] No EventManager available" << std::endl;
         return;
     }
     
@@ -68,132 +76,76 @@ void KitchenStatusDisplay::setupEventListeners() {
         eventManager_->subscribe(POSEvents::KITCHEN_QUEUE_UPDATED,
             [this](const std::any& data) { handleKitchenQueueUpdated(data); }));
     
-    std::cout << "✓ KitchenStatusDisplay event listeners setup complete" << std::endl;
+    std::cout << "[KitchenStatusDisplay] Event listeners setup complete" << std::endl;
 }
 
-
-// Also fix the createStatusHeader method if it has similar issues:
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createStatusHeader() {
     auto header = std::make_unique<Wt::WContainerWidget>();
-    header->addStyleClass("card-header kitchen-status-header");
+    header->addStyleClass("kitchen-status-header mb-3");
     
-    auto layout = std::make_unique<Wt::WHBoxLayout>();
+    // Status header text
+    statusHeaderText_ = header->addNew<Wt::WText>("🍳 Kitchen Status: " + getKitchenStatusText());
+    statusHeaderText_->addStyleClass("h5 mb-1");
     
-    // Status icon and title
-    auto titleContainer = std::make_unique<Wt::WContainerWidget>();
-    auto titleLayout = std::make_unique<Wt::WHBoxLayout>();
+    // Kitchen load text
+    kitchenLoadText_ = header->addNew<Wt::WText>("Load: Calculating...");
+    kitchenLoadText_->addStyleClass("text-muted small");
     
-    auto iconText = std::make_unique<Wt::WText>(getKitchenStatusIcon());
-    iconText->addStyleClass("kitchen-status-icon me-2");
-    titleLayout->addWidget(std::move(iconText));
-    
-    // FIXED: Create and add status header text properly
-    statusHeaderText_ = titleLayout->addWidget(std::make_unique<Wt::WText>("Kitchen Status"));
-    statusHeaderText_->addStyleClass("h6 mb-0");
-    
-    titleContainer->setLayout(std::move(titleLayout));
-    layout->addWidget(std::move(titleContainer), 1);
-    
-    // Kitchen load indicator - FIXED: Create properly
-    auto progressBar = std::make_unique<Wt::WProgressBar>();
-    progressBar->setRange(0, 100);
-    progressBar->setValue(0);
-    progressBar->setWidth(80);
-    progressBar->addStyleClass("kitchen-load-bar");
-    kitchenLoadBar_ = progressBar.get();  // Store pointer before moving
-    layout->addWidget(std::move(progressBar));
-    
-    header->setLayout(std::move(layout));
     return std::move(header);
 }
 
-// Fix for KitchenStatusDisplay.cpp - createKitchenMetrics method
-
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createKitchenMetrics() {
     auto metrics = std::make_unique<Wt::WContainerWidget>();
-    metrics->addStyleClass("kitchen-metrics card-body");
+    metrics->addStyleClass("kitchen-metrics p-2 border rounded mb-3");
     metricsContainer_ = metrics.get();
     
-    auto layout = std::make_unique<Wt::WGridLayout>();
+    // Create kitchen load progress bar
+    auto loadContainer = metrics->addNew<Wt::WContainerWidget>();
+    loadContainer->addStyleClass("kitchen-load-container mb-2");
     
-    // Queue size metric
-    auto queueSizeLabel = std::make_unique<Wt::WText>("Queue Size:");
-    queueSizeLabel->addStyleClass("metric-label small text-muted");
-    layout->addWidget(std::move(queueSizeLabel), 0, 0);
+    auto loadLabel = loadContainer->addNew<Wt::WLabel>("Kitchen Load:");
+    loadLabel->addStyleClass("form-label");
     
-    // FIXED: Create and add queue size text directly to layout
-    auto queueSizeWidget = std::make_unique<Wt::WText>("0");
-    queueSizeWidget->addStyleClass("metric-value font-weight-bold");
-    queueSizeText_ = queueSizeWidget.get();  // Store pointer before moving
-    layout->addWidget(std::move(queueSizeWidget), 0, 1);
+    kitchenLoadBar_ = loadContainer->addNew<Wt::WProgressBar>();
+    kitchenLoadBar_->addStyleClass("progress kitchen-load-bar");
+    kitchenLoadBar_->setRange(0, 100);
+    kitchenLoadBar_->setValue(0);
     
-    // Estimated wait time metric
-    auto waitTimeLabel = std::make_unique<Wt::WText>("Est. Wait:");
-    waitTimeLabel->addStyleClass("metric-label small text-muted");
-    layout->addWidget(std::move(waitTimeLabel), 1, 0);
+    // Metrics text (will be populated by updateKitchenMetrics)
+    auto metricsText = metrics->addNew<Wt::WText>("Loading metrics...");
+    metricsText->addStyleClass("kitchen-metrics-text small text-muted");
     
-    // FIXED: Create and add estimated wait text directly to layout
-    auto estimatedWaitWidget = std::make_unique<Wt::WText>("0 min");
-    estimatedWaitWidget->addStyleClass("metric-value font-weight-bold");
-    estimatedWaitText_ = estimatedWaitWidget.get();  // Store pointer before moving
-    layout->addWidget(std::move(estimatedWaitWidget), 1, 1);
-    
-    // Kitchen load metric
-    auto loadLabel = std::make_unique<Wt::WText>("Load:");
-    loadLabel->addStyleClass("metric-label small text-muted");
-    layout->addWidget(std::move(loadLabel), 2, 0);
-    
-    // FIXED: Create and add kitchen load text directly to layout
-    auto kitchenLoadWidget = std::make_unique<Wt::WText>("Normal");
-    kitchenLoadWidget->addStyleClass("metric-value font-weight-bold");
-    kitchenLoadText_ = kitchenLoadWidget.get();  // Store pointer before moving
-    layout->addWidget(std::move(kitchenLoadWidget), 2, 1);
-    
-    // Set column stretches
-    layout->setColumnStretch(0, 1);
-    layout->setColumnStretch(1, 1);
-    
-    metrics->setLayout(std::move(layout));
     return std::move(metrics);
 }
 
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createQueueStatus() {
     auto queue = std::make_unique<Wt::WContainerWidget>();
-    queue->addStyleClass("queue-status card-footer bg-light");
+    queue->addStyleClass("kitchen-queue-status p-2 border rounded");
     queueContainer_ = queue.get();
     
-    // This will be populated by updateQueueStatus()
+    // Queue size
+    queueSizeText_ = queue->addNew<Wt::WText>("Queue: 0 orders");
+    queueSizeText_->addStyleClass("queue-size fw-bold d-block mb-1");
+    
+    // Estimated wait time
+    estimatedWaitText_ = queue->addNew<Wt::WText>("Est. Wait: 0 min");
+    estimatedWaitText_->addStyleClass("estimated-wait text-info d-block");
     
     return std::move(queue);
 }
 
 void KitchenStatusDisplay::refresh() {
     if (!posService_) {
-        std::cerr << "Error: POSService not available for kitchen status refresh" << std::endl;
+        std::cerr << "[KitchenStatusDisplay] POSService not available for refresh" << std::endl;
         return;
     }
     
-    updateAllStatus();
-    
-    std::cout << "KitchenStatusDisplay refreshed" << std::endl;
-}
-
-void KitchenStatusDisplay::setShowDetailedMetrics(bool showDetailed) {
-    showDetailedMetrics_ = showDetailed;
-    
-    if (metricsContainer_) {
-        if (showDetailed) {
-            metricsContainer_->show();
-        } else {
-            metricsContainer_->hide();
-        }
+    try {
+        updateAllStatus();
+        std::cout << "[KitchenStatusDisplay] Refreshed successfully" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[KitchenStatusDisplay] Refresh failed: " << e.what() << std::endl;
     }
-    
-    std::cout << "Kitchen detailed metrics " << (showDetailed ? "shown" : "hidden") << std::endl;
-}
-
-bool KitchenStatusDisplay::getShowDetailedMetrics() const {
-    return showDetailedMetrics_;
 }
 
 void KitchenStatusDisplay::updateAllStatus() {
@@ -203,126 +155,106 @@ void KitchenStatusDisplay::updateAllStatus() {
 }
 
 void KitchenStatusDisplay::updateKitchenMetrics() {
-    if (!posService_) {
+    if (!statusHeaderText_ || !kitchenLoadText_) {
         return;
     }
     
-    // Update queue size
-    auto kitchenTickets = posService_->getKitchenTickets();
-    int queueSize = static_cast<int>(kitchenTickets.size());
-    
-    if (queueSizeText_) {
-        queueSizeText_->setText(std::to_string(queueSize));
-    }
-    
-    // Update estimated wait time
-    int estimatedWait = posService_->getEstimatedWaitTime();
-    if (estimatedWaitText_) {
-        estimatedWaitText_->setText(formatWaitTime(estimatedWait));
-    }
-    
-    // Update kitchen load
-    int loadPercentage = calculateKitchenLoad();
-    if (kitchenLoadBar_) {
-        kitchenLoadBar_->setValue(loadPercentage);
-    }
-    
-    if (kitchenLoadText_) {
-        kitchenLoadText_->setText(getKitchenStatusText());
-    }
-    
-    // Update header text
-    if (statusHeaderText_) {
-        statusHeaderText_->setText("Kitchen Status - " + getKitchenStatusText());
+    try {
+        // Update status header
+        std::string statusText = "🍳 Kitchen Status: " + getKitchenStatusText();
+        statusHeaderText_->setText(statusText);
+        
+        // Update load information
+        int loadPercentage = calculateKitchenLoad();
+        std::string loadText = "Load: " + std::to_string(loadPercentage) + "%";
+        
+        if (isKitchenBusy()) {
+            loadText += " (Busy)";
+        } else if (isKitchenOverloaded()) {
+            loadText += " (Overloaded)";
+        }
+        
+        kitchenLoadText_->setText(loadText);
+        
+        // Update progress bar if it exists
+        if (kitchenLoadBar_) {
+            kitchenLoadBar_->setValue(loadPercentage);
+        }
+        
+        // Update detailed metrics if container exists
+        if (metricsContainer_ && showDetailedMetrics_) {
+            // Find and update the metrics text
+            auto children = metricsContainer_->children();
+            for (auto& child : children) {
+                auto textWidget = dynamic_cast<Wt::WText*>(child);
+                if (textWidget && textWidget->hasStyleClass("kitchen-metrics-text")) {
+                    textWidget->setText(formatKitchenMetrics());
+                    break;
+                }
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[KitchenStatusDisplay] Error updating kitchen metrics: " << e.what() << std::endl;
     }
 }
 
 void KitchenStatusDisplay::updateQueueStatus() {
-    if (!queueContainer_ || !posService_) {
+    if (!queueSizeText_ || !estimatedWaitText_ || !posService_) {
         return;
     }
     
-    queueContainer_->clear();
-    
-    auto kitchenTickets = posService_->getKitchenTickets();
-    
-    if (kitchenTickets.empty()) {
-        auto emptyMessage = std::make_unique<Wt::WText>("Kitchen queue is empty");
-        emptyMessage->addStyleClass("text-muted small text-center");
-        queueContainer_->addWidget(std::move(emptyMessage));
-        return;
+    try {
+        // Get current queue information
+        auto tickets = posService_->getKitchenTickets();
+        int queueSize = static_cast<int>(tickets.size());
+        int waitTime = posService_->getEstimatedWaitTime();
+        
+        // Update queue size
+        std::string queueText = "Queue: " + std::to_string(queueSize) + " orders";
+        queueSizeText_->setText(queueText);
+        
+        // Update estimated wait time
+        std::string waitText = "Est. Wait: " + formatWaitTime(waitTime);
+        estimatedWaitText_->setText(waitText);
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[KitchenStatusDisplay] Error updating queue status: " << e.what() << std::endl;
     }
-    
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
-    
-    // Add queue summary
-    auto summaryText = std::make_unique<Wt::WText>(
-        "Current Tickets: " + std::to_string(kitchenTickets.size()));
-    summaryText->addStyleClass("small font-weight-bold mb-1");
-    layout->addWidget(std::move(summaryText));
-    
-    // Add recent tickets (limit to 3 for space)
-    int displayCount = std::min(3, static_cast<int>(kitchenTickets.size()));
-    for (int i = 0; i < displayCount; ++i) {
-        const auto& ticket = kitchenTickets[i];
-        
-        auto ticketContainer = std::make_unique<Wt::WContainerWidget>();
-        ticketContainer->addStyleClass("ticket-item small d-flex justify-content-between");
-        
-        auto ticketInfo = std::make_unique<Wt::WText>(
-            "Order #" + std::to_string(ticket.orderId) + 
-            " (Table " + std::to_string(ticket.tableNumber) + ")");
-        ticketInfo->addStyleClass("ticket-info");
-        ticketContainer->addWidget(std::move(ticketInfo));
-        
-        auto statusText = std::make_unique<Wt::WText>(formatKitchenTicketStatus(ticket.status));
-        statusText->addStyleClass("ticket-status text-muted");
-        ticketContainer->addWidget(std::move(statusText));
-        
-        layout->addWidget(std::move(ticketContainer));
-    }
-    
-    // Show "and X more" if there are additional tickets
-    if (static_cast<int>(kitchenTickets.size()) > displayCount) {
-        auto moreText = std::make_unique<Wt::WText>(
-            "... and " + std::to_string(kitchenTickets.size() - displayCount) + " more");
-        moreText->addStyleClass("small text-muted font-italic");
-        layout->addWidget(std::move(moreText));
-    }
-    
-    queueContainer_->setLayout(std::move(layout));
 }
 
-// =================================================================
-// Event Handlers
-// =================================================================
-
+// Event handlers
 void KitchenStatusDisplay::handleOrderSentToKitchen(const std::any& eventData) {
-    std::cout << "Order sent to kitchen event received in KitchenStatusDisplay" << std::endl;
-    refresh();
+    updateAllStatus();
+    std::cout << "[KitchenStatusDisplay] Order sent to kitchen event handled" << std::endl;
 }
 
 void KitchenStatusDisplay::handleKitchenStatusChanged(const std::any& eventData) {
-    std::cout << "Kitchen status changed event received in KitchenStatusDisplay" << std::endl;
-    refresh();
+    updateAllStatus();
+    std::cout << "[KitchenStatusDisplay] Kitchen status changed event handled" << std::endl;
 }
 
 void KitchenStatusDisplay::handleKitchenQueueUpdated(const std::any& eventData) {
-    std::cout << "Kitchen queue updated event received in KitchenStatusDisplay" << std::endl;
     updateQueueStatus();
+    std::cout << "[KitchenStatusDisplay] Kitchen queue updated event handled" << std::endl;
 }
 
-// =================================================================
-// Helper Methods
-// =================================================================
-
+// Helper methods
 std::string KitchenStatusDisplay::getKitchenStatusText() const {
-    if (isKitchenOverloaded()) {
-        return "Overloaded";
-    } else if (isKitchenBusy()) {
-        return "Busy";
-    } else {
-        return "Normal";
+    if (!posService_) {
+        return "Unavailable";
+    }
+    
+    try {
+        if (isKitchenOverloaded()) {
+            return "Overloaded";
+        } else if (isKitchenBusy()) {
+            return "Busy";
+        } else {
+            return "Available";
+        }
+    } catch (const std::exception& e) {
+        return "Error";
     }
 }
 
@@ -338,11 +270,11 @@ std::string KitchenStatusDisplay::getKitchenStatusIcon() const {
 
 std::string KitchenStatusDisplay::getKitchenStatusColor() const {
     if (isKitchenOverloaded()) {
-        return "text-danger";
+        return "danger";
     } else if (isKitchenBusy()) {
-        return "text-warning";
+        return "warning";
     } else {
-        return "text-success";
+        return "success";
     }
 }
 
@@ -351,92 +283,82 @@ int KitchenStatusDisplay::calculateKitchenLoad() const {
         return 0;
     }
     
-    auto kitchenTickets = posService_->getKitchenTickets();
-    int queueSize = static_cast<int>(kitchenTickets.size());
-    
-    // Calculate load percentage based on queue size
-    // 0-5 orders = 0-50%, 5-10 orders = 50-100%, >10 orders = 100%
-    if (queueSize <= BUSY_THRESHOLD) {
-        return (queueSize * 50) / BUSY_THRESHOLD;
-    } else if (queueSize <= OVERLOADED_THRESHOLD) {
-        return 50 + ((queueSize - BUSY_THRESHOLD) * 50) / (OVERLOADED_THRESHOLD - BUSY_THRESHOLD);
-    } else {
-        return 100;
+    try {
+        auto tickets = posService_->getKitchenTickets();
+        int queueSize = static_cast<int>(tickets.size());
+        
+        // Calculate load as percentage of busy threshold
+        int loadPercentage = std::min(100, (queueSize * 100) / std::max(1, BUSY_THRESHOLD));
+        return loadPercentage;
+        
+    } catch (const std::exception& e) {
+        return 0;
     }
 }
 
 std::string KitchenStatusDisplay::formatWaitTime(int minutes) const {
     if (minutes <= 0) {
         return "0 min";
-    } else if (minutes == 1) {
-        return "1 min";
     } else if (minutes < 60) {
         return std::to_string(minutes) + " min";
     } else {
         int hours = minutes / 60;
         int remainingMinutes = minutes % 60;
-        if (remainingMinutes == 0) {
-            return std::to_string(hours) + "h";
-        } else {
-            return std::to_string(hours) + "h " + std::to_string(remainingMinutes) + "m";
-        }
+        return std::to_string(hours) + "h " + std::to_string(remainingMinutes) + "m";
     }
 }
 
 std::string KitchenStatusDisplay::formatKitchenMetrics() const {
     if (!posService_) {
-        return "";
+        return "Metrics unavailable";
     }
     
-    auto kitchenStatus = posService_->getKitchenQueueStatus();
-    
-    std::ostringstream oss;
-    oss << "Queue: " << queueSizeText_->text().toUTF8()
-        << ", Wait: " << estimatedWaitText_->text().toUTF8()
-        << ", Load: " << kitchenLoadText_->text().toUTF8();
-    
-    return oss.str();
+    try {
+        auto tickets = posService_->getKitchenTickets();
+        int totalTickets = static_cast<int>(tickets.size());
+        int avgPrepTime = getAveragePreparationTime();
+        
+        std::string metrics = "Active Tickets: " + std::to_string(totalTickets) + " | ";
+        metrics += "Avg Prep Time: " + std::to_string(avgPrepTime) + " min";
+        
+        return metrics;
+        
+    } catch (const std::exception& e) {
+        return "Error loading metrics";
+    }
+}
+
+std::string KitchenStatusDisplay::formatKitchenTicketStatus(KitchenInterface::KitchenStatus status) const {
+    return KitchenInterface::kitchenStatusToString(status);
 }
 
 void KitchenStatusDisplay::updateStatusColors() {
     std::string colorClass = getKitchenStatusColor();
     
+    // Apply color coding to status elements
     if (statusHeaderText_) {
-        statusHeaderText_->removeStyleClass("text-success");
-        statusHeaderText_->removeStyleClass("text-warning");
-        statusHeaderText_->removeStyleClass("text-danger");
-        statusHeaderText_->addStyleClass(colorClass);
+        statusHeaderText_->removeStyleClass("text-success text-warning text-danger");
+        statusHeaderText_->addStyleClass("text-" + colorClass);
     }
     
-    if (kitchenLoadText_) {
-        kitchenLoadText_->removeStyleClass("text-success");
-        kitchenLoadText_->removeStyleClass("text-warning");
-        kitchenLoadText_->removeStyleClass("text-danger");
-        kitchenLoadText_->addStyleClass(colorClass);
-    }
-    
-    if (kitchenLoadBar_) {
-        kitchenLoadBar_->removeStyleClass("progress-bar-success");
-        kitchenLoadBar_->removeStyleClass("progress-bar-warning");
-        kitchenLoadBar_->removeStyleClass("progress-bar-danger");
-        
-        if (isKitchenOverloaded()) {
-            kitchenLoadBar_->addStyleClass("progress-bar-danger");
-        } else if (isKitchenBusy()) {
-            kitchenLoadBar_->addStyleClass("progress-bar-warning");
-        } else {
-            kitchenLoadBar_->addStyleClass("progress-bar-success");
-        }
+    if (queueSizeText_) {
+        queueSizeText_->removeStyleClass("text-success text-warning text-danger");
+        queueSizeText_->addStyleClass("text-" + colorClass);
     }
 }
 
+// Status calculation methods
 bool KitchenStatusDisplay::isKitchenBusy() const {
     if (!posService_) {
         return false;
     }
     
-    auto kitchenTickets = posService_->getKitchenTickets();
-    return kitchenTickets.size() >= BUSY_THRESHOLD;
+    try {
+        auto tickets = posService_->getKitchenTickets();
+        return tickets.size() >= BUSY_THRESHOLD;
+    } catch (const std::exception& e) {
+        return false;
+    }
 }
 
 bool KitchenStatusDisplay::isKitchenOverloaded() const {
@@ -444,24 +366,46 @@ bool KitchenStatusDisplay::isKitchenOverloaded() const {
         return false;
     }
     
-    auto kitchenTickets = posService_->getKitchenTickets();
-    return kitchenTickets.size() >= OVERLOADED_THRESHOLD;
+    try {
+        auto tickets = posService_->getKitchenTickets();
+        return tickets.size() >= OVERLOADED_THRESHOLD;
+    } catch (const std::exception& e) {
+        return false;
+    }
 }
 
 int KitchenStatusDisplay::getAveragePreparationTime() const {
-    // This would calculate the average preparation time based on historical data
-    // For now, return a reasonable default
-    return 15; // 15 minutes average
+    if (!posService_) {
+        return 0;
+    }
+    
+    try {
+        auto tickets = posService_->getKitchenTickets();
+        if (tickets.empty()) {
+            return 0;
+        }
+        
+        int totalTime = 0;
+        for (const auto& ticket : tickets) {
+            totalTime += ticket.estimatedPrepTime;
+        }
+        
+        return totalTime / static_cast<int>(tickets.size());
+        
+    } catch (const std::exception& e) {
+        return 0;
+    }
 }
 
-// Fix for KitchenStatusDisplay.cpp - formatKitchenTicketStatus method
-
-std::string KitchenStatusDisplay::formatKitchenTicketStatus(KitchenInterface::KitchenStatus status) const {
-    switch (status) {
-        case KitchenInterface::ORDER_RECEIVED:    return "Received";
-        case KitchenInterface::PREP_STARTED:      return "Preparing";      // FIXED: was IN_PREPARATION
-        case KitchenInterface::READY_FOR_PICKUP:  return "Ready";          // FIXED: was READY_TO_SERVE
-        case KitchenInterface::SERVED:            return "Served";
-        default:                                  return "Unknown";
+// Configuration methods
+void KitchenStatusDisplay::setShowDetailedMetrics(bool showDetailed) {
+    if (showDetailedMetrics_ != showDetailed) {
+        showDetailedMetrics_ = showDetailed;
+        // In a full implementation, you might want to rebuild the UI here
+        // For now, just update the flag
     }
+}
+
+bool KitchenStatusDisplay::getShowDetailedMetrics() const {
+    return showDetailedMetrics_;
 }

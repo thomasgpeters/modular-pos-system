@@ -85,6 +85,11 @@ protected:
     void initializeUI();
     
     /**
+     * @brief Initializes table headers
+     */
+    void initializeTableHeaders();
+    
+    /**
      * @brief Sets up event listeners
      */
     void setupEventListeners();
@@ -94,11 +99,6 @@ protected:
      * @return Container widget with header
      */
     std::unique_ptr<Wt::WWidget> createDisplayHeader();
-    
-    /**
-     * @brief Creates the orders table
-     */
-    void createOrdersTable();
     
     /**
      * @brief Updates the orders table with current data
@@ -143,6 +143,7 @@ private:
     
     // Helper methods
     std::vector<std::shared_ptr<Order>> getDisplayOrders() const;
+    std::string formatOrderId(int orderId) const;
     std::string formatOrderStatus(Order::Status status) const;
     std::string formatOrderTime(const std::shared_ptr<Order>& order) const;
     std::string formatCurrency(double amount) const;

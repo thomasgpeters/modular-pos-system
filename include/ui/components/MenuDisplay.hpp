@@ -100,6 +100,11 @@ protected:
     void initializeUI();
     
     /**
+     * @brief Initializes table headers
+     */
+    void initializeTableHeaders();
+    
+    /**
      * @brief Sets up event listeners
      */
     void setupEventListeners();
@@ -109,11 +114,6 @@ protected:
      * @return Container widget with header controls
      */
     std::unique_ptr<Wt::WWidget> createMenuHeader();
-    
-    /**
-     * @brief Creates the menu items display table
-     */
-    void createMenuItemsTable();
     
     /**
      * @brief Updates the menu items table with current category filter

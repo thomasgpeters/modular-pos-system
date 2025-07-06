@@ -18,6 +18,7 @@
  * @version 2.0.0
  */
 
+ 
 /**
  * @class ConfigurationManager
  * @brief Service for managing application configuration
