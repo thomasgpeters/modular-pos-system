@@ -1,625 +1,309 @@
+//============================================================================
+// RestaurantPOSApp Enhanced Implementation
+//============================================================================
+
 #include "../../include/core/RestaurantPOSApp.hpp"
 
 #include <Wt/WBootstrap5Theme.h>
-#include <Wt/WCssDecorationStyle.h>
+#include <Wt/WText.h>
 #include <iostream>
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
-    : Wt::WApplication(env)
-    , eventManager_(nullptr)
-    , posService_(nullptr)
-    , themeService_(nullptr)
-    , configManager_(nullptr)
-    , componentFactory_(nullptr)
+    : WApplication(env)
+    , currentMode_(POS_MODE)
     , mainContainer_(nullptr)
-    , headerContainer_(nullptr)
-    , contentContainer_(nullptr)
-    , statusBarContainer_(nullptr)
-    , themeControlsContainer_(nullptr)
-    , themeSelector_(nullptr)
-    , themeToggleButton_(nullptr)
-    , orderEntryPanel_(nullptr)
-    , menuDisplay_(nullptr)
-    , currentOrderDisplay_(nullptr)
-    , orderStatusPanel_(nullptr)
-    , statusText_(nullptr)
-    , updateTimer_(nullptr)
+    , mainLayout_(nullptr)
+    , commonHeader_(nullptr)
+    , commonFooter_(nullptr)
+    , modeContainer_(nullptr)
+    , posModeContainer_(nullptr)
+    , kitchenModeContainer_(nullptr)
 {
     logApplicationStart();
     
-    try {
-        // Setup meta tags and theming first
-        setupMetaTags();
-        setupBootstrapTheme();
-        addCustomCSS();
-        addThemeSpecificCSS();
-        
-        // Initialize services in proper order
-        initializeServices();
-        initializeComponentFactory();
-        
-        // Setup main layout structure
-        setupMainLayout();
-        setupHeaderWithThemeControls();
-        
-        // Create all components using factory
-        createAllComponents();
-        
-        // Setup content layout with components
-        setupContentLayout();
-        setupStatusBar();
-        
-        // Setup events and updates
-        setupEventListeners();
-        setupThemeEventHandlers();
-        setupRealTimeUpdates();
-        
-        // Apply styling and theming
-        applyComponentStyling();
-        applyThemeToComponents();
-        
-        // Validate everything is set up correctly
-        validateComponents();
-        
-        std::cout << "[SUCCESS] Restaurant POS Application with Flat Architecture initialized!" << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "[ERROR] Application initialization failed: " << e.what() << std::endl;
-        if (statusText_) {
-            statusText_->setText("❌ Initialization Error: " + std::string(e.what()));
-        }
-    }
+    // Initialize services first
+    initializeServices();
+    initializeComponentFactory();
+    
+    // Setup theme and styling
+    initializeThemeService();
+    setupBootstrapTheme();
+    
+    // Setup main application layout
+    setupMainLayout();
+    createCommonComponents();
+    createModeContainers();
+    
+    // Setup event handling and real-time updates
+    setupEventListeners();
+    setupRealTimeUpdates();
+    
+    // Start in POS mode
+    switchMode(POS_MODE);
+    
+    addCustomCSS();
 }
 
 void RestaurantPOSApp::initializeServices() {
-    std::cout << "[INIT] Initializing core services..." << std::endl;
-    
-    // Create event manager first
     eventManager_ = std::make_shared<EventManager>();
-    
-    // Create configuration manager
-    configManager_ = std::make_shared<ConfigurationManager>();
-    configManager_->initialize();
-    
-    // Create POS service with event manager
     posService_ = std::make_shared<POSService>(eventManager_);
+    configManager_ = std::make_shared<ConfigurationManager>();
+    
+    // Initialize POS service menu
     posService_->initializeMenu();
     
-    // Initialize theme service
-    initializeThemeService();
-    
-    std::cout << "[INIT] Core services initialized successfully" << std::endl;
+    std::cout << "✓ Core services initialized" << std::endl;
 }
 
 void RestaurantPOSApp::initializeComponentFactory() {
-    std::cout << "[INIT] Creating UI component factory..." << std::endl;
-    
-    if (!posService_ || !eventManager_ || !configManager_) {
-        throw std::runtime_error("Cannot create UIComponentFactory: missing required services");
-    }
-    
-    // Create component factory with all dependencies
     componentFactory_ = std::make_unique<UIComponentFactory>(
         posService_, eventManager_, configManager_);
     
-    // Register optional services
-    if (themeService_) {
-        componentFactory_->registerThemeService(themeService_);
-    }
-    
-    std::cout << "[INIT] UI component factory created successfully" << std::endl;
+    std::cout << "✓ Component factory initialized" << std::endl;
 }
 
 void RestaurantPOSApp::initializeThemeService() {
-    try {
-        themeService_ = std::make_shared<ThemeService>(this);
-        themeService_->loadThemePreference();
-        
-        std::cout << "[THEME] Initialized with theme: " 
-                  << themeService_->getThemeName(themeService_->getCurrentTheme()) << std::endl;
-                  
-    } catch (const std::exception& e) {
-        std::cerr << "[ERROR] ThemeService initialization failed: " << e.what() << std::endl;
-        themeService_ = nullptr;
-    }
+    themeService_ = std::make_shared<ThemeService>(this);
+    componentFactory_->registerThemeService(themeService_);
+    
+    std::cout << "✓ Theme service initialized" << std::endl;
+}
+
+void RestaurantPOSApp::setupBootstrapTheme() {
+    auto theme = std::make_shared<Wt::WBootstrap5Theme>();
+    setTheme(theme);
+    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css");
+    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
 }
 
 void RestaurantPOSApp::setupMainLayout() {
-    setTitle("Restaurant POS System - Flat Architecture");
+    setTitle("Restaurant POS System - Enhanced Mode Switching");
     
-    // Create main container with simple vertical layout
-    mainContainer_ = root()->addNew<Wt::WContainerWidget>();
-    mainContainer_->addStyleClass("pos-main-container container-fluid");
+    // Create main container
+    mainContainer_ = root();
+    mainContainer_->addStyleClass("d-flex flex-column min-vh-100");
     
-    // Header section (direct child)
-    headerContainer_ = mainContainer_->addNew<Wt::WContainerWidget>();
-    headerContainer_->addStyleClass("pos-header-section");
+    // Create main layout
+    mainLayout_ = mainContainer_->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    mainLayout_->setContentsMargins(0, 0, 0, 0);
     
-    // Content section (direct child)
-    contentContainer_ = mainContainer_->addNew<Wt::WContainerWidget>();
-    contentContainer_->addStyleClass("pos-content-section");
-    
-    // Status bar section (direct child)
-    statusBarContainer_ = mainContainer_->addNew<Wt::WContainerWidget>();
-    statusBarContainer_->addStyleClass("pos-status-section");
-    
-    std::cout << "[LAYOUT] Simple main layout structure created" << std::endl;
+    std::cout << "✓ Main layout configured" << std::endl;
 }
 
-void RestaurantPOSApp::createAllComponents() {
-    std::cout << "[COMPONENTS] Creating all components using factory..." << std::endl;
+void RestaurantPOSApp::createCommonComponents() {
+    // Create common header
+    commonHeader_ = mainLayout_->addWidget(
+        std::make_unique<CommonHeader>(
+            themeService_, 
+            eventManager_,
+            [this](ModeSelector::Mode mode) {
+                OperatingMode appMode = (mode == ModeSelector::POS_MODE) ? 
+                    POS_MODE : KITCHEN_MODE;
+                switchMode(appMode);
+            }
+        )
+    );
+    commonHeader_->addStyleClass("bg-primary text-white shadow-sm");
     
-    if (!componentFactory_) {
-        throw std::runtime_error("ComponentFactory not initialized");
-    }
+    // Create mode container (will hold mode-specific content)
+    modeContainer_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>());
+    modeContainer_->addStyleClass("flex-grow-1 d-flex");
+    modeContainer_->setId("mode-container");
     
-    // Create each component separately using the factory
-    createOrderEntryPanel();
-    createMenuDisplay();
-    createCurrentOrderDisplay();
-    createOrderStatusPanel();
+    // Create common footer
+    commonFooter_ = mainLayout_->addWidget(
+        std::make_unique<CommonFooter>(posService_, eventManager_)
+    );
+    commonFooter_->addStyleClass("bg-light border-top mt-auto");
     
-    std::cout << "[COMPONENTS] All components created successfully" << std::endl;
+    std::cout << "✓ Common components created" << std::endl;
 }
 
-void RestaurantPOSApp::createOrderEntryPanel() {
-    std::cout << "[COMPONENT] Creating OrderEntryPanel..." << std::endl;
+void RestaurantPOSApp::createModeContainers() {
+    // Create POS mode container
+    posModeContainer_ = modeContainer_->addWidget(
+        std::make_unique<POSModeContainer>(posService_, eventManager_)
+    );
+    posModeContainer_->addStyleClass("w-100");
+    posModeContainer_->hide(); // Initially hidden
     
-    auto orderEntryComponent = componentFactory_->createOrderEntryPanel();
-    if (!orderEntryComponent) {
-        throw std::runtime_error("Failed to create OrderEntryPanel");
-    }
+    // Create Kitchen mode container
+    kitchenModeContainer_ = modeContainer_->addWidget(
+        std::make_unique<KitchenModeContainer>(posService_, eventManager_)
+    );
+    kitchenModeContainer_->addStyleClass("w-100");
+    kitchenModeContainer_->hide(); // Initially hidden
     
-    // Add to content container and store pointer
-    orderEntryPanel_ = contentContainer_->addWidget(std::move(orderEntryComponent));
-    orderEntryPanel_->addStyleClass("order-entry-section");
-    
-    std::cout << "[COMPONENT] OrderEntryPanel created successfully" << std::endl;
+    std::cout << "✓ Mode containers created" << std::endl;
 }
 
-void RestaurantPOSApp::createMenuDisplay() {
-    std::cout << "[COMPONENT] Creating MenuDisplay..." << std::endl;
-    
-    auto menuComponent = componentFactory_->createMenuDisplay();
-    if (!menuComponent) {
-        throw std::runtime_error("Failed to create MenuDisplay");
+void RestaurantPOSApp::switchMode(OperatingMode mode) {
+    if (currentMode_ == mode) {
+        return; // Already in this mode
     }
     
-    // Add to content container and store pointer
-    menuDisplay_ = contentContainer_->addWidget(std::move(menuComponent));
-    menuDisplay_->addStyleClass("menu-display-section");
+    OperatingMode oldMode = currentMode_;
+    currentMode_ = mode;
     
-    std::cout << "[COMPONENT] MenuDisplay created successfully" << std::endl;
+    // Hide all mode containers
+    hideModeContainers();
+    
+    // Show the appropriate mode container
+    switch (mode) {
+        case POS_MODE:
+            showPOSMode();
+            break;
+        case KITCHEN_MODE:
+            showKitchenMode();
+            break;
+    }
+    
+    // Update header mode selector
+    ModeSelector::Mode selectorMode = (mode == POS_MODE) ? 
+        ModeSelector::POS_MODE : ModeSelector::KITCHEN_MODE;
+    commonHeader_->setCurrentMode(selectorMode);
+    
+    // Apply mode-specific styling
+    applyModeSpecificStyling();
+    
+    // Notify mode change
+    onModeChanged(mode);
+    
+    logModeSwitch(mode);
 }
 
-void RestaurantPOSApp::createCurrentOrderDisplay() {
-    std::cout << "[COMPONENT] Creating CurrentOrderDisplay..." << std::endl;
-    
-    auto currentOrderComponent = componentFactory_->createCurrentOrderDisplay();
-    if (!currentOrderComponent) {
-        throw std::runtime_error("Failed to create CurrentOrderDisplay");
-    }
-    
-    // Add to content container and store pointer
-    currentOrderDisplay_ = contentContainer_->addWidget(std::move(currentOrderComponent));
-    currentOrderDisplay_->addStyleClass("current-order-section");
-    
-    std::cout << "[COMPONENT] CurrentOrderDisplay created successfully" << std::endl;
+void RestaurantPOSApp::hideModeContainers() {
+    posModeContainer_->hide();
+    kitchenModeContainer_->hide();
 }
 
-void RestaurantPOSApp::createOrderStatusPanel() {
-    std::cout << "[COMPONENT] Creating OrderStatusPanel..." << std::endl;
+void RestaurantPOSApp::showPOSMode() {
+    posModeContainer_->show();
+    posModeContainer_->refresh();
     
-    auto statusPanelComponent = componentFactory_->createOrderStatusPanel();
-    if (!statusPanelComponent) {
-        throw std::runtime_error("Failed to create OrderStatusPanel");
-    }
-    
-    // Add to content container and store pointer
-    orderStatusPanel_ = contentContainer_->addWidget(std::move(statusPanelComponent));
-    orderStatusPanel_->addStyleClass("order-status-section");
-    
-    std::cout << "[COMPONENT] OrderStatusPanel created successfully" << std::endl;
+    // Focus on order taking workflow
+    std::cout << "Switched to POS Mode - Order Taking" << std::endl;
 }
 
-void RestaurantPOSApp::setupHeaderWithThemeControls() {
-    headerContainer_->addStyleClass("pos-header row align-items-center p-3 mb-4");
+void RestaurantPOSApp::showKitchenMode() {
+    kitchenModeContainer_->show();
+    kitchenModeContainer_->refresh();
     
-    // Left side - Application title (direct child)
-    auto titleContainer = headerContainer_->addNew<Wt::WContainerWidget>();
-    titleContainer->addStyleClass("col-md-8");
-    
-    auto headerTitle = titleContainer->addNew<Wt::WText>("🍽️ Restaurant POS System - Flat Architecture");
-    headerTitle->addStyleClass("h2 mb-0 pos-app-title");
-    
-    // Right side - Theme controls (direct child)
-    themeControlsContainer_ = headerContainer_->addNew<Wt::WContainerWidget>();
-    themeControlsContainer_->addStyleClass("col-md-4 text-right");
-    
-    setupThemeControls();
-    
-    std::cout << "[HEADER] Simple header with theme controls created" << std::endl;
+    // Focus on kitchen workflow
+    std::cout << "Switched to Kitchen Mode - Order Preparation" << std::endl;
 }
 
-void RestaurantPOSApp::setupContentLayout() {
-    // Simple approach: widgets are already added to contentContainer_
-    // Just apply styling classes for spacing
+void RestaurantPOSApp::applyModeSpecificStyling() {
+    // Remove previous mode classes
+    modeContainer_->removeStyleClass("pos-mode");
+    modeContainer_->removeStyleClass("kitchen-mode");
     
-    if (orderEntryPanel_) {
-        orderEntryPanel_->addStyleClass("mb-4");
-    }
-    
-    if (menuDisplay_) {
-        menuDisplay_->addStyleClass("mb-4");
-    }
-    
-    if (currentOrderDisplay_) {
-        currentOrderDisplay_->addStyleClass("mb-4");
-    }
-    
-    if (orderStatusPanel_) {
-        orderStatusPanel_->addStyleClass("mt-2");
-    }
-    
-    std::cout << "[LAYOUT] Content layout styling applied" << std::endl;
-}
-
-void RestaurantPOSApp::setupStatusBar() {
-    statusBarContainer_->addStyleClass("pos-status-bar p-2 mt-2 bg-light border-top");
-    
-    // Status text (direct child)
-    statusText_ = statusBarContainer_->addNew<Wt::WText>("System Ready - Flat Architecture");
-    statusText_->addStyleClass("mb-0 text-muted");
-    
-    // Component count info (direct child)
-    auto componentInfo = statusBarContainer_->addNew<Wt::WText>(" | 4 components loaded");
-    componentInfo->addStyleClass("small text-info");
-    
-    std::cout << "[STATUS] Simple status bar created" << std::endl;
-}
-
-void RestaurantPOSApp::setupThemeControls() {
-    if (!themeService_) {
-        std::cout << "[WARNING] ThemeService not available, skipping theme controls" << std::endl;
-        return;
-    }
-    
-    // Theme selector dropdown (direct child)
-    createThemeSelector();
-    
-    // Theme toggle button (direct child)
-    createThemeToggleButton();
-    
-    std::cout << "[THEME] Simple theme controls created" << std::endl;
-}
-
-void RestaurantPOSApp::createThemeSelector() {
-    if (!themeService_) return;
-    
-    themeSelector_ = themeControlsContainer_->addNew<Wt::WComboBox>();
-    themeSelector_->addStyleClass("form-select pos-theme-selector me-2");
-    
-    auto themes = themeService_->getAvailableThemes();
-    for (const auto& theme : themes) {
-        std::string text = themeService_->getThemeIcon(theme) + " " + 
-                          themeService_->getThemeName(theme);
-        themeSelector_->addItem(text);
-    }
-    
-    auto currentTheme = themeService_->getCurrentTheme();
-    auto it = std::find(themes.begin(), themes.end(), currentTheme);
-    if (it != themes.end()) {
-        themeSelector_->setCurrentIndex(std::distance(themes.begin(), it));
+    // Add current mode class
+    switch (currentMode_) {
+        case POS_MODE:
+            modeContainer_->addStyleClass("pos-mode");
+            break;
+        case KITCHEN_MODE:
+            modeContainer_->addStyleClass("kitchen-mode");
+            break;
     }
 }
 
-void RestaurantPOSApp::createThemeToggleButton() {
-    if (!themeService_) return;
+void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
+    // Publish mode change event
+    eventManager_->publish("MODE_CHANGED", std::to_string(static_cast<int>(newMode)));
     
-    themeToggleButton_ = themeControlsContainer_->addNew<Wt::WPushButton>();
-    themeToggleButton_->addStyleClass("btn btn-outline-secondary pos-theme-toggle");
-    
-    updateThemeControls();
+    // Update footer status
+    commonFooter_->updateStatus();
 }
 
 void RestaurantPOSApp::setupEventListeners() {
-    // Register for order creation events
-    posService_->onOrderCreated([this](std::shared_ptr<Order> order) {
-        onOrderCreated(order);
-    });
-    
-    // Register for order modification events
-    posService_->onOrderModified([this](std::shared_ptr<Order> order) {
-        onOrderModified(order);
-    });
-    
-    std::cout << "[EVENTS] Event listeners setup complete" << std::endl;
-}
-
-void RestaurantPOSApp::setupThemeEventHandlers() {
-    if (!themeService_) return;
-    
-    // Register for theme change notifications
-    themeService_->onThemeChanged([this](ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
-        onThemeChanged(oldTheme, newTheme);
-    });
-    
-    // Connect theme selector change event
-    if (themeSelector_) {
-        themeSelector_->changed().connect([this] {
-            onThemeSelectorChanged();
+    // Listen for theme changes
+    if (themeService_) {
+        themeService_->onThemeChanged([this](ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
+            onThemeChanged(oldTheme, newTheme);
         });
     }
     
-    // Connect theme toggle button
-    if (themeToggleButton_) {
-        themeToggleButton_->clicked().connect([this] {
-            onThemeToggleClicked();
-        });
-    }
-    
-    std::cout << "[THEME] Theme event handlers setup complete" << std::endl;
+    std::cout << "✓ Event listeners configured" << std::endl;
 }
 
 void RestaurantPOSApp::setupRealTimeUpdates() {
-    try {
-        updateTimer_ = root()->addChild(std::make_unique<Wt::WTimer>());
-        updateTimer_->setInterval(std::chrono::seconds(30)); // Less frequent updates
-        
-        updateTimer_->timeout().connect([this] {
-            try {
-                onPeriodicUpdate();
-            } catch (...) {
-                // Silently handle timer update errors
-            }
-        });
-        
-        updateTimer_->start();
-        
-        std::cout << "[TIMER] Real-time updates setup complete" << std::endl;
-        
-    } catch (...) {
-        std::cout << "[WARNING] Could not setup auto-refresh timer" << std::endl;
-    }
+    updateTimer_ = std::make_unique<Wt::WTimer>();
+    updateTimer_->timeout().connect([this]() {
+        onPeriodicUpdate();
+    });
+    updateTimer_->setInterval(std::chrono::seconds(5));
+    updateTimer_->start();
+    
+    std::cout << "✓ Real-time updates configured" << std::endl;
 }
 
-// Event handlers
 void RestaurantPOSApp::onPeriodicUpdate() {
-    // Refresh all components
-    if (orderEntryPanel_) orderEntryPanel_->refresh();
-    if (menuDisplay_) menuDisplay_->refresh();
-    if (currentOrderDisplay_) currentOrderDisplay_->refresh();
-    if (orderStatusPanel_) orderStatusPanel_->refresh();
+    // Update current mode container
+    switch (currentMode_) {
+        case POS_MODE:
+            if (posModeContainer_->isVisible()) {
+                posModeContainer_->refresh();
+            }
+            break;
+        case KITCHEN_MODE:
+            if (kitchenModeContainer_->isVisible()) {
+                kitchenModeContainer_->refresh();
+            }
+            break;
+    }
     
-    updateStatus("Auto-refresh completed");
+    // Update footer
+    commonFooter_->updateStatus();
 }
 
-void RestaurantPOSApp::onOrderCreated(std::shared_ptr<Order> order) {
-    if (order) {
-        updateStatus("✅ Order #" + std::to_string(order->getOrderId()) + " created");
-    }
-}
-
-void RestaurantPOSApp::onOrderModified(std::shared_ptr<Order> order) {
-    if (order) {
-        updateStatus("📝 Order #" + std::to_string(order->getOrderId()) + " modified");
-    }
-}
-
-void RestaurantPOSApp::onCurrentOrderChanged() {
-    updateStatus("🔄 Current order changed");
-}
-
-// Theme event handlers
 void RestaurantPOSApp::onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
-    std::cout << "[THEME] Changed from " << themeService_->getThemeName(oldTheme) 
-              << " to " << themeService_->getThemeName(newTheme) << std::endl;
+    std::cout << "Theme changed from " << static_cast<int>(oldTheme) 
+              << " to " << static_cast<int>(newTheme) << std::endl;
     
-    applyThemeTransition();
-    updateThemeControls();
-    applyThemeToComponents();
-    
-    updateStatus("Theme changed to " + themeService_->getThemeName(newTheme));
-}
-
-void RestaurantPOSApp::onThemeToggleClicked() {
-    if (themeService_) {
-        themeService_->toggleTheme();
-    }
-}
-
-void RestaurantPOSApp::onThemeSelectorChanged() {
-    if (!themeService_ || !themeSelector_) return;
-    
-    int index = themeSelector_->currentIndex();
-    auto themes = themeService_->getAvailableThemes();
-    if (index >= 0 && index < static_cast<int>(themes.size())) {
-        themeService_->setTheme(themes[index]);
-    }
-}
-
-void RestaurantPOSApp::updateThemeControls() {
-    if (!themeService_) return;
-    
-    auto currentTheme = themeService_->getCurrentTheme();
-    
-    if (themeToggleButton_) {
-        std::string buttonText = themeService_->getThemeIcon(currentTheme) + " " + 
-                               themeService_->getThemeName(currentTheme);
-        themeToggleButton_->setText(buttonText);
-    }
-    
-    if (themeSelector_) {
-        auto themes = themeService_->getAvailableThemes();
-        auto it = std::find(themes.begin(), themes.end(), currentTheme);
-        if (it != themes.end()) {
-            themeSelector_->setCurrentIndex(std::distance(themes.begin(), it));
-        }
-    }
-}
-
-void RestaurantPOSApp::applyThemeToComponents() {
-    if (!themeService_) return;
-    
-    // Apply theme to main containers
-    themeService_->applyThemeToContainer(mainContainer_);
-    if (headerContainer_) themeService_->applyThemeToContainer(headerContainer_);
-    if (contentContainer_) themeService_->applyThemeToContainer(contentContainer_);
-    if (statusBarContainer_) themeService_->applyThemeToContainer(statusBarContainer_);
-    
-    // Individual components handle their own theming through their event subscriptions
-}
-
-void RestaurantPOSApp::applyThemeTransition() {
-    if (themeService_) {
-        ThemeUtils::applyThemeTransition(this, 300);
-    }
-}
-
-// CSS and styling methods (same as before)
-void RestaurantPOSApp::setupBootstrapTheme() {
-    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css");
-    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css");
-    require("https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/js/bootstrap.bundle.min.js");
+    // Apply theme-specific styling if needed
+    applyModeSpecificStyling();
 }
 
 void RestaurantPOSApp::addCustomCSS() {
-    styleSheet().addRule(".pos-application", "padding: 20px;");
-    styleSheet().addRule(".pos-header-section", 
-        "background-color: var(--pos-header-bg, #f8f9fa); "
-        "color: var(--pos-header-text, #212529); "
-        "border-radius: 0.375rem; border: 1px solid var(--pos-border-color, #dee2e6);");
+    // Mode-specific styles
+    styleSheet().addRule(".pos-mode", "background-color: #f8f9fa;");
+    styleSheet().addRule(".kitchen-mode", "background-color: #fff3cd;");
     
-    styleSheet().addRule(".pos-content-section", 
-        "background-color: var(--pos-main-bg, #ffffff); "
-        "color: var(--pos-main-text, #212529); "
-        "padding: 1rem; min-height: 400px;");
+    // POS Mode styles
+    styleSheet().addRule(".pos-mode .order-work-area", 
+        "border-left: 3px solid #007bff; padding-left: 1rem;");
     
-    styleSheet().addRule(".pos-status-section", 
-        "background-color: var(--pos-card-bg, #f8f9fa); "
-        "color: var(--pos-card-text, #6c757d); "
-        "border: 1px solid var(--pos-border-color, #dee2e6);");
+    // Kitchen Mode styles  
+    styleSheet().addRule(".kitchen-mode .kitchen-status", 
+        "border-left: 3px solid #fd7e14; padding-left: 1rem;");
     
-    // Component section styling - simplified for vertical stack
-    styleSheet().addRule(".order-entry-section", 
-        "border: 2px solid #28a745; border-radius: 8px; padding: 15px; "
-        "background-color: var(--pos-card-bg, #f8fff9);");
+    // Common header styles
+    styleSheet().addRule(".common-header", 
+        "box-shadow: 0 2px 4px rgba(0,0,0,0.1);");
     
-    styleSheet().addRule(".menu-display-section", 
-        "border: 2px solid #007bff; border-radius: 8px; padding: 15px; "
-        "background-color: var(--pos-card-bg, #f0f8ff);");
+    // Mode selector styles
+    styleSheet().addRule(".mode-selector .btn.active", 
+        "background-color: #ffffff; color: #007bff; font-weight: bold;");
     
-    styleSheet().addRule(".current-order-section", 
-        "border: 2px solid #17a2b8; border-radius: 8px; padding: 15px; "
-        "background-color: var(--pos-card-bg, #f0fdff);");
-    
-    styleSheet().addRule(".order-status-section", 
-        "border: 2px solid #6f42c1; border-radius: 8px; padding: 15px; "
-        "background-color: var(--pos-card-bg, #faf9ff);");
-    
-    // OrderEntryPanel specific styling to replace layouts
-    styleSheet().addRule(".table-selection-group", "padding: 20px;");
-    styleSheet().addRule(".order-actions-section", "padding: 20px; text-align: center;");
-    styleSheet().addRule(".table-identifier-combo", "width: 100%; max-width: 400px;");
-    styleSheet().addRule(".action-buttons-container", "margin-top: 15px;");
-    
-    // Responsive design
-    styleSheet().addRule("@media (min-width: 768px)", 
-        ".pos-content-section { display: flex; flex-wrap: wrap; gap: 1rem; }");
-    
-    styleSheet().addRule("@media (min-width: 768px)", 
-        ".order-entry-section { flex: 1 1 100%; }");
-    
-    styleSheet().addRule("@media (min-width: 768px)", 
-        ".menu-display-section { flex: 2 1 60%; }");
-    
-    styleSheet().addRule("@media (min-width: 768px)", 
-        ".current-order-section { flex: 1 1 35%; }");
-    
-    styleSheet().addRule("@media (min-width: 768px)", 
-        ".order-status-section { flex: 1 1 100%; }");
-}
-
-void RestaurantPOSApp::addThemeSpecificCSS() {
-    // Light theme CSS variables
-    styleSheet().addRule(".theme-light", 
-        "--pos-main-bg: #f8f9fa; --pos-main-text: #212529; "
-        "--pos-header-bg: #ffffff; --pos-header-text: #495057; "
-        "--pos-card-bg: #ffffff; --pos-card-text: #212529; "
-        "--pos-border-color: #dee2e6;");
-    
-    // Dark theme CSS variables
-    styleSheet().addRule(".theme-dark", 
-        "--pos-main-bg: #212529; --pos-main-text: #f8f9fa; "
-        "--pos-header-bg: #343a40; --pos-header-text: #f8f9fa; "
-        "--pos-card-bg: #495057; --pos-card-text: #f8f9fa; "
-        "--pos-border-color: #6c757d;");
-    
-    // Base theme CSS variables
-    styleSheet().addRule(".theme-base", 
-        "--pos-main-bg: #ffffff; --pos-main-text: #495057; "
-        "--pos-header-bg: #f8f9fa; --pos-header-text: #495057; "
-        "--pos-card-bg: #ffffff; --pos-card-text: #495057; "
-        "--pos-border-color: #ced4da;");
-}
-
-void RestaurantPOSApp::setupMetaTags() {
-    addMetaHeader("viewport", "width=device-width, initial-scale=1.0");
-    addMetaHeader("description", "Restaurant POS System - Flat Component Architecture");
-}
-
-void RestaurantPOSApp::applyComponentStyling() {
-    styleSheet().addRule(".pos-theme-selector", "min-width: 150px;");
-    styleSheet().addRule(".pos-theme-toggle", "min-width: 120px;");
-    styleSheet().addRule(".pos-app-title", "color: var(--pos-title-color, #495057);");
-    
-    // Component transition support
-    styleSheet().addRule(".pos-theme-transition", 
-        "transition: background-color 0.3s ease, color 0.3s ease, "
-        "border-color 0.3s ease, box-shadow 0.3s ease !important;");
-}
-
-// Utility methods
-void RestaurantPOSApp::validateComponents() const {
-    std::vector<std::string> missing;
-    
-    if (!orderEntryPanel_) missing.push_back("OrderEntryPanel");
-    if (!menuDisplay_) missing.push_back("MenuDisplay");
-    if (!currentOrderDisplay_) missing.push_back("CurrentOrderDisplay");
-    if (!orderStatusPanel_) missing.push_back("OrderStatusPanel");
-    
-    if (!missing.empty()) {
-        std::string errorMsg = "Missing components: ";
-        for (size_t i = 0; i < missing.size(); ++i) {
-            if (i > 0) errorMsg += ", ";
-            errorMsg += missing[i];
-        }
-        throw std::runtime_error(errorMsg);
-    }
-    
-    std::cout << "[VALIDATION] All components validated successfully" << std::endl;
+    std::cout << "✓ Custom CSS applied" << std::endl;
 }
 
 void RestaurantPOSApp::logApplicationStart() {
-    std::cout << "=== Restaurant POS Application Starting (Flat Architecture) ===" << std::endl;
-    std::cout << "Version: 2.3.0 - Flattened Component Hierarchy" << std::endl;
-    std::cout << "Architecture: Individual components created via UIComponentFactory" << std::endl;
+    std::cout << "\n=== Restaurant POS System Enhanced ===\n";
+    std::cout << "Version: 3.0.0 - Mode Switching\n";
+    std::cout << "Starting application...\n\n";
 }
 
-void RestaurantPOSApp::updateStatus(const std::string& message) {
-    if (statusText_) {
-        statusText_->setText(message);
+void RestaurantPOSApp::logModeSwitch(OperatingMode mode) {
+    std::cout << "→ Mode switched to: " << getModeDisplayName(mode) << std::endl;
+}
+
+std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
+    switch (mode) {
+        case POS_MODE:     return "POS Mode (Order Taking)";
+        case KITCHEN_MODE: return "Kitchen Mode (Order Preparation)";
+        default:           return "Unknown Mode";
     }
-    std::cout << "[POS] " << message << std::endl;
-}
-
-std::string RestaurantPOSApp::getCurrentThemeDisplayName() const {
-    if (themeService_) {
-        return themeService_->getThemeName(themeService_->getCurrentTheme());
-    }
-    return "Default";
-}
-
-std::unique_ptr<Wt::WApplication> createApplication(const Wt::WEnvironment& env) {
-    return std::make_unique<RestaurantPOSApp>(env);
 }

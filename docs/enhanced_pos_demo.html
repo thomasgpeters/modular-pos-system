@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced POS System - Mode Switching Demo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .demo-container { min-height: 100vh; }
+        .common-header { background: linear-gradient(135deg, #007bff, #0056b3); }
+        .mode-selector .btn.active { background-color: #ffffff; color: #007bff; font-weight: bold; }
+        .pos-mode { background-color: #f8f9fa; }
+        .kitchen-mode { background-color: #fff3cd; }
+        .order-work-area { border-left: 3px solid #007bff; }
+        .kitchen-status { border-left: 3px solid #fd7e14; }
+        .demo-section { border: 2px dashed #dee2e6; border-radius: 10px; padding: 20px; margin: 10px 0; }
+        .workflow-step { background: #e7f3ff; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .highlight { background-color: #fff3cd; padding: 2px 5px; border-radius: 3px; }
+        .demo-card { transition: all 0.3s ease; cursor: pointer; }
+        .demo-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        /* Mode-specific animations */
+        .mode-transition { transition: all 0.5s ease-in-out; }
+        .pos-mode-active { border-left: 4px solid #007bff; }
+        .kitchen-mode-active { border-left: 4px solid #fd7e14; }
+        
+        /* Interactive elements */
+        .interactive-demo { border: 2px solid #007bff; border-radius: 10px; background: #f8f9fa; }
+        .demo-status { font-family: 'Courier New', monospace; background: #f8f9fa; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- Header Simulation -->
+        <header class="common-header text-white p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <h4 class="mb-0 fw-bold">🍴 Restaurant POS Enhanced</h4>
+                </div>
+                
+                <div class="mode-selector d-flex align-items-center gap-2 mx-4">
+                    <button id="posMode" class="btn btn-outline-light active" onclick="switchMode('pos')">
+                        📋 POS
+                    </button>
+                    <button id="kitchenMode" class="btn btn-outline-light" onclick="switchMode('kitchen')">
+                        👨‍🍳 Kitchen
+                    </button>
+                    <span class="text-light ms-3 fw-bold">Current: <span id="currentMode">POS Mode</span></span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <select class="form-select form-select-sm">
+                        <option>Light Theme</option>
+                        <option>Dark Theme</option>
+                        <option>Warm Theme</option>
+                    </select>
+                    <span class="text-light">👤 POS User</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow-1">
+            <!-- POS Mode Container -->
+            <div id="posModeContainer" class="pos-mode p-4 mode-transition">
+                <div class="row h-100">
+                    <!-- Left Panel: Active Orders -->
+                    <div class="col-md-5">
+                        <div class="demo-section h-100">
+                            <h5 class="text-primary mb-3">📋 Active Orders</h5>
+                            <div class="demo-status mb-3">
+                                <strong>Purpose:</strong> Shows all active orders for quick access and management
+                            </div>
+                            
+                            <div class="list-group">
+                                <div class="list-group-item demo-card" onclick="selectOrder(1001)">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>#1001</strong> - Table 5
+                                            <br><small class="text-muted">2 items • $24.50</small>
+                                        </div>
+                                        <span class="badge bg-warning">Preparing</span>
+                                    </div>
+                                </div>
+                                <div class="list-group-item demo-card" onclick="selectOrder(1002)">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>#1002</strong> - Table 3
+                                            <br><small class="text-muted">4 items • $45.75</small>
+                                        </div>
+                                        <span class="badge bg-primary">Pending</span>
+                                    </div>
+                                </div>
+                                <div class="list-group-item demo-card" onclick="selectOrder(1003)">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>#1003</strong> - Walk-in
+                                            <br><small class="text-muted">1 item • $12.99</small>
+                                        </div>
+                                        <span class="badge bg-success">Ready</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Panel: Order Work Area -->
+                    <div class="col-md-7">
+                        <div class="demo-section h-100 order-work-area">
+                            <h5 class="text-primary mb-3">🍽️ Order Work Area</h5>
+                            
+                            <!-- Order Entry Area (when no current order) -->
+                            <div id="orderEntryArea" class="workflow-step">
+                                <h6>👋 Welcome to POS Mode</h6>
+                                <p class="text-muted">Create a new order or select an existing order from the Active Orders list to begin.</p>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Table/Location:</label>
+                                    <select class="form-select">
+                                        <option>Table 1</option>
+                                        <option>Table 2</option>
+                                        <option>Walk-in</option>
+                                        <option>Delivery - DoorDash</option>
+                                    </select>
+                                </div>
+                                
+                                <button class="btn btn-primary btn-lg" onclick="createNewOrder()">
+                                    🆕 Create New Order
+                                </button>
+                            </div>
+                            
+                            <!-- Order Edit Area (when editing an order) -->
+                            <div id="orderEditArea" class="d-none">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="text-success mb-0">✏️ Editing Order #<span id="editOrderId">1001</span></h6>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="closeOrder()">
+                                        ❌ Close Order
+                                    </button>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="border rounded p-3">
+                                            <h6 class="text-primary mb-3">📖 Menu</h6>
+                                            <div class="demo-status mb-2">Menu items organized by category</div>
+                                            <div class="list-group list-group-flush">
+                                                <div class="list-group-item d-flex justify-content-between">
+                                                    <span>🍔 Classic Burger</span>
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="addItem('Classic Burger', 12.99)">Add $12.99</button>
+                                                </div>
+                                                <div class="list-group-item d-flex justify-content-between">
+                                                    <span>🍕 Margherita Pizza</span>
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="addItem('Margherita Pizza', 15.99)">Add $15.99</button>
+                                                </div>
+                                                <div class="list-group-item d-flex justify-content-between">
+                                                    <span>🥗 Caesar Salad</span>
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="addItem('Caesar Salad', 9.99)">Add $9.99</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-5">
+                                        <div class="border rounded p-3">
+                                            <h6 class="text-primary mb-3">🧾 Current Order</h6>
+                                            <div id="currentOrderItems" class="demo-status">
+                                                <div>No items yet</div>
+                                            </div>
+                                            <hr>
+                                            <div class="d-flex justify-content-between">
+                                                <strong>Total: <span id="orderTotal">$0.00</span></strong>
+                                            </div>
+                                            <button class="btn btn-success w-100 mt-2" onclick="sendToKitchen()">
+                                                👨‍🍳 Send to Kitchen
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kitchen Mode Container -->
+            <div id="kitchenModeContainer" class="kitchen-mode p-4 mode-transition d-none">
+                <div class="row h-100">
+                    <!-- Left Panel: Kitchen Orders -->
+                    <div class="col-md-6">
+                        <div class="demo-section h-100">
+                            <h5 class="text-warning mb-3">👨‍🍳 Kitchen Orders</h5>
+                            <div class="demo-status mb-3">
+                                <strong>Purpose:</strong> Shows orders for kitchen preparation with status updates
+                            </div>
+                            <small class="text-muted mb-3 d-block">Click on an order to view preparation details</small>
+                            
+                            <div class="list-group">
+                                <div class="list-group-item demo-card kitchen-order" onclick="viewOrderDetails(1001)">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>#1001</strong> - Table 5 <span class="badge bg-info">5 min ago</span>
+                                            <br><small>🍔 Classic Burger, 🍟 Fries</small>
+                                        </div>
+                                        <button class="btn btn-warning btn-sm">Start Prep</button>
+                                    </div>
+                                </div>
+                                <div class="list-group-item demo-card kitchen-order" onclick="viewOrderDetails(1002)">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>#1002</strong> - Table 3 <span class="badge bg-warning">Preparing</span>
+                                            <br><small>🍕 Margherita Pizza x2, 🥗 Caesar Salad</small>
+                                        </div>
+                                        <button class="btn btn-success btn-sm">Mark Ready</button>
+                                    </div>
+                                </div>
+                                <div class="list-group-item demo-card kitchen-order" onclick="viewOrderDetails(1003)">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>#1003</strong> - Walk-in <span class="badge bg-success">Ready</span>
+                                            <br><small>🥤 Drink Only</small>
+                                        </div>
+                                        <button class="btn btn-outline-success btn-sm">Complete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Panel: Kitchen Status -->
+                    <div class="col-md-6">
+                        <div class="demo-section h-100 kitchen-status">
+                            <h5 class="text-warning mb-3">📊 Kitchen Status</h5>
+                            
+                            <div class="row mb-4">
+                                <div class="col-4">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <h3 class="text-primary">3</h3>
+                                        <small>Queue Size</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <h3 class="text-warning">12</h3>
+                                        <small>Est. Wait (min)</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-center p-3 bg-light rounded">
+                                        <h3 class="text-success">Normal</h3>
+                                        <small>Load Status</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="demo-status mb-3">
+                                <strong>Kitchen Metrics:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Average prep time: 8 minutes</li>
+                                    <li>Orders completed today: 45</li>
+                                    <li>Peak time: 12:30 PM</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mt-4 p-3 bg-light rounded">
+                                <h6 class="text-dark mb-3">⚡ Quick Actions</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="refreshStatus()">
+                                        🔄 Refresh Status
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm">
+                                        ✅ Clear Completed
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm">
+                                        📋 Print Orders
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-light border-top p-2">
+            <div class="d-flex justify-content-between align-items-center px-3">
+                <div class="d-flex gap-4">
+                    <span class="text-muted small">📋 Active Orders: <span id="footerActiveOrders">3</span></span>
+                    <span class="text-muted small">👨‍🍳 Kitchen Queue: <span id="footerKitchenQueue">3</span></span>
+                    <span class="text-success small">✅ System: Online</span>
+                </div>
+                <span class="text-muted small">POS v3.0.0 Enhanced</span>
+            </div>
+        </footer>
+
+        <!-- Demo Information Panel -->
+        <div class="position-fixed bottom-0 end-0 m-3">
+            <div class="card shadow" style="width: 300px;">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">🎯 Enhanced POS Features</h6>
+                </div>
+                <div class="card-body small">
+                    <div id="demoInfo">
+                        <strong>POS Mode Active:</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>Focus on order creation/editing</li>
+                            <li>One order at a time workflow</li>
+                            <li>Menu only shows when editing</li>
+                            <li>Clear active orders overview</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Demo State
+        let currentOrderItems = [];
+        let currentOrderTotal = 0;
+        let isEditingOrder = false;
+
+        // Mode Switching
+        function switchMode(mode) {
+            const posBtn = document.getElementById('posMode');
+            const kitchenBtn = document.getElementById('kitchenMode');
+            const currentModeText = document.getElementById('currentMode');
+            const posContainer = document.getElementById('posModeContainer');
+            const kitchenContainer = document.getElementById('kitchenModeContainer');
+            const demoInfo = document.getElementById('demoInfo');
+
+            // Update buttons
+            if (mode === 'pos') {
+                posBtn.classList.add('active');
+                kitchenBtn.classList.remove('active');
+                currentModeText.textContent = 'POS Mode';
+                
+                // Show POS container
+                posContainer.classList.remove('d-none');
+                kitchenContainer.classList.add('d-none');
+                
+                // Update demo info
+                demoInfo.innerHTML = `
+                    <strong>POS Mode Active:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li>Focus on order creation/editing</li>
+                        <li>One order at a time workflow</li>
+                        <li>Menu only shows when editing</li>
+                        <li>Clear active orders overview</li>
+                    </ul>
+                `;
+                
+                console.log('🔄 Switched to POS Mode - Order Taking');
+            } else {
+                kitchenBtn.classList.add('active');
+                posBtn.classList.remove('active');
+                currentModeText.textContent = 'Kitchen Mode';
+                
+                // Show Kitchen container
+                kitchenContainer.classList.remove('d-none');
+                posContainer.classList.add('d-none');
+                
+                // Update demo info
+                demoInfo.innerHTML = `
+                    <strong>Kitchen Mode Active:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li>Focus on order preparation</li>
+                        <li>Kitchen status monitoring</li>
+                        <li>Order completion tracking</li>
+                        <li>Real-time queue management</li>
+                    </ul>
+                `;
+                
+                console.log('🔄 Switched to Kitchen Mode - Order Preparation');
+            }
+        }
+
+        // POS Mode Functions
+        function selectOrder(orderId) {
+            document.getElementById('editOrderId').textContent = orderId;
+            document.getElementById('orderEntryArea').classList.add('d-none');
+            document.getElementById('orderEditArea').classList.remove('d-none');
+            isEditingOrder = true;
+            
+            // Simulate loading order items
+            currentOrderItems = [
+                { name: 'Classic Burger', price: 12.99 },
+                { name: 'Fries', price: 4.99 }
+            ];
+            updateCurrentOrder();
+            
+            console.log(`✏️ Opened order #${orderId} for editing`);
+        }
+
+        function createNewOrder() {
+            const orderId = Date.now() % 10000;
+            selectOrder(orderId);
+            currentOrderItems = [];
+            updateCurrentOrder();
+            console.log(`📝 Created new order #${orderId}`);
+        }
+
+        function closeOrder() {
+            document.getElementById('orderEditArea').classList.add('d-none');
+            document.getElementById('orderEntryArea').classList.remove('d-none');
+            isEditingOrder = false;
+            currentOrderItems = [];
+            currentOrderTotal = 0;
+            console.log('❌ Closed current order');
+        }
+
+        function addItem(name, price) {
+            currentOrderItems.push({ name, price });
+            updateCurrentOrder();
+            console.log(`➕ Added ${name} - $${price}`);
+        }
+
+        function updateCurrentOrder() {
+            const container = document.getElementById('currentOrderItems');
+            const totalElement = document.getElementById('orderTotal');
+            
+            if (currentOrderItems.length === 0) {
+                container.innerHTML = '<div>No items yet</div>';
+                currentOrderTotal = 0;
+            } else {
+                container.innerHTML = currentOrderItems.map((item, index) => 
+                    `<div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>${item.name}</span>
+                        <div>
+                            <span>$${item.price.toFixed(2)}</span>
+                            <button class="btn btn-outline-danger btn-sm ms-1" onclick="removeItem(${index})">×</button>
+                        </div>
+                    </div>`
+                ).join('');
+                
+                currentOrderTotal = currentOrderItems.reduce((sum, item) => sum + item.price, 0);
+            }
+            
+            totalElement.textContent = `$${currentOrderTotal.toFixed(2)}`;
+        }
+
+        function removeItem(index) {
+            const item = currentOrderItems[index];
+            currentOrderItems.splice(index, 1);
+            updateCurrentOrder();
+            console.log(`➖ Removed ${item.name}`);
+        }
+
+        function sendToKitchen() {
+            if (currentOrderItems.length === 0) {
+                alert('Please add items to the order first!');
+                return;
+            }
+            
+            alert('Order sent to kitchen! 👨‍🍳');
+            closeOrder();
+            console.log('👨‍🍳 Order sent to kitchen');
+        }
+
+        // Kitchen Mode Functions
+        function viewOrderDetails(orderId) {
+            alert(`🔍 Viewing preparation details for order #${orderId}\n\nThis would show:\n- Item preparation instructions\n- Special dietary requirements\n- Estimated completion time\n- Customer notes`);
+            console.log(`🔍 Viewing details for order #${orderId}`);
+        }
+
+        function refreshStatus() {
+            console.log('🔄 Kitchen status refreshed');
+            alert('Kitchen status refreshed! 🔄');
+        }
+
+        // Initialize demo
+        console.log('🚀 Enhanced POS System Demo Loaded');
+        console.log('💡 Key Improvements:');
+        console.log('   • Dual mode operation (POS/Kitchen)');
+        console.log('   • Focus on one order at a time');
+        console.log('   • Intuitive workflow separation');
+        console.log('   • Common header/footer for consistency');
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
-#ifndef RESTAURANTPOSAPP_H
-#define RESTAURANTPOSAPP_H
+#ifndef RESTAURANTPOSAPP_ENHANCED_H
+#define RESTAURANTPOSAPP_ENHANCED_H
 
 #include "../services/POSService.hpp"
 #include "../services/ThemeService.hpp"
@@ -7,43 +7,55 @@
 #include "../core/ConfigurationManager.hpp"
 #include "../ui/factories/UIComponentFactory.hpp"
 
-// Include all the component headers
-#include "../ui/components/OrderEntryPanel.hpp"
-#include "../ui/components/OrderStatusPanel.hpp"
-#include "../ui/components/MenuDisplay.hpp"
-#include "../ui/components/CurrentOrderDisplay.hpp"
+// Mode-specific containers
+#include "../ui/containers/POSModeContainer.hpp"
+#include "../ui/containers/KitchenModeContainer.hpp"
+
+// RestaurantPOSApp common-components
+#include "../ui/components/ModeSelector.hpp"
+#include "../ui/components/CommonHeader.hpp"
+#include "../ui/components/CommonFooter.hpp"
 
 #include <Wt/WApplication.h>
 #include <Wt/WContainerWidget.h>
-#include <Wt/WTimer.h>
-#include <Wt/WEnvironment.h>
-#include <Wt/WText.h>
-#include <Wt/WPushButton.h>
-#include <Wt/WComboBox.h>
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
-#include <Wt/WGroupBox.h>
-#include <Wt/WLabel.h>
+#include <Wt/WTimer.h>
 
 #include <memory>
 
 /**
- * @file RestaurantPOSApp.hpp (Flat Component Architecture)
- * @brief Main application with flattened component hierarchy
+ * @file RestaurantPOSApp_Enhanced.hpp
+ * @brief Enhanced main application with POS/Kitchen mode switching
+ * 
+ * This enhanced version provides:
+ * - POS Mode: Order creation and management
+ * - Kitchen Mode: Order preparation and kitchen status
+ * - Common header with mode switching and theme controls
+ * - Intuitive workflow for restaurant operations
  * 
  * @author Restaurant POS Team
- * @version 2.3.0 - Flattened component architecture
+ * @version 3.0.0 - Enhanced with mode switching
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Main application with individual components created via factory
+ * @brief Enhanced main application with dual operating modes
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
     /**
-     * @brief Constructs the main POS application
-     * @param env Wt web environment containing request information
+     * @enum OperatingMode
+     * @brief Application operating modes
+     */
+    enum OperatingMode {
+        POS_MODE,       ///< Point of Sale mode for order taking
+        KITCHEN_MODE    ///< Kitchen mode for order preparation
+    };
+    
+    /**
+     * @brief Constructs the enhanced POS application
+     * @param env Wt web environment
      */
     RestaurantPOSApp(const Wt::WEnvironment& env);
     
@@ -51,6 +63,18 @@ public:
      * @brief Virtual destructor
      */
     virtual ~RestaurantPOSApp() = default;
+    
+    /**
+     * @brief Switches to the specified operating mode
+     * @param mode Mode to switch to
+     */
+    void switchMode(OperatingMode mode);
+    
+    /**
+     * @brief Gets the current operating mode
+     * @return Current operating mode
+     */
+    OperatingMode getCurrentMode() const { return currentMode_; }
 
 private:
     // Core services
@@ -58,86 +82,61 @@ private:
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<ThemeService> themeService_;
     std::shared_ptr<ConfigurationManager> configManager_;
-    
-    // UI Component Factory
     std::unique_ptr<UIComponentFactory> componentFactory_;
     
-    // Main UI containers
+    // Application state
+    OperatingMode currentMode_;
+    
+    // Main layout structure
     Wt::WContainerWidget* mainContainer_;
-    Wt::WContainerWidget* headerContainer_;
-    Wt::WContainerWidget* contentContainer_;
-    Wt::WContainerWidget* statusBarContainer_;
+    Wt::WVBoxLayout* mainLayout_;
     
-    // Header components
-    Wt::WContainerWidget* themeControlsContainer_;
-    Wt::WComboBox* themeSelector_;
-    Wt::WPushButton* themeToggleButton_;
+    // Common components
+    CommonHeader* commonHeader_;
+    CommonFooter* commonFooter_;
+    Wt::WContainerWidget* modeContainer_;
     
-    // Individual components (raw pointers - Wt manages lifetime)
-    OrderEntryPanel* orderEntryPanel_;
-    MenuDisplay* menuDisplay_;
-    CurrentOrderDisplay* currentOrderDisplay_;
-    OrderStatusPanel* orderStatusPanel_;
+    // Mode-specific containers
+    POSModeContainer* posModeContainer_;
+    KitchenModeContainer* kitchenModeContainer_;
     
-    // Status and timer
-    Wt::WText* statusText_;
-    Wt::WTimer* updateTimer_;
+    // Real-time updates
+    std::unique_ptr<Wt::WTimer> updateTimer_;
     
     // Initialization methods
     void initializeServices();
     void initializeComponentFactory();
     void setupMainLayout();
-    void createAllComponents();
-    void setupHeaderWithThemeControls();
-    void setupContentLayout();
-    void setupStatusBar();
+    void createCommonComponents();
+    void createModeContainers();
     void setupEventListeners();
     void setupRealTimeUpdates();
     
-    // Component creation methods
-    void createOrderEntryPanel();
-    void createMenuDisplay();
-    void createCurrentOrderDisplay();
-    void createOrderStatusPanel();
+    // Mode switching
+    void showPOSMode();
+    void showKitchenMode();
+    void hideModeContainers();
+    void onModeChanged(OperatingMode newMode);
     
-    // Theme management methods
+    // Theme and styling
     void initializeThemeService();
-    void setupThemeControls();
-    void setupThemeEventHandlers();
-    void onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme);
-    void onThemeToggleClicked();
-    void onThemeSelectorChanged();
-    void updateThemeControls();
-    void createThemeSelector();
-    void createThemeToggleButton();
-    
-    // CSS and styling methods
     void setupBootstrapTheme();
     void addCustomCSS();
-    void addThemeSpecificCSS();
-    void setupMetaTags();
-    void applyComponentStyling();
-    void applyThemeToComponents();
-    void applyThemeTransition();
+    void applyModeSpecificStyling();
     
     // Event handlers
     void onPeriodicUpdate();
-    void onOrderCreated(std::shared_ptr<Order> order);
-    void onOrderModified(std::shared_ptr<Order> order);
-    void onCurrentOrderChanged();
+    void onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme);
     
     // Utility methods
     void logApplicationStart();
-    void updateStatus(const std::string& message);
-    std::string getCurrentThemeDisplayName() const;
-    void validateComponents() const;
+    void logModeSwitch(OperatingMode mode);
+    std::string getModeDisplayName(OperatingMode mode) const;
 };
 
 /**
  * @brief Application factory function
- * @param env Wt web environment
- * @return Unique pointer to the created application
  */
 std::unique_ptr<Wt::WApplication> createApplication(const Wt::WEnvironment& env);
 
-#endif // RESTAURANTPOSAPP_H
+#endif // RESTAURANTPOSAPP_ENHANCED_H
