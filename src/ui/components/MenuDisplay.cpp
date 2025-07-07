@@ -173,8 +173,6 @@ std::unique_ptr<Wt::WWidget> MenuDisplay::createMenuHeader() {
     return std::move(header);
 }
 
-// REMOVED: createMenuItemsTable() method - functionality moved to initializeUI()
-
 void MenuDisplay::refresh() {
     if (!posService_) {
         std::cerr << "[MenuDisplay] POSService not available for refresh" << std::endl;
@@ -285,17 +283,28 @@ void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t i
     
     int row = itemsTable_->rowCount();
     
-    // Item name
+    // Item name with enhanced styling
     auto nameContainer = std::make_unique<Wt::WContainerWidget>();
     auto nameText = nameContainer->addNew<Wt::WText>(item->getName());
     nameText->addStyleClass("menu-item-name fw-bold");
     
-    // Add category badge if showing all categories
+    // Add category badge if showing all categories - FIXED: Use inline function
     if (currentCategory_ == ALL_CATEGORIES) {
         std::string categoryName = MenuItem::categoryToString(item->getCategory());
         if (!categoryName.empty()) {
             auto categoryBadge = nameContainer->addNew<Wt::WText>(" " + categoryName);
-            categoryBadge->addStyleClass("badge bg-info ms-2");
+            
+            // FIXED: Use inline category badge styling instead of method call
+            std::string badgeVariant = "info"; // Default
+            switch (item->getCategory()) {
+                case MenuItem::APPETIZER:   badgeVariant = "info"; break;
+                case MenuItem::MAIN_COURSE: badgeVariant = "primary"; break;
+                case MenuItem::DESSERT:     badgeVariant = "warning"; break;
+                case MenuItem::BEVERAGE:    badgeVariant = "secondary"; break;
+                case MenuItem::SPECIAL:     badgeVariant = "danger"; break;
+                default:                    badgeVariant = "secondary"; break;
+            }
+            categoryBadge->addStyleClass("badge bg-" + badgeVariant + " ms-2");
         }
     }
     
@@ -306,7 +315,7 @@ void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t i
     descText->addStyleClass("menu-item-description text-muted");
     itemsTable_->elementAt(row, 1)->addWidget(std::move(descText));
     
-    // Price
+    // Price with enhanced styling
     auto priceText = std::make_unique<Wt::WText>(formatCurrency(item->getPrice()));
     priceText->addStyleClass("menu-item-price fw-bold text-success");
     itemsTable_->elementAt(row, 2)->addWidget(std::move(priceText));
@@ -343,24 +352,24 @@ void MenuDisplay::showAddToOrderDialog(const std::shared_ptr<MenuItem>& item) {
     auto contents = std::make_unique<Wt::WContainerWidget>();
     auto layout = std::make_unique<Wt::WVBoxLayout>();
     
-    // Item info
+    // Item info with enhanced styling
     auto itemInfo = std::make_unique<Wt::WContainerWidget>();
-    itemInfo->addStyleClass("item-info mb-3");
+    itemInfo->addStyleClass("item-info mb-3 p-3 bg-primary text-white rounded");
     
     auto itemTitle = itemInfo->addNew<Wt::WText>(item->getName());
     itemTitle->addStyleClass("h5 mb-1");
     
     auto itemPrice = itemInfo->addNew<Wt::WText>(formatCurrency(item->getPrice()));
-    itemPrice->addStyleClass("text-success fw-bold");
+    itemPrice->addStyleClass("fw-bold");
     
     layout->addWidget(std::move(itemInfo));
     
-    // Quantity section
+    // Quantity section with enhanced styling
     auto quantityContainer = std::make_unique<Wt::WContainerWidget>();
     quantityContainer->addStyleClass("quantity-section mb-3");
     
     auto quantityLabel = quantityContainer->addNew<Wt::WLabel>("Quantity:");
-    quantityLabel->addStyleClass("form-label");
+    quantityLabel->addStyleClass("form-label fw-bold");
     
     auto quantitySpinBox = quantityContainer->addNew<Wt::WSpinBox>();
     quantitySpinBox->setRange(1, MAX_QUANTITY);
@@ -369,12 +378,12 @@ void MenuDisplay::showAddToOrderDialog(const std::shared_ptr<MenuItem>& item) {
     
     layout->addWidget(std::move(quantityContainer));
     
-    // Special instructions section
+    // Special instructions section with enhanced styling
     auto instructionsContainer = std::make_unique<Wt::WContainerWidget>();
     instructionsContainer->addStyleClass("instructions-section mb-3");
     
     auto instructionsLabel = instructionsContainer->addNew<Wt::WLabel>("Special Instructions:");
-    instructionsLabel->addStyleClass("form-label");
+    instructionsLabel->addStyleClass("form-label fw-bold");
     
     auto instructionsTextArea = instructionsContainer->addNew<Wt::WTextArea>();
     instructionsTextArea->setPlaceholderText("Optional special instructions...");
@@ -386,19 +395,16 @@ void MenuDisplay::showAddToOrderDialog(const std::shared_ptr<MenuItem>& item) {
     contents->setLayout(std::move(layout));
     dialog->contents()->addWidget(std::move(contents));
     
-    // Dialog buttons
+    // Dialog buttons with enhanced styling
     auto buttonContainer = std::make_unique<Wt::WContainerWidget>();
-    buttonContainer->addStyleClass("dialog-buttons");
-    
-    auto buttonLayout = std::make_unique<Wt::WHBoxLayout>();
-    buttonLayout->addStretch(1);
+    buttonContainer->addStyleClass("dialog-buttons d-flex justify-content-end gap-2");
     
     auto cancelButton = std::make_unique<Wt::WPushButton>("Cancel");
-    cancelButton->addStyleClass("btn btn-secondary me-2");
+    cancelButton->addStyleClass("btn btn-secondary");
     cancelButton->clicked().connect([dialog]() {
         dialog->reject();
     });
-    buttonLayout->addWidget(std::move(cancelButton));
+    buttonContainer->addWidget(std::move(cancelButton));
     
     auto addButton = std::make_unique<Wt::WPushButton>("Add to Order");
     addButton->addStyleClass("btn btn-primary");
@@ -411,9 +417,8 @@ void MenuDisplay::showAddToOrderDialog(const std::shared_ptr<MenuItem>& item) {
             dialog->accept();
         }
     });
-    buttonLayout->addWidget(std::move(addButton));
+    buttonContainer->addWidget(std::move(addButton));
     
-    buttonContainer->setLayout(std::move(buttonLayout));
     dialog->footer()->addWidget(std::move(buttonContainer));
     
     dialog->show();
@@ -469,6 +474,18 @@ void MenuDisplay::updateItemCount() {
     }
     
     itemCountText_->setText(countText);
+    
+    // Update badge color based on count - FIXED: Use inline styling
+    itemCountText_->removeStyleClass("bg-secondary bg-primary bg-success bg-info");
+    if (filteredItems.size() == 0) {
+        itemCountText_->addStyleClass("bg-secondary");
+    } else if (filteredItems.size() > 20) {
+        itemCountText_->addStyleClass("bg-info");
+    } else if (filteredItems.size() > 10) {
+        itemCountText_->addStyleClass("bg-primary");
+    } else {
+        itemCountText_->addStyleClass("bg-success");
+    }
 }
 
 // Event handlers
@@ -657,28 +674,32 @@ void MenuDisplay::applyItemRowStyling(int row, const std::shared_ptr<MenuItem>& 
     for (int col = 0; col < itemsTable_->columnCount(); ++col) {
         auto cell = itemsTable_->elementAt(row, col);
         
-        // Style based on category
+        // Style based on category with enhanced CSS classes
         switch (item->getCategory()) {
             case MenuItem::SPECIAL:
-                cell->addStyleClass("menu-item-special");
+                cell->addStyleClass("menu-item-special border-start border-danger border-3");
                 break;
             case MenuItem::APPETIZER:
-                cell->addStyleClass("menu-item-appetizer");
+                cell->addStyleClass("menu-item-appetizer border-start border-info border-2");
                 break;
             case MenuItem::MAIN_COURSE:
-                cell->addStyleClass("menu-item-main-course");
+                cell->addStyleClass("menu-item-main-course border-start border-primary border-2");
                 break;
             case MenuItem::DESSERT:
-                cell->addStyleClass("menu-item-dessert");
+                cell->addStyleClass("menu-item-dessert border-start border-warning border-2");
                 break;
             case MenuItem::BEVERAGE:
-                cell->addStyleClass("menu-item-beverage");
+                cell->addStyleClass("menu-item-beverage border-start border-secondary border-2");
                 break;
         }
         
-        // Mark unavailable items
+        // Mark unavailable items with enhanced styling
         if (!item->isAvailable()) {
-            cell->addStyleClass("menu-item-unavailable");
+            cell->addStyleClass("menu-item-unavailable bg-light text-muted opacity-50");
+        } else {
+            // Add hover effect for available items
+            cell->addStyleClass("menu-item-available");
+            cell->setAttributeValue("style", "cursor: pointer; transition: all 0.3s ease;");
         }
     }
 }

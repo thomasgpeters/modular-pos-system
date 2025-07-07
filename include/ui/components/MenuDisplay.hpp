@@ -1,6 +1,8 @@
 #ifndef MENUDISPLAY_H
 #define MENUDISPLAY_H
 
+#include "../../utils/UIStyleHelper.hpp" // Include our styling helper
+
 #include "../../services/POSService.hpp"
 #include "../../services/ThemeService.hpp"
 #include "../../events/EventManager.hpp"

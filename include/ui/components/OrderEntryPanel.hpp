@@ -1,6 +1,8 @@
 #ifndef ORDERENTRYPANEL_H
 #define ORDERENTRYPANEL_H
 
+#include "../../utils/UIStyleHelper.hpp" // Include our styling helper
+
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
 #include "../../events/POSEvents.hpp"

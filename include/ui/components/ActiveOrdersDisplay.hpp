@@ -1,6 +1,8 @@
 #ifndef ACTIVEORDERSDISPLAY_H
 #define ACTIVEORDERSDISPLAY_H
 
+#include "../../utils/UIStyleHelper.hpp" // Include our styling helper
+
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
 #include "../../events/POSEvents.hpp"
