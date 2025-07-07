@@ -446,6 +446,164 @@ void ThemeService::unloadAllThemes() {
     frameworkLoaded_ = false;
 }
 
+void ThemeService::applyThemeToContainer(Wt::WContainerWidget* container, Theme theme) {
+    if (!container) {
+        std::cerr << "[ThemeService] Cannot apply theme to null container" << std::endl;
+        return;
+    }
+    
+    Theme effectiveTheme = (theme == Theme::AUTO) ? currentTheme_ : theme;
+    
+    // Remove any existing theme classes
+    removeThemeFromContainer(container);
+    
+    // Apply the new theme class
+    std::string themeClass = getThemeCSSClass(effectiveTheme);
+    container->addStyleClass(themeClass);
+    
+    // Apply additional theme-specific styling
+    std::string additionalClasses;
+    switch (effectiveTheme) {
+        case Theme::DARK:
+            additionalClasses = "bg-dark text-light";
+            break;
+        case Theme::LIGHT:
+            additionalClasses = "bg-light text-dark";
+            break;
+        case Theme::WARM:
+            additionalClasses = "theme-warm-bg theme-warm-text";
+            break;
+        case Theme::COOL:
+            additionalClasses = "theme-cool-bg theme-cool-text";
+            break;
+        case Theme::BASE:
+        case Theme::AUTO:
+        default:
+            additionalClasses = "bg-white text-dark";
+            break;
+    }
+    
+    if (!additionalClasses.empty()) {
+        container->addStyleClass(additionalClasses);
+    }
+    
+    std::cout << "[ThemeService] Applied theme " << getThemeName(effectiveTheme) 
+              << " to container with classes: " << themeClass << " " << additionalClasses << std::endl;
+}
+
+void ThemeService::removeThemeFromContainer(Wt::WContainerWidget* container) {
+    if (!container) {
+        return;
+    }
+    
+    // Remove all theme classes
+    for (const auto& pair : themeCSSClasses_) {
+        container->removeStyleClass(pair.second);
+    }
+    
+    // Remove additional styling classes
+    std::vector<std::string> stylesToRemove = {
+        "bg-dark", "text-light", "bg-light", "text-dark",
+        "bg-white", "text-dark", "theme-warm-bg", "theme-warm-text",
+        "theme-cool-bg", "theme-cool-text"
+    };
+    
+    for (const auto& styleClass : stylesToRemove) {
+        container->removeStyleClass(styleClass);
+    }
+}
+
+std::map<std::string, std::string> ThemeService::getThemeCSSVariables() const {
+    std::map<std::string, std::string> variables;
+    
+    switch (currentTheme_) {
+        case Theme::LIGHT:
+            variables["--primary-bg"] = "#ffffff";
+            variables["--primary-text"] = "#212529";
+            variables["--secondary-bg"] = "#f8f9fa";
+            variables["--accent-color"] = "#0066cc";
+            break;
+        case Theme::DARK:
+            variables["--primary-bg"] = "#212529";
+            variables["--primary-text"] = "#ffffff";
+            variables["--secondary-bg"] = "#343a40";
+            variables["--accent-color"] = "#4dabf7";
+            break;
+        case Theme::WARM:
+            variables["--primary-bg"] = "#fdf6e3";
+            variables["--primary-text"] = "#5d4e37";
+            variables["--secondary-bg"] = "#f4f1e8";
+            variables["--accent-color"] = "#8b4513";
+            break;
+        case Theme::COOL:
+            variables["--primary-bg"] = "#f0f8ff";
+            variables["--primary-text"] = "#1e3a8a";
+            variables["--secondary-bg"] = "#e6f3ff";
+            variables["--accent-color"] = "#1e40af";
+            break;
+        case Theme::BASE:
+        case Theme::AUTO:
+        default:
+            variables["--primary-bg"] = "#ffffff";
+            variables["--primary-text"] = "#212529";
+            variables["--secondary-bg"] = "#f8f9fa";
+            variables["--accent-color"] = "#007bff";
+            break;
+    }
+    
+    return variables;
+}
+
+void ThemeService::injectThemeCSS() {
+    if (!app_) return;
+    
+    auto variables = getThemeCSSVariables();
+    std::string cssVariables = ":root { ";
+    
+    for (const auto& pair : variables) {
+        cssVariables += pair.first + ": " + pair.second + "; ";
+    }
+    cssVariables += "}";
+    
+    // Inject CSS variables via JavaScript
+    std::string script = 
+        "var style = document.createElement('style');"
+        "style.textContent = '" + cssVariables + "';"
+        "document.head.appendChild(style);";
+    
+    app_->doJavaScript(script);
+    
+    std::cout << "[ThemeService] Injected CSS variables for theme: " << getThemeName(currentTheme_) << std::endl;
+}
+
+bool ThemeService::isThemeDark(Theme theme) const {
+    return theme == Theme::DARK;
+}
+
+double ThemeService::getThemeContrastRatio(Theme theme) const {
+    // Simplified contrast ratio calculation
+    // In a real implementation, you'd calculate based on actual colors
+    switch (theme) {
+        case Theme::LIGHT:
+            return 7.0; // High contrast
+        case Theme::DARK:
+            return 6.5; // Good contrast
+        case Theme::WARM:
+            return 5.8; // Medium contrast
+        case Theme::COOL:
+            return 6.2; // Good contrast
+        case Theme::BASE:
+        case Theme::AUTO:
+        default:
+            return 6.0; // Standard contrast
+    }
+}
+
+bool ThemeService::isThemeAccessible(Theme theme) const {
+    // WCAG AA standard requires contrast ratio of at least 4.5:1
+    return getThemeContrastRatio(theme) >= 4.5;
+}
+
 // Simplified ThemeUtils namespace (no widget dependencies)
 namespace ThemeUtils {
 

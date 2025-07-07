@@ -16,41 +16,48 @@ CSSLoader::CSSLoader(Wt::WApplication* app)
     if (!app_) {
         throw std::invalid_argument("CSSLoader: Application instance cannot be null");
     }
+    
+    std::cout << "[CSSLoader] Initialized with application" << std::endl;
 }
 
 bool CSSLoader::loadCSS(const std::string& cssPath, int priority) {
     if (!isValidCSSPath(cssPath)) {
-        std::cerr << "CSSLoader: Invalid CSS path: " << cssPath << std::endl;
+        std::cerr << "[CSSLoader] Invalid CSS path: " << cssPath << std::endl;
         return false;
     }
     
     // Check if already loaded
     if (isCSSLoaded(cssPath)) {
-        std::cout << "CSSLoader: CSS already loaded: " << cssPath << std::endl;
+        std::cout << "[CSSLoader] CSS already loaded: " << cssPath << std::endl;
         return true;
     }
     
     try {
-        // Create CSS info
-        CSSInfo cssInfo(cssPath, priority);
-        
         // Load dependencies first
-        if (loadCSSWithDependencies(cssPath)) {
-            // Use Wt's built-in CSS loading
-            app_->useStyleSheet(cssPath);
-            
-            // Mark as loaded
-            cssInfo.loaded = true;
-            cssFiles_[cssPath] = cssInfo;
-            
-            std::cout << "CSSLoader: Successfully loaded CSS: " << cssPath << std::endl;
-            
-            // Notify callback
-            notifyCallback(cssPath, true, true);
-            return true;
+        if (!loadCSSWithDependencies(cssPath)) {
+            std::cerr << "[CSSLoader] Failed to load dependencies for: " << cssPath << std::endl;
+            return false;
         }
+        
+        // Use Wt's built-in CSS loading
+        app_->useStyleSheet(cssPath);
+        
+        // Create or update CSS info
+        CSSInfo cssInfo(cssPath, priority);
+        cssInfo.loaded = true;
+        cssFiles_[cssPath] = cssInfo;
+        
+        // Add to loaded files tracking
+        loadedCSSFiles_.push_back(cssPath);
+        
+        std::cout << "[CSSLoader] Successfully loaded CSS: " << cssPath << std::endl;
+        
+        // Notify callback
+        notifyCallback(cssPath, true, true);
+        return true;
+        
     } catch (const std::exception& e) {
-        std::cerr << "CSSLoader: Failed to load CSS " << cssPath << ": " << e.what() << std::endl;
+        std::cerr << "[CSSLoader] Failed to load CSS " << cssPath << ": " << e.what() << std::endl;
         notifyCallback(cssPath, true, false);
     }
     
@@ -60,7 +67,7 @@ bool CSSLoader::loadCSS(const std::string& cssPath, int priority) {
 bool CSSLoader::unloadCSS(const std::string& cssPath) {
     auto it = cssFiles_.find(cssPath);
     if (it == cssFiles_.end() || !it->second.loaded) {
-        std::cout << "CSSLoader: CSS not loaded or already unloaded: " << cssPath << std::endl;
+        std::cout << "[CSSLoader] CSS not loaded or already unloaded: " << cssPath << std::endl;
         return false;
     }
     
@@ -68,7 +75,7 @@ bool CSSLoader::unloadCSS(const std::string& cssPath) {
         // Check for dependents
         auto dependents = getDependents(cssPath);
         if (!dependents.empty()) {
-            std::cout << "CSSLoader: Cannot unload CSS with dependents: " << cssPath << std::endl;
+            std::cout << "[CSSLoader] Cannot unload CSS with dependents: " << cssPath << std::endl;
             for (const auto& dependent : dependents) {
                 std::cout << "  Dependent: " << dependent << std::endl;
             }
@@ -78,19 +85,26 @@ bool CSSLoader::unloadCSS(const std::string& cssPath) {
         // Mark as unloaded
         it->second.loaded = false;
         
+        // Remove from loaded files tracking
+        auto fileIt = std::find(loadedCSSFiles_.begin(), loadedCSSFiles_.end(), cssPath);
+        if (fileIt != loadedCSSFiles_.end()) {
+            loadedCSSFiles_.erase(fileIt);
+        }
+        
         // Note: Wt doesn't provide a direct way to unload stylesheets
         // In a production implementation, you might:
         // 1. Keep track of loaded stylesheets and recreate the page
         // 2. Use JavaScript to manipulate the DOM
         // 3. Use a custom CSS loading mechanism
         
-        std::cout << "CSSLoader: Marked CSS as unloaded: " << cssPath << std::endl;
+        std::cout << "[CSSLoader] Marked CSS as unloaded: " << cssPath << std::endl;
         
         // Notify callback
         notifyCallback(cssPath, false, true);
         return true;
+        
     } catch (const std::exception& e) {
-        std::cerr << "CSSLoader: Failed to unload CSS " << cssPath << ": " << e.what() << std::endl;
+        std::cerr << "[CSSLoader] Failed to unload CSS " << cssPath << ": " << e.what() << std::endl;
         notifyCallback(cssPath, false, false);
     }
     
@@ -117,7 +131,7 @@ int CSSLoader::loadMultipleCSS(const std::vector<std::string>& cssPaths) {
         }
     }
     
-    std::cout << "CSSLoader: Loaded " << loadedCount << " out of " << cssPaths.size() << " CSS files" << std::endl;
+    std::cout << "[CSSLoader] Loaded " << loadedCount << " out of " << cssPaths.size() << " CSS files" << std::endl;
     return loadedCount;
 }
 
@@ -130,18 +144,12 @@ int CSSLoader::unloadMultipleCSS(const std::vector<std::string>& cssPaths) {
         }
     }
     
-    std::cout << "CSSLoader: Unloaded " << unloadedCount << " out of " << cssPaths.size() << " CSS files" << std::endl;
+    std::cout << "[CSSLoader] Unloaded " << unloadedCount << " out of " << cssPaths.size() << " CSS files" << std::endl;
     return unloadedCount;
 }
 
 void CSSLoader::unloadAllCSS() {
-    std::vector<std::string> loadedPaths;
-    
-    for (const auto& pair : cssFiles_) {
-        if (pair.second.loaded) {
-            loadedPaths.push_back(pair.first);
-        }
-    }
+    std::vector<std::string> loadedPaths = loadedCSSFiles_;
     
     // Unload in reverse dependency order
     std::reverse(loadedPaths.begin(), loadedPaths.end());
@@ -151,7 +159,10 @@ void CSSLoader::unloadAllCSS() {
     }
     
     cssFiles_.clear();
-    std::cout << "CSSLoader: Unloaded all CSS files" << std::endl;
+    loadedCSSFiles_.clear();
+    frameworkLoaded_ = false;
+    
+    std::cout << "[CSSLoader] Unloaded all CSS files" << std::endl;
 }
 
 bool CSSLoader::isCSSLoaded(const std::string& cssPath) const {
@@ -160,29 +171,15 @@ bool CSSLoader::isCSSLoaded(const std::string& cssPath) const {
 }
 
 std::vector<std::string> CSSLoader::getLoadedCSS() const {
-    std::vector<std::string> loadedPaths;
-    
-    for (const auto& pair : cssFiles_) {
-        if (pair.second.loaded) {
-            loadedPaths.push_back(pair.first);
-        }
-    }
-    
-    return loadedPaths;
+    return loadedCSSFiles_;
 }
 
 size_t CSSLoader::getLoadedCount() const {
-    size_t count = 0;
-    for (const auto& pair : cssFiles_) {
-        if (pair.second.loaded) {
-            count++;
-        }
-    }
-    return count;
+    return loadedCSSFiles_.size();
 }
 
 bool CSSLoader::reloadCSS(const std::string& cssPath) {
-    std::cout << "CSSLoader: Reloading CSS: " << cssPath << std::endl;
+    std::cout << "[CSSLoader] Reloading CSS: " << cssPath << std::endl;
     
     // Get current priority
     int priority = 0;
@@ -202,14 +199,14 @@ void CSSLoader::addDependency(const std::string& cssPath, const std::string& dep
         auto& deps = it->second.dependencies;
         if (std::find(deps.begin(), deps.end(), dependency) == deps.end()) {
             deps.push_back(dependency);
-            std::cout << "CSSLoader: Added dependency " << dependency << " to " << cssPath << std::endl;
+            std::cout << "[CSSLoader] Added dependency " << dependency << " to " << cssPath << std::endl;
         }
     } else {
         // Create entry for future use
         CSSInfo cssInfo(cssPath, 0);
         cssInfo.dependencies.push_back(dependency);
         cssFiles_[cssPath] = cssInfo;
-        std::cout << "CSSLoader: Created CSS entry with dependency " << dependency << " for " << cssPath << std::endl;
+        std::cout << "[CSSLoader] Created CSS entry with dependency " << dependency << " for " << cssPath << std::endl;
     }
 }
 
@@ -220,7 +217,7 @@ void CSSLoader::removeDependency(const std::string& cssPath, const std::string& 
         auto depIt = std::find(deps.begin(), deps.end(), dependency);
         if (depIt != deps.end()) {
             deps.erase(depIt);
-            std::cout << "CSSLoader: Removed dependency " << dependency << " from " << cssPath << std::endl;
+            std::cout << "[CSSLoader] Removed dependency " << dependency << " from " << cssPath << std::endl;
         }
     }
 }
@@ -235,10 +232,12 @@ std::vector<std::string> CSSLoader::getDependencies(const std::string& cssPath) 
 
 void CSSLoader::setLoadCallback(LoadCallback callback) {
     loadCallback_ = callback;
+    std::cout << "[CSSLoader] Load callback registered" << std::endl;
 }
 
 void CSSLoader::removeLoadCallback() {
     loadCallback_ = nullptr;
+    std::cout << "[CSSLoader] Load callback removed" << std::endl;
 }
 
 bool CSSLoader::isValidCSSPath(const std::string& cssPath) {
@@ -290,7 +289,7 @@ bool CSSLoader::loadCSSWithDependencies(const std::string& cssPath) {
     for (const auto& dep : deps) {
         if (!isCSSLoaded(dep)) {
             if (!loadCSS(dep)) {
-                std::cerr << "CSSLoader: Failed to load dependency " << dep << " for " << cssPath << std::endl;
+                std::cerr << "[CSSLoader] Failed to load dependency " << dep << " for " << cssPath << std::endl;
                 return false;
             }
         }
@@ -303,7 +302,7 @@ bool CSSLoader::unloadCSSWithDependents(const std::string& cssPath) {
     auto dependents = getDependents(cssPath);
     
     if (!dependents.empty()) {
-        std::cout << "CSSLoader: Unloading dependents of " << cssPath << std::endl;
+        std::cout << "[CSSLoader] Unloading dependents of " << cssPath << std::endl;
         for (const auto& dependent : dependents) {
             unloadCSS(dependent);
         }
@@ -330,7 +329,7 @@ void CSSLoader::notifyCallback(const std::string& cssPath, bool loaded, bool suc
         try {
             loadCallback_(cssPath, success);
         } catch (const std::exception& e) {
-            std::cerr << "CSSLoader: Error in load callback: " << e.what() << std::endl;
+            std::cerr << "[CSSLoader] Error in load callback: " << e.what() << std::endl;
         }
     }
 }
@@ -350,7 +349,7 @@ std::shared_ptr<CSSLoader> createThemeCSSLoader(Wt::WApplication* app) {
     loader->addDependency("theme-warm.css", "theme-framework.css");
     loader->addDependency("theme-cool.css", "theme-framework.css");
     
-    std::cout << "CSSLoaderUtils: Created theme CSS loader with dependencies" << std::endl;
+    std::cout << "[CSSLoaderUtils] Created theme CSS loader with dependencies" << std::endl;
     return loader;
 }
 
@@ -375,25 +374,30 @@ int preloadThemeCSS(std::shared_ptr<CSSLoader> cssLoader) {
     }
     
     int loaded = cssLoader->loadMultipleCSS(paths);
-    std::cout << "CSSLoaderUtils: Preloaded " << loaded << " theme CSS files" << std::endl;
+    std::cout << "[CSSLoaderUtils] Preloaded " << loaded << " theme CSS files" << std::endl;
     return loaded;
 }
 
 std::map<std::string, std::string> getThemeCSSPaths() {
     std::map<std::string, std::string> paths;
     
-    // Determine base path
+    // Determine base path by testing different locations
     std::string basePath = "css/"; // Default web-accessible path
     
-    // Check for external resources
-    std::ifstream externalCheck("build/resources/css/theme-framework.css");
-    if (externalCheck.good()) {
-        basePath = "build/resources/css/";
-    } else {
-        // Check for internal resources
-        std::ifstream internalCheck("resources/css/theme-framework.css");
-        if (internalCheck.good()) {
-            basePath = "resources/css/";
+    // Test different possible paths
+    std::vector<std::string> testPaths = {
+        "css/",
+        "docroot/css/",
+        "../docroot/css/",
+        "build/resources/css/",
+        "resources/css/"
+    };
+    
+    for (const auto& testPath : testPaths) {
+        std::ifstream testFile(testPath + "theme-framework.css");
+        if (testFile.good()) {
+            basePath = testPath;
+            break;
         }
     }
     
@@ -404,6 +408,7 @@ std::map<std::string, std::string> getThemeCSSPaths() {
     paths["warm"] = basePath + "theme-warm.css";
     paths["cool"] = basePath + "theme-cool.css";
     
+    std::cout << "[CSSLoaderUtils] Using CSS base path: " << basePath << std::endl;
     return paths;
 }
 

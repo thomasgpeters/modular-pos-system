@@ -1,10 +1,10 @@
 /* ============================================================================
-   Dynamic CSS Loader Utility
+   Dynamic CSS Loader Utility - Complete Header
    
    This utility provides dynamic loading and unloading of CSS files for the
    theme system. It manages CSS dependencies and ensures proper cleanup.
    
-   File: include/utils/CSSLoader.hpp and src/utils/CSSLoader.cpp
+   File: include/utils/CSSLoader.hpp
    ============================================================================ */
 
 #ifndef CSSLOADER_H
@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <functional>
+#include <utility>
 
 /**
  * @file CSSLoader.hpp
@@ -193,13 +194,51 @@ private:
         bool loaded;
         std::vector<std::string> dependencies;
         
+        // Default constructor
+        CSSInfo() : path(""), priority(0), loaded(false) {}
+        
+        // Parameterized constructor
         CSSInfo(const std::string& p, int pr) 
             : path(p), priority(pr), loaded(false) {}
+        
+        // Copy constructor
+        CSSInfo(const CSSInfo& other) 
+            : path(other.path), priority(other.priority), loaded(other.loaded), dependencies(other.dependencies) {}
+        
+        // Move constructor
+        CSSInfo(CSSInfo&& other) noexcept
+            : path(std::move(other.path)), priority(other.priority), loaded(other.loaded), dependencies(std::move(other.dependencies)) {}
+        
+        // Copy assignment operator
+        CSSInfo& operator=(const CSSInfo& other) {
+            if (this != &other) {
+                path = other.path;
+                priority = other.priority;
+                loaded = other.loaded;
+                dependencies = other.dependencies;
+            }
+            return *this;
+        }
+        
+        // Move assignment operator
+        CSSInfo& operator=(CSSInfo&& other) noexcept {
+            if (this != &other) {
+                path = std::move(other.path);
+                priority = other.priority;
+                loaded = other.loaded;
+                dependencies = std::move(other.dependencies);
+            }
+            return *this;
+        }
     };
     
     Wt::WApplication* app_;
     std::map<std::string, CSSInfo> cssFiles_;
     LoadCallback loadCallback_;
+    
+    // Loaded CSS tracking
+    std::vector<std::string> loadedCSSFiles_;
+    bool frameworkLoaded_;
     
     // Helper methods
     bool loadCSSWithDependencies(const std::string& cssPath);

@@ -355,11 +355,12 @@ private:
     
     // Helper methods
     void initializeThemeMetadata();
+    std::string detectCSSBasePath();
     Theme parseThemeFromString(const std::string& themeString) const;
     std::string themeToString(Theme theme) const;
     void detectSystemTheme();
     void ensureFrameworkLoaded();
-    
+        
     // Storage key for preferences
     static constexpr const char* THEME_PREFERENCE_KEY = "pos_theme_preference";
     static constexpr const char* FRAMEWORK_CSS_PATH = "assets/css/theme-framework.css";
