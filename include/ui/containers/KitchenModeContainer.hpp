@@ -6,6 +6,7 @@
 #define KITCHENMODECONTAINER_H
 
 #include "../../services/POSService.hpp"
+#include "../../events/POSEvents.hpp"
 #include "../../events/EventManager.hpp"
 #include "../components/ActiveOrdersDisplay.hpp"
 #include "../components/KitchenStatusDisplay.hpp"

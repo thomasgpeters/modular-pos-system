@@ -199,6 +199,68 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     )
 endif()
 
+# ============================================================================
+# Add this to your CMakeLists.txt - Resources Configuration
+# ============================================================================
+
+# Configure resources directory
+set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
+
+# Create resources directory if it doesn't exist
+file(MAKE_DIRECTORY ${RESOURCES_DIR})
+file(MAKE_DIRECTORY ${RESOURCES_DIR}/themes/bootstrap/5)
+file(MAKE_DIRECTORY ${RESOURCES_DIR}/css)
+file(MAKE_DIRECTORY ${RESOURCES_DIR}/js)
+
+# Copy resources to build directory (optional - for development)
+configure_file(
+    "${CMAKE_SOURCE_DIR}/setup_bootstrap_resources.sh"
+    "${CMAKE_BINARY_DIR}/setup_bootstrap_resources.sh"
+    COPYONLY
+)
+
+# Add custom target to download Bootstrap resources
+add_custom_target(download_bootstrap
+    COMMAND chmod +x "${CMAKE_BINARY_DIR}/setup_bootstrap_resources.sh"
+    COMMAND "${CMAKE_BINARY_DIR}/setup_bootstrap_resources.sh"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Downloading Bootstrap 5 resources..."
+)
+
+# Make the main target depend on Bootstrap resources
+add_dependencies(restaurant-pos-app download_bootstrap)
+
+# Install resources (for deployment)
+install(DIRECTORY ${RESOURCES_DIR}/
+    DESTINATION resources
+    COMPONENT resources
+)
+
+# Print resource information
+message(STATUS "Resources directory: ${RESOURCES_DIR}")
+message(STATUS "Bootstrap theme will be available at: ${RESOURCES_DIR}/themes/bootstrap/5/")
+message(STATUS "Run 'make download_bootstrap' to set up Bootstrap resources manually if needed")
+
+# Check if Bootstrap resources exist
+function(check_bootstrap_resources)
+    set(REQUIRED_FILES
+        "${RESOURCES_DIR}/themes/bootstrap/5/bootstrap.min.css"
+        "${RESOURCES_DIR}/themes/bootstrap/5/bootstrap.bundle.min.js"
+        "${RESOURCES_DIR}/css/pos-system.css"
+    )
+    
+    foreach(REQUIRED_FILE ${REQUIRED_FILES})
+        if(NOT EXISTS ${REQUIRED_FILE})
+            message(WARNING "Required resource file missing: ${REQUIRED_FILE}")
+            message(STATUS "Run 'make download_bootstrap' to download required resources")
+        endif()
+    endforeach()
+endfunction()
+
+# Check resources at configure time
+check_bootstrap_resources()
+
+
 #==============================================================================
 # Output Configuration
 #==============================================================================

@@ -16,6 +16,8 @@
 #include "../ui/components/CommonHeader.hpp"
 #include "../ui/components/CommonFooter.hpp"
 
+#include "../events/POSEvents.hpp"
+
 #include <Wt/WApplication.h>
 #include <Wt/WContainerWidget.h>
 #include <Wt/WVBoxLayout.h>

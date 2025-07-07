@@ -1,5 +1,5 @@
 //============================================================================
-// src/utils/FormatUtils.cpp - CORRECTED (Only formatting utilities)
+// src/utils/FormatUtils.cpp - FIXED (Clean implementations)
 //============================================================================
 
 #include "../../include/utils/FormatUtils.hpp"
@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include <ctime>
+#include <cctype>
 
 namespace FormatUtils {
     
