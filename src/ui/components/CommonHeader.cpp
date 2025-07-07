@@ -249,5 +249,3 @@ void CommonHeader::setupEventHandlers() {
     timer->start();
 }
 */
-
-

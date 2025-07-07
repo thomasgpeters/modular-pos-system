@@ -1,451 +1,326 @@
-cmake_minimum_required(VERSION 3.16)
-project(RestaurantPOS_Enhanced)
+# ============================================================================
+# Fixed CMakeLists.txt for Restaurant POS with Theme System
+# ============================================================================
 
-# Set C++ standard
+cmake_minimum_required(VERSION 3.16)
+
+# Set policy for FindBoost (fixes the warning)
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
+# Project definition
+project(RestaurantPOS 
+    VERSION 1.0.0
+    DESCRIPTION "Restaurant Point of Sale System"
+    LANGUAGES CXX
+)
+
+# C++ Standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find Wt library (using your working approach)
-find_package(Wt REQUIRED Wt HTTP)
+# Build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
 
-# Include directories
-include_directories(${CMAKE_SOURCE_DIR})
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-#==============================================================================
-# Enhanced Core Files (Mode Switching Architecture)
-#==============================================================================
+# ============================================================================
+# Find Dependencies
+# ============================================================================
 
-# Core required files that must exist for enhanced version
-set(CORE_SOURCES
-    src/main.cpp
-    
-    # Enhanced main application
-    src/core/RestaurantPOSApp.cpp
-    
-    # Core services
-    src/services/POSService.cpp
-    src/events/EventManager.cpp
-    src/events/POSEvents.cpp
-    
-    # Data models
-    src/MenuItem.cpp
-    src/Order.cpp
-    src/OrderManager.cpp
-    src/PaymentProcessor.cpp
-    src/KitchenInterface.cpp
-    
-    # Enhanced mode containers (core to enhanced functionality)
-    src/ui/containers/POSModeContainer.cpp
-    src/ui/containers/KitchenModeContainer.cpp
-    
-    # Enhanced common components (core to enhanced functionality)
-    src/ui/components/CommonHeader.cpp
-    src/ui/components/CommonFooter.cpp
-    src/ui/components/ModeSelector.cpp
+# Find Wt
+find_package(Wt REQUIRED)
+if(Wt_FOUND)
+    message(STATUS "Found Wt: ${Wt_VERSION}")
+else()
+    message(FATAL_ERROR "Wt not found! Please install Wt framework.")
+endif()
+
+# Find Boost (required by Wt)
+find_package(Boost REQUIRED COMPONENTS system filesystem thread)
+
+# Find Threads
+find_package(Threads REQUIRED)
+
+# ============================================================================
+# Source Files Discovery
+# ============================================================================
+
+# Automatically find all source files
+file(GLOB_RECURSE HEADER_FILES 
+    "include/*.hpp"
+    "include/*.h"
 )
 
-# Start with enhanced core sources
-set(ALL_SOURCES ${CORE_SOURCES})
-
-#==============================================================================
-# Enhanced Optional Components
-#==============================================================================
-
-# Enhanced optional files (will be included if they exist)
-set(ENHANCED_OPTIONAL_FILES
-    # Enhanced services
-    src/core/ConfigurationManager.cpp
-    src/services/ThemeService.cpp
-    src/services/NotificationService.cpp
-    
-    # Enhanced UI components
-    src/ui/components/OrderEntryPanel.cpp
-    src/ui/components/OrderStatusPanel.cpp
-    src/ui/components/MenuDisplay.cpp
-    src/ui/components/CurrentOrderDisplay.cpp
-    src/ui/components/ActiveOrdersDisplay.cpp
-    src/ui/components/KitchenStatusDisplay.cpp
-    src/ui/components/ThemeSelector.cpp
-    
-    # Enhanced dialogs
-    src/ui/dialogs/PaymentDialog.cpp
-    src/ui/dialogs/CategoryPopover.cpp
-    src/ui/dialogs/ThemeSelectionDialog.cpp
-    
-    # Enhanced factories and utilities
-    src/ui/factories/UIComponentFactory.cpp
-    src/utils/UIHelpers.cpp
-    src/utils/FormatUtils.cpp
-    src/utils/CSSLoader.cpp
-    
-    # Enhanced layout managers
-    src/ui/layouts/POSLayoutManager.cpp
-    src/ui/layouts/KitchenLayoutManager.cpp
-    src/ui/layouts/ResponsiveLayoutManager.cpp
-    
-    # Additional enhanced components
-    src/ui/components/OrderSummaryWidget.cpp
-    src/ui/components/MenuCategoryWidget.cpp
-    src/ui/components/MenuItemWidget.cpp
-    src/ui/components/OrderItemWidget.cpp
-    src/ui/components/CustomerInfoWidget.cpp
-    
-    # Enhanced data models
-    src/models/Customer.cpp
-    src/models/Payment.cpp
-    src/models/KitchenTicket.cpp
-    src/models/Table.cpp
-    
-    # Core utilities
-    src/core/DatabaseManager.cpp
-    src/core/Logger.cpp
-    src/core/ValidationEngine.cpp
-    
-    # Additional services
-    src/services/MenuService.cpp
-    src/services/OrderService.cpp
-    src/services/PaymentService.cpp
-    src/services/ReportingService.cpp
-    
-    # Utility classes
-    src/utils/StringUtils.cpp
-    src/utils/DateTimeUtils.cpp
-    src/utils/CurrencyUtils.cpp
-    src/utils/FileUtils.cpp
-    src/utils/NetworkUtils.cpp
+file(GLOB_RECURSE SOURCE_FILES 
+    "src/*.cpp"
+    "src/*.cc"
+    "src/*.cxx"
 )
 
-#==============================================================================
-# Check for Optional Files and Add Them
-#==============================================================================
+# Get list lengths correctly
+list(LENGTH HEADER_FILES HEADER_COUNT)
+list(LENGTH SOURCE_FILES SOURCE_COUNT)
 
-# Add enhanced optional files if they exist
-set(INCLUDED_COUNT 0)
-set(MISSING_COUNT 0)
+# Print discovered files
+message(STATUS "Found ${HEADER_COUNT} header files")
+message(STATUS "Found ${SOURCE_COUNT} source files")
 
-foreach(source_file ${ENHANCED_OPTIONAL_FILES})
-    if(EXISTS "${CMAKE_SOURCE_DIR}/${source_file}")
-        list(APPEND ALL_SOURCES ${source_file})
-        message(STATUS "✓ Including: ${source_file}")
-        math(EXPR INCLUDED_COUNT "${INCLUDED_COUNT} + 1")
-    else()
-        message(STATUS "⚠ Missing (optional): ${source_file}")
-        math(EXPR MISSING_COUNT "${MISSING_COUNT} + 1")
-    endif()
-endforeach()
+# Show some example files if found
+if(SOURCE_COUNT GREATER 0)
+    list(GET SOURCE_FILES 0 FIRST_SOURCE)
+    message(STATUS "Example source file: ${FIRST_SOURCE}")
+endif()
 
-#==============================================================================
-# Build Status Information
-#==============================================================================
+# ============================================================================
+# Executable Definition
+# ============================================================================
 
-list(LENGTH CORE_SOURCES CORE_COUNT)
-list(LENGTH ALL_SOURCES TOTAL_COUNT)
+# Define the main executable
+set(EXECUTABLE_NAME "RestaurantPOS")
 
-message(STATUS "")
-message(STATUS "═══════════════════════════════════════════════")
-message(STATUS "  Enhanced Restaurant POS Build Configuration")
-message(STATUS "═══════════════════════════════════════════════")
-message(STATUS "Core files (required): ${CORE_COUNT}")
-message(STATUS "Optional files found: ${INCLUDED_COUNT}")
-message(STATUS "Optional files missing: ${MISSING_COUNT}")
-message(STATUS "Total files building: ${TOTAL_COUNT}")
-message(STATUS "")
-message(STATUS "Enhanced Features:")
-message(STATUS "  ✓ Mode Switching (POS/Kitchen)")
-message(STATUS "  ✓ Common Header/Footer")
-message(STATUS "  ✓ Bootstrap Theme Support")
-message(STATUS "  ✓ Event-Driven Architecture")
-message(STATUS "═══════════════════════════════════════════════")
+# Create executable
+add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 
-#==============================================================================
-# Create Executable
-#==============================================================================
+# Set target properties
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES
+    OUTPUT_NAME "restaurant_pos"
+    VERSION ${PROJECT_VERSION}
+)
 
-# Create executable with enhanced name
-add_executable(restaurant-pos-app ${ALL_SOURCES})
+message(STATUS "Creating executable: ${EXECUTABLE_NAME}")
 
-# Link libraries (using your working approach)
-target_link_libraries(restaurant-pos-app Wt::Wt Wt::HTTP)
+# ============================================================================
+# Include Directories
+# ============================================================================
 
-#==============================================================================
-# Compiler Configuration
-#==============================================================================
+target_include_directories(${EXECUTABLE_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/components
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/containers
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/dialogs
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/factories
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/events
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
+)
 
-# Compiler flags (using your working approach + enhanced flags)
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(restaurant-pos-app PRIVATE 
-        -Wall 
-        -Wextra 
-        -Wno-deprecated-declarations
-        -Wno-unused-parameter
-        -Wno-unused-variable
+# ============================================================================
+# Link Libraries
+# ============================================================================
+
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE
+    Wt::Wt
+    Wt::HTTP
+    Boost::system
+    Boost::filesystem
+    Boost::thread
+    Threads::Threads
+)
+
+# ============================================================================
+# Compiler Flags
+# ============================================================================
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(${EXECUTABLE_NAME} PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        $<$<CONFIG:Debug>:-g -O0>
+        $<$<CONFIG:Release>:-O3 -DNDEBUG>
     )
 endif()
 
-# Enhanced compiler definitions
-target_compile_definitions(restaurant-pos-app PRIVATE
-    PROJECT_VERSION="3.0.0"
-    PROJECT_NAME="RestaurantPOS"
-    WT_ENHANCED_MODE_SUPPORT
-    BOOTSTRAP_THEME_SUPPORT
-)
-
-# Debug-specific definitions
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(restaurant-pos-app PRIVATE
-        DEBUG_MODE
-        VERBOSE_LOGGING
-        EVENT_DEBUGGING
+if(MSVC)
+    target_compile_options(${EXECUTABLE_NAME} PRIVATE
+        /W4
+        $<$<CONFIG:Debug>:/Od /Zi>
+        $<$<CONFIG:Release>:/O2>
     )
 endif()
 
 # ============================================================================
-# Add this to your CMakeLists.txt - Resources Configuration
+# Theme System Configuration
 # ============================================================================
 
-# Configure resources directory
-set(RESOURCES_DIR "${CMAKE_SOURCE_DIR}/resources")
+# Set the correct target name for theme system
+set(POS_TARGET_NAME ${EXECUTABLE_NAME})
 
-# Create resources directory if it doesn't exist
-file(MAKE_DIRECTORY ${RESOURCES_DIR})
-file(MAKE_DIRECTORY ${RESOURCES_DIR}/themes/bootstrap/5)
-file(MAKE_DIRECTORY ${RESOURCES_DIR}/css)
-file(MAKE_DIRECTORY ${RESOURCES_DIR}/js)
-
-# Copy resources to build directory (optional - for development)
-configure_file(
-    "${CMAKE_SOURCE_DIR}/setup_bootstrap_resources.sh"
-    "${CMAKE_BINARY_DIR}/setup_bootstrap_resources.sh"
-    COPYONLY
-)
-
-# Add custom target to download Bootstrap resources
-add_custom_target(download_bootstrap
-    COMMAND chmod +x "${CMAKE_BINARY_DIR}/setup_bootstrap_resources.sh"
-    COMMAND "${CMAKE_BINARY_DIR}/setup_bootstrap_resources.sh"
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "Downloading Bootstrap 5 resources..."
-)
-
-# Make the main target depend on Bootstrap resources
-add_dependencies(restaurant-pos-app download_bootstrap)
-
-# Install resources (for deployment)
-install(DIRECTORY ${RESOURCES_DIR}/
-    DESTINATION resources
-    COMPONENT resources
-)
-
-# Print resource information
-message(STATUS "Resources directory: ${RESOURCES_DIR}")
-message(STATUS "Bootstrap theme will be available at: ${RESOURCES_DIR}/themes/bootstrap/5/")
-message(STATUS "Run 'make download_bootstrap' to set up Bootstrap resources manually if needed")
-
-# Check if Bootstrap resources exist
-function(check_bootstrap_resources)
-    set(REQUIRED_FILES
-        "${RESOURCES_DIR}/themes/bootstrap/5/bootstrap.min.css"
-        "${RESOURCES_DIR}/themes/bootstrap/5/bootstrap.bundle.min.js"
-        "${RESOURCES_DIR}/css/pos-system.css"
+# Check if target exists
+if(TARGET ${POS_TARGET_NAME})
+    message(STATUS "Configuring theme system for target: ${POS_TARGET_NAME}")
+    
+    # Theme CSS files
+    set(THEME_CSS_FILES
+        theme-framework.css
+        theme-light.css
+        theme-dark.css
+        theme-warm.css
+        theme-cool.css
     )
     
-    foreach(REQUIRED_FILE ${REQUIRED_FILES})
-        if(NOT EXISTS ${REQUIRED_FILE})
-            message(WARNING "Required resource file missing: ${REQUIRED_FILE}")
-            message(STATUS "Run 'make download_bootstrap' to download required resources")
+    # Get theme file count
+    list(LENGTH THEME_CSS_FILES THEME_COUNT)
+    
+    # Create necessary directories
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docroot/css)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build/resources/css)
+    
+    # Copy CSS files to build locations
+    set(CSS_FILES_FOUND 0)
+    foreach(CSS_FILE ${THEME_CSS_FILES})
+        set(SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources/css/${CSS_FILE}")
+        set(DOCROOT_FILE "${CMAKE_CURRENT_BINARY_DIR}/docroot/css/${CSS_FILE}")
+        set(RESOURCES_FILE "${CMAKE_CURRENT_BINARY_DIR}/build/resources/css/${CSS_FILE}")
+        
+        if(EXISTS ${SOURCE_FILE})
+            configure_file(${SOURCE_FILE} ${DOCROOT_FILE} COPYONLY)
+            configure_file(${SOURCE_FILE} ${RESOURCES_FILE} COPYONLY)
+            math(EXPR CSS_FILES_FOUND "${CSS_FILES_FOUND} + 1")
+            message(STATUS "  ✓ ${CSS_FILE}")
+        else()
+            message(WARNING "  ✗ ${CSS_FILE} not found at ${SOURCE_FILE}")
         endif()
     endforeach()
-endfunction()
-
-# Check resources at configure time
-check_bootstrap_resources()
-
-
-#==============================================================================
-# Output Configuration
-#==============================================================================
-
-# Set output directory (using your working approach)
-set_target_properties(restaurant-pos-app PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
-
-#==============================================================================
-# Configuration Files
-#==============================================================================
-
-# Enhanced config file handling
-if(EXISTS "${CMAKE_SOURCE_DIR}/wt_config.xml.in")
-    configure_file(
-        ${CMAKE_SOURCE_DIR}/wt_config.xml.in
-        ${CMAKE_BINARY_DIR}/wt_config.xml
-        @ONLY
+    
+    message(STATUS "Theme CSS files found: ${CSS_FILES_FOUND}/${THEME_COUNT}")
+    
+    # Add compile definitions for theme paths
+    target_compile_definitions(${POS_TARGET_NAME} PRIVATE
+        THEME_CSS_PATH="${CMAKE_CURRENT_BINARY_DIR}/docroot/css/"
+        THEME_RESOURCES_PATH="${CMAKE_CURRENT_BINARY_DIR}/build/resources/css/"
+        THEME_INTERNAL_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/css/"
     )
-elseif(EXISTS "${CMAKE_SOURCE_DIR}/wt_config.xml")
-    # Copy existing config file
-    configure_file(
-        ${CMAKE_SOURCE_DIR}/wt_config.xml
-        ${CMAKE_BINARY_DIR}/wt_config.xml
-        COPYONLY
+    
+    # Custom target for updating CSS files
+    add_custom_target(update_theme_css
+        COMMAND ${CMAKE_COMMAND} -E echo "Updating theme CSS files..."
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/docroot/css
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/build/resources/css
+        COMMENT "Updating theme CSS files"
     )
-    message(STATUS "✓ Using existing wt_config.xml")
+    
+    # Copy CSS files as part of build
+    foreach(CSS_FILE ${THEME_CSS_FILES})
+        set(SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources/css/${CSS_FILE}")
+        if(EXISTS ${SOURCE_FILE})
+            add_custom_command(
+                TARGET update_theme_css POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SOURCE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/docroot/css/${CSS_FILE}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SOURCE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/build/resources/css/${CSS_FILE}
+                COMMENT "Copying ${CSS_FILE}"
+            )
+        endif()
+    endforeach()
+    
+    # Make executable depend on CSS updates
+    add_dependencies(${POS_TARGET_NAME} update_theme_css)
+    
+    message(STATUS "Theme system configured successfully")
+else()
+    message(WARNING "Target '${POS_TARGET_NAME}' not found - theme system disabled")
 endif()
 
-# Enhanced POS config file
-if(EXISTS "${CMAKE_SOURCE_DIR}/pos_config.xml.in")
-    configure_file(
-        ${CMAKE_SOURCE_DIR}/pos_config.xml.in
-        ${CMAKE_BINARY_DIR}/pos_config.xml
-        @ONLY
+# ============================================================================
+# Installation
+# ============================================================================
+
+install(TARGETS ${EXECUTABLE_NAME}
+    RUNTIME DESTINATION bin
+    COMPONENT runtime
+)
+
+# Install CSS files
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources/css")
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources/css/
+        DESTINATION share/${PROJECT_NAME}/css
+        COMPONENT themes
+        FILES_MATCHING PATTERN "*.css"
     )
-elseif(EXISTS "${CMAKE_SOURCE_DIR}/pos_config.xml")
-    # Copy existing POS config file
-    configure_file(
-        ${CMAKE_SOURCE_DIR}/pos_config.xml
-        ${CMAKE_BINARY_DIR}/pos_config.xml
-        COPYONLY
-    )
-    message(STATUS "✓ Using existing pos_config.xml")
 endif()
 
-#==============================================================================
-# Resource Management
-#==============================================================================
-
-# Create enhanced resource directories
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/resources)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/resources/css)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/resources/js)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/resources/images)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/config)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/themes)
-
-# Copy resource files if they exist
-if(EXISTS ${CMAKE_SOURCE_DIR}/resources)
-    file(COPY ${CMAKE_SOURCE_DIR}/resources/ 
-         DESTINATION ${CMAKE_BINARY_DIR}/bin/resources/)
-    message(STATUS "✓ Copied resources directory")
-endif()
-
-if(EXISTS ${CMAKE_SOURCE_DIR}/www)
-    file(COPY ${CMAKE_SOURCE_DIR}/www/ 
-         DESTINATION ${CMAKE_BINARY_DIR}/bin/www/)
-    message(STATUS "✓ Copied www directory")
-endif()
-
-# Copy configuration files to bin directory
-if(EXISTS ${CMAKE_BINARY_DIR}/wt_config.xml)
-    file(COPY ${CMAKE_BINARY_DIR}/wt_config.xml
-         DESTINATION ${CMAKE_BINARY_DIR}/bin/)
-endif()
-
-if(EXISTS ${CMAKE_BINARY_DIR}/pos_config.xml)
-    file(COPY ${CMAKE_BINARY_DIR}/pos_config.xml
-         DESTINATION ${CMAKE_BINARY_DIR}/bin/)
-endif()
-
-#==============================================================================
-# Enhanced Custom Targets
-#==============================================================================
-
-# Enhanced run target (using your working port configuration)
-add_custom_target(run
-    COMMAND restaurant-pos-app --config-file=wt_config.xml --http-address=0.0.0.0 --http-port=8081 --docroot=.
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    DEPENDS restaurant-app
-    COMMENT "Running Enhanced Restaurant POS System on http://localhost:8081"
+# Install docroot
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docroot/
+    DESTINATION share/${PROJECT_NAME}/docroot
+    COMPONENT themes
+    FILES_MATCHING PATTERN "*.css" PATTERN "*.html"
 )
 
-# Development run target with debug output
-add_custom_target(run-dev
-    COMMAND restaurant-pos-app --config-file=wt_config.xml --http-address=localhost --http-port=8081 --docroot=. --accesslog=-
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    DEPENDS restaurant-pos-app
-    COMMENT "Running Enhanced Restaurant POS System in development mode"
+# ============================================================================
+# Development Helpers
+# ============================================================================
+
+# Add helpful targets
+add_custom_target(pos_help
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Restaurant POS Build Targets:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ${EXECUTABLE_NAME}       - Build main executable"
+    COMMAND ${CMAKE_COMMAND} -E echo "  update_theme_css  - Update theme CSS files"
+    COMMAND ${CMAKE_COMMAND} -E echo "  pos_help          - Show this help"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Usage:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make ${EXECUTABLE_NAME}"
+    COMMAND ${CMAKE_COMMAND} -E echo "  make update_theme_css"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "Run executable:"
+    COMMAND ${CMAKE_COMMAND} -E echo "  ./${EXECUTABLE_NAME} --docroot=../docroot --http-port=8080"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
 )
 
-# Clean run target (fresh start)
-add_custom_target(run-clean
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target restaurant-pos-app
-    COMMAND restaurant-pos-app --config-file=wt_config.xml --http-address=localhost --http-port=8081 --docroot=.
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    COMMENT "Clean build and run Enhanced Restaurant POS System"
-)
-
-# Theme development target
-add_custom_target(run-themes
-    COMMAND restaurant-pos-app --config-file=wt_config.xml --http-address=localhost --http-port=8081 --docroot=. --resource-dir=themes
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    DEPENDS restaurant-pos-app
-    COMMENT "Running with theme development support"
-)
-
-#==============================================================================
-# Installation Rules
-#==============================================================================
-
-# Install the enhanced executable
-install(TARGETS restaurant-pos-app DESTINATION bin)
-
-# Install configuration files
-install(FILES 
-    ${CMAKE_BINARY_DIR}/wt_config.xml
-    ${CMAKE_BINARY_DIR}/pos_config.xml
-    DESTINATION etc/restaurant-pos-app
-    OPTIONAL
-)
-
-# Install resource directories
-if(EXISTS ${CMAKE_BINARY_DIR}/bin/resources)
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/bin/resources/
-            DESTINATION share/restaurant-pos-app/resources)
-endif()
-
-if(EXISTS ${CMAKE_BINARY_DIR}/bin/www)
-    install(DIRECTORY ${CMAKE_BINARY_DIR}/bin/www/
-            DESTINATION share/restaurant-pos-app/www)
-endif()
-
-#==============================================================================
-# Final Status
-#==============================================================================
+# ============================================================================
+# Status Summary
+# ============================================================================
 
 message(STATUS "")
-message(STATUS "Enhanced CMake configuration complete!")
+message(STATUS "=============== Configuration Summary ===============")
+message(STATUS "Project: ${PROJECT_NAME} v${PROJECT_VERSION}")
+message(STATUS "Executable: ${EXECUTABLE_NAME}")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Source Files: ${SOURCE_COUNT}")
+message(STATUS "Header Files: ${HEADER_COUNT}")
+
+if(DEFINED CSS_FILES_FOUND)
+    message(STATUS "Theme CSS Files: ${CSS_FILES_FOUND}/${THEME_COUNT}")
+endif()
+
 message(STATUS "")
 message(STATUS "Build commands:")
-message(STATUS "  make                    - Build enhanced POS system")
-message(STATUS "  make run                - Build and run on http://localhost:8081")
-message(STATUS "  make run-dev            - Build and run in development mode")
-message(STATUS "  make run-clean          - Clean build and run")
-message(STATUS "  make run-themes         - Run with theme development support")
-message(STATUS "  make pos-help           - Show detailed help")
-message(STATUS "")
-message(STATUS "The enhanced system will use your existing wt_config.xml")
-message(STATUS "and will run on port 8081 as configured.")
+message(STATUS "  cd build && cmake .. && make")
+message(STATUS "  ./${EXECUTABLE_NAME} --docroot=../docroot --http-port=8080")
+message(STATUS "==================================================")
 message(STATUS "")
 
-#==============================================================================
-# Helpful Target Information
-#==============================================================================
+# ============================================================================
+# Validation
+# ============================================================================
 
-# Add a help target (using pos-help to avoid reserved name conflict)
-add_custom_target(pos-help
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "Enhanced Restaurant POS System - Available Targets:"
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "  make                    Build the enhanced POS system"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make run                Run on http://localhost:8081"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make run-dev            Run in development mode"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make run-clean          Clean build and run"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make run-themes         Run with theme support"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make install            Install system files"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make pos-help           Show this help"
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "Enhanced Features:"
-    COMMAND ${CMAKE_COMMAND} -E echo "  • POS Mode / Kitchen Mode switching"
-    COMMAND ${CMAKE_COMMAND} -E echo "  • Common header with theme controls"
-    COMMAND ${CMAKE_COMMAND} -E echo "  • Bootstrap theme framework"
-    COMMAND ${CMAKE_COMMAND} -E echo "  • Event-driven component architecture"
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-)
+# Check if we have any source files
+if(NOT SOURCE_FILES)
+    message(WARNING "No source files found! Please check your src/ directory.")
+    message(STATUS "Looking for files in: ${CMAKE_CURRENT_SOURCE_DIR}/src/")
+endif()
+
+# Check if main function exists (basic check)
+if(SOURCE_FILES)
+    set(MAIN_FOUND FALSE)
+    foreach(SOURCE_FILE ${SOURCE_FILES})
+        file(READ ${SOURCE_FILE} SOURCE_CONTENT)
+        if(SOURCE_CONTENT MATCHES "int main\\(")
+            set(MAIN_FOUND TRUE)
+            message(STATUS "Found main() function in: ${SOURCE_FILE}")
+            break()
+        endif()
+    endforeach()
+    
+    if(NOT MAIN_FOUND)
+        message(WARNING "No main() function found in source files!")
+        message(STATUS "You may need to create src/main.cpp")
+    endif()
+endif()

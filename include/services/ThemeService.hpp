@@ -10,6 +10,8 @@
 #ifndef THEMESERVICE_H
 #define THEMESERVICE_H
 
+#include "CSSLoader.hpp"
+
 #include <Wt/WApplication.h>
 #include <Wt/WContainerWidget.h>
 #include <string>

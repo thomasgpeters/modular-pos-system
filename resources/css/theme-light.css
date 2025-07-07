@@ -1,0 +1,298 @@
+/* ============================================================================
+   Light Theme CSS - Bright, High Contrast Theme
+   File: resources/css/theme-light.css
+   ============================================================================ */
+
+/* Light Theme CSS Variables */
+:root {
+  /* Primary Colors - Bright Blue */
+  --pos-primary: #0066cc;
+  --pos-primary-dark: #004499;
+  --pos-primary-light: #3388dd;
+  
+  /* Secondary Colors - Clean Gray */
+  --pos-secondary: #6c757d;
+  --pos-secondary-dark: #545b62;
+  --pos-secondary-light: #9ca3af;
+  
+  /* Success/Error Colors - Vibrant */
+  --pos-success: #28a745;
+  --pos-warning: #ffc107;
+  --pos-danger: #dc3545;
+  --pos-info: #17a2b8;
+  
+  /* Background Colors - Pure White Base */
+  --pos-bg-primary: #ffffff;
+  --pos-bg-secondary: #f8f9fa;
+  --pos-bg-tertiary: #e9ecef;
+  --pos-bg-dark: #212529;
+  
+  /* Text Colors - High Contrast */
+  --pos-text-primary: #212529;
+  --pos-text-secondary: #495057;
+  --pos-text-muted: #6c757d;
+  --pos-text-light: #ffffff;
+  
+  /* Border Colors - Subtle */
+  --pos-border: #dee2e6;
+  --pos-border-light: #f1f3f4;
+  --pos-border-dark: #adb5bd;
+  
+  /* Shadow - Crisp */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.2);
+}
+
+/* Light Theme Body */
+body.theme-light {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+/* Light Theme Header */
+body.theme-light .pos-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+}
+
+body.theme-light .pos-header .brand {
+  color: #0066cc;
+}
+
+/* Light Theme Footer */
+body.theme-light .pos-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  color: #6c757d;
+}
+
+/* Light Theme Cards */
+body.theme-light .pos-card {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+}
+
+/* Light Theme Tables */
+body.theme-light .pos-table {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+}
+
+body.theme-light .pos-table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+body.theme-light .pos-table td {
+  color: #212529;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+body.theme-light .pos-table tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Light Theme Buttons */
+body.theme-light .pos-btn-primary {
+  background-color: #0066cc;
+  border-color: #0066cc;
+  color: white;
+}
+
+body.theme-light .pos-btn-primary:hover {
+  background-color: #004499;
+  border-color: #004499;
+}
+
+body.theme-light .pos-btn-secondary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+body.theme-light .pos-btn-secondary:hover {
+  background-color: #545b62;
+  border-color: #545b62;
+}
+
+/* Light Theme Form Controls */
+body.theme-light .pos-form-control {
+  background-color: #ffffff;
+  border: 1px solid #ced4da;
+  color: #495057;
+}
+
+body.theme-light .pos-form-control:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+}
+
+/* Light Theme Mode Selector */
+body.theme-light .pos-mode-selector {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+body.theme-light .pos-mode-selector .pos-btn.active {
+  background-color: #0066cc;
+  color: white;
+}
+
+/* Light Theme Badges */
+body.theme-light .pos-badge-success {
+  background-color: #28a745;
+  color: white;
+}
+
+body.theme-light .pos-badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+body.theme-light .pos-badge-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+body.theme-light .pos-badge-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+/* Light Theme Notifications */
+body.theme-light .pos-notification {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+body.theme-light .pos-notification-success {
+  border-left: 4px solid #28a745;
+}
+
+body.theme-light .pos-notification-warning {
+  border-left: 4px solid #ffc107;
+}
+
+body.theme-light .pos-notification-danger {
+  border-left: 4px solid #dc3545;
+}
+
+body.theme-light .pos-notification-info {
+  border-left: 4px solid #17a2b8;
+}
+
+/* Light Theme Loading States */
+body.theme-light .pos-loading::after {
+  border-color: #f1f3f4;
+  border-top-color: #0066cc;
+}
+
+/* Light Theme Specific Enhancements */
+body.theme-light .navbar-brand {
+  color: #0066cc !important;
+}
+
+body.theme-light .btn-outline-primary {
+  color: #0066cc;
+  border-color: #0066cc;
+}
+
+body.theme-light .btn-outline-primary:hover {
+  background-color: #0066cc;
+  border-color: #0066cc;
+  color: white;
+}
+
+body.theme-light .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #f8f9fa;
+}
+
+body.theme-light .table-hover tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Light Theme Menu Categories */
+body.theme-light .menu-category {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+body.theme-light .menu-category:hover {
+  background-color: #e9ecef;
+}
+
+body.theme-light .menu-item {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+}
+
+body.theme-light .menu-item:hover {
+  background-color: #f8f9fa;
+  border-color: #0066cc;
+}
+
+/* Light Theme Order States */
+body.theme-light .order-pending {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+}
+
+body.theme-light .order-preparing {
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+}
+
+body.theme-light .order-ready {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+body.theme-light .order-served {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+/* Light Theme Kitchen Display */
+body.theme-light .kitchen-ticket {
+  background-color: #ffffff;
+  border: 2px solid #dee2e6;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+body.theme-light .kitchen-ticket.urgent {
+  border-color: #dc3545;
+  background-color: #f8d7da;
+}
+
+body.theme-light .kitchen-ticket.ready {
+  border-color: #28a745;
+  background-color: #d4edda;
+}
+
+/* Light Theme Focus Indicators */
+body.theme-light *:focus {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Light Theme High Contrast Elements */
+body.theme-light .text-muted {
+  color: #6c757d !important;
+}
+
+body.theme-light .text-primary {
+  color: #0066cc !important;
+}
+
+body.theme-light .bg-primary {
+  background-color: #0066cc !important;
+}
+
+body.theme-light .border-primary {
+  border-color: #0066cc !important;
+}

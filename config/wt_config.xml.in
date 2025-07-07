@@ -1,0 +1,177 @@
+<!-- ============================================================================
+     Wt Configuration Template for Theme System
+     File: config/wt_config.xml.in
+     ============================================================================ -->
+
+<server>
+    <application-settings location="*">
+        <!-- Basic Application Settings -->
+        <session-management>
+            <dedicated-process>
+                <max-num-sessions>1</max-num-sessions>
+            </dedicated-process>
+        </session-management>
+        
+        <!-- Enable progressive bootstrap for faster loading -->
+        <progressive-bootstrap>true</progressive-bootstrap>
+        
+        <!-- Enable AJAX by default -->
+        <ajax-intrapage-navigation>true</ajax-intrapage-navigation>
+        
+        <!-- Theme System Configuration -->
+        <properties>
+            <!-- Theme CSS paths -->
+            <property name="theme-css-path">@THEME_CSS_PATH@</property>
+            <property name="theme-resources-path">@THEME_RESOURCES_PATH@</property>
+            <property name="theme-internal-path">@THEME_INTERNAL_PATH@</property>
+            
+            <!-- Default theme settings -->
+            <property name="default-theme">base</property>
+            <property name="enable-theme-switching">true</property>
+            <property name="enable-theme-persistence">true</property>
+            
+            <!-- Theme performance settings -->
+            <property name="preload-themes">false</property>
+            <property name="minify-css">@CMAKE_BUILD_TYPE@ STREQUAL "Release"</property>
+            <property name="cache-css">true</property>
+        </properties>
+        
+        <!-- Static Resources Configuration -->
+        <static-resources>
+            <!-- Serve CSS files from docroot -->
+            <resource-mapping>
+                <pattern>/css/(.*)$</pattern>
+                <path>${docroot}/css/$1</path>
+            </resource-mapping>
+            
+            <!-- Serve theme resources -->
+            <resource-mapping>
+                <pattern>/themes/(.*)$</pattern>
+                <path>${docroot}/css/$1</path>
+            </resource-mapping>
+            
+            <!-- Serve assets -->
+            <resource-mapping>
+                <pattern>/assets/(.*)$</pattern>
+                <path>${docroot}/assets/$1</path>
+            </resource-mapping>
+        </static-resources>
+        
+        <!-- Head matter for CSS framework -->
+        <head-matter>
+            <!-- Bootstrap CSS (CDN fallback) -->
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
+                  rel="stylesheet" 
+                  integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg==" 
+                  crossorigin="anonymous" />
+            
+            <!-- Theme Framework CSS -->
+            <link href="/css/theme-framework.css" rel="stylesheet" type="text/css" />
+            
+            <!-- Theme Support JavaScript -->
+            <script type="text/javascript">
+            // Theme detection and management
+            (function() {
+                'use strict';
+                
+                // Detect system theme preference
+                function detectSystemTheme() {
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        return 'dark';
+                    }
+                    return 'light';
+                }
+                
+                // Load saved theme or detect system theme
+                function loadInitialTheme() {
+                    var savedTheme = localStorage.getItem('pos_theme_preference');
+                    if (savedTheme && savedTheme !== 'auto') {
+                        return savedTheme;
+                    }
+                    return detectSystemTheme();
+                }
+                
+                // Apply theme class to body
+                function applyTheme(theme) {
+                    document.body.className = document.body.className.replace(/theme-\w+/g, '');
+                    document.body.classList.add('theme-' + theme);
+                }
+                
+                // Initialize theme on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    var initialTheme = loadInitialTheme();
+                    applyTheme(initialTheme);
+                });
+                
+                // Listen for system theme changes
+                if (window.matchMedia) {
+                    window.matchMedia('(prefers-color-scheme: dark)').addListener(function(e) {
+                        var savedTheme = localStorage.getItem('pos_theme_preference');
+                        if (!savedTheme || savedTheme === 'auto') {
+                            applyTheme(e.matches ? 'dark' : 'light');
+                        }
+                    });
+                }
+                
+                // Export theme functions for use by the application
+                window.POS_ThemeManager = {
+                    setTheme: function(theme) {
+                        applyTheme(theme);
+                        localStorage.setItem('pos_theme_preference', theme);
+                    },
+                    getTheme: function() {
+                        return localStorage.getItem('pos_theme_preference') || 'auto';
+                    },
+                    detectSystemTheme: detectSystemTheme
+                };
+            })();
+            </script>
+        </head-matter>
+        
+        <!-- Security Settings -->
+        <security>
+            <!-- Enable CSRF protection -->
+            <csrf-protection>true</csrf-protection>
+            
+            <!-- Content Security Policy for CSS -->
+            <content-security-policy>
+                default-src 'self';
+                style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+                font-src 'self' https://cdnjs.cloudflare.com;
+                script-src 'self' 'unsafe-inline';
+                img-src 'self' data:;
+            </content-security-policy>
+        </security>
+        
+        <!-- Debug Settings (for development) -->
+        <debug>
+            <!-- Enable JavaScript debugging -->
+            <javascript-debug>@CMAKE_BUILD_TYPE@ STREQUAL "Debug"</javascript-debug>
+            
+            <!-- Log CSS loading -->
+            <log-css-loading>@CMAKE_BUILD_TYPE@ STREQUAL "Debug"</log-css-loading>
+        </debug>
+        
+    </application-settings>
+    
+    <!-- HTTP Server Configuration -->
+    <http-server>
+        <!-- Listen on all interfaces -->
+        <bind>0.0.0.0</bind>
+        <port>8080</port>
+        
+        <!-- Static file serving -->
+        <docroot>@CMAKE_CURRENT_BINARY_DIR@/docroot</docroot>
+        
+        <!-- Enable compression for CSS files -->
+        <compression>
+            <gzip>true</gzip>
+            <types>text/css,application/javascript,text/html</types>
+        </compression>
+        
+        <!-- Cache settings for static resources -->
+        <static-cache>
+            <max-age>3600</max-age> <!-- 1 hour for development, increase for production -->
+        </static-cache>
+    </http-server>
+</server>
