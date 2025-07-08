@@ -1,5 +1,5 @@
 //============================================================================
-// src/core/RestaurantPOSApp.cpp - REQUIRED Implementation
+// src/core/RestaurantPOSApp.cpp - Enhanced to ensure POS mode loads by default
 //============================================================================
 
 #include "../../include/core/RestaurantPOSApp.hpp"
@@ -10,8 +10,8 @@
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     : Wt::WApplication(env)
-    , currentMode_(POS_MODE)
-    , isDestroying_(false)  // ADD THIS
+    , currentMode_(POS_MODE)  // Start with POS mode as default
+    , isDestroying_(false)
     , mainContainer_(nullptr)
     , mainLayout_(nullptr)
     , commonHeader_(nullptr)
@@ -46,13 +46,12 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     // Apply initial theme
     initializeThemeService();
     
-    // Start in POS mode
-    switchMode(POS_MODE);
+    // ENHANCED: Ensure POS mode is loaded and visible by default
+    ensurePOSModeDefault();
     
-    std::cout << "✓ RestaurantPOSApp initialized successfully" << std::endl;
+    std::cout << "✓ RestaurantPOSApp initialized successfully in POS mode" << std::endl;
 }
 
-// Add proper destructor:
 RestaurantPOSApp::~RestaurantPOSApp() {
     std::cout << "[RestaurantPOSApp] Destructor called" << std::endl;
     
@@ -65,9 +64,6 @@ RestaurantPOSApp::~RestaurantPOSApp() {
             updateTimer_->stop();
             updateTimer_.reset();
         }
-        
-        // CRITICAL: Clear event subscriptions if any exist
-        // (This prevents callbacks to destroyed objects)
         
         // CRITICAL: Remove widgets from containers before destruction
         if (modeContainer_) {
@@ -85,6 +81,268 @@ RestaurantPOSApp::~RestaurantPOSApp() {
         std::cerr << "[RestaurantPOSApp] Error during destruction: " << e.what() << std::endl;
     }
 }
+
+void RestaurantPOSApp::createModeContainers() {
+    std::cout << "[RestaurantPOSApp] Creating mode containers..." << std::endl;
+    
+    try {
+        // Ensure services exist
+        if (!posService_ || !eventManager_) {
+            throw std::runtime_error("Services not initialized before creating mode containers");
+        }
+        
+        // Ensure mode container exists
+        if (!modeContainer_) {
+            throw std::runtime_error("Mode container not initialized");
+        }
+        
+        std::cout << "[RestaurantPOSApp] Creating POS mode container..." << std::endl;
+        
+        // Create POS mode container as child
+        posModeContainer_ = modeContainer_->addNew<POSModeContainer>(posService_, eventManager_);
+        if (!posModeContainer_) {
+            throw std::runtime_error("Failed to create POS mode container");
+        }
+        
+        // Add identification for debugging
+        posModeContainer_->setId("pos-mode-container");
+        posModeContainer_->addStyleClass("mode-container pos-mode-active");
+        
+        std::cout << "[RestaurantPOSApp] Creating Kitchen mode container..." << std::endl;
+        
+        kitchenModeContainer_ = modeContainer_->addNew<KitchenModeContainer>(posService_, eventManager_);
+        if (!kitchenModeContainer_) {
+            throw std::runtime_error("Failed to create Kitchen mode container");
+        }
+        
+        // Add identification for debugging
+        kitchenModeContainer_->setId("kitchen-mode-container");
+        kitchenModeContainer_->addStyleClass("mode-container kitchen-mode-inactive");
+        
+        // ENHANCED: Set initial visibility state clearly
+        // POS mode should be visible by default, Kitchen mode hidden
+        posModeContainer_->show();  // Make POS visible from start
+        kitchenModeContainer_->hide();  // Hide kitchen mode
+        
+        std::cout << "[RestaurantPOSApp] ✓ Mode containers created successfully" << std::endl;
+        std::cout << "[RestaurantPOSApp] ✓ POS mode container is visible by default" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[RestaurantPOSApp] CRITICAL ERROR creating mode containers: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+// NEW METHOD: Ensure POS mode is properly loaded and visible
+void RestaurantPOSApp::ensurePOSModeDefault() {
+    std::cout << "[RestaurantPOSApp] Ensuring POS mode is loaded by default..." << std::endl;
+    
+    try {
+        // Verify containers exist
+        if (!posModeContainer_ || !kitchenModeContainer_) {
+            std::cerr << "[RestaurantPOSApp] ERROR: Mode containers not created!" << std::endl;
+            return;
+        }
+        
+        // Force POS mode to be the active mode
+        currentMode_ = POS_MODE;
+        
+        // Ensure visibility states are correct
+        posModeContainer_->show();
+        kitchenModeContainer_->hide();
+        
+        // Update header to reflect POS mode
+        if (commonHeader_) {
+            commonHeader_->setCurrentMode(ModeSelector::POS_MODE);
+        }
+        
+        // Refresh POS mode container to ensure it loads content
+        if (posModeContainer_) {
+            posModeContainer_->refresh();
+        }
+        
+        // Add visual confirmation
+        if (modeContainer_) {
+            modeContainer_->addStyleClass("pos-mode-active");
+            modeContainer_->removeStyleClass("kitchen-mode-active");
+        }
+        
+        std::cout << "[RestaurantPOSApp] ✓ POS mode is now active and visible" << std::endl;
+        
+        // Optional: Add a welcome message to confirm POS mode is loaded
+        if (eventManager_) {
+            auto welcomeEvent = POSEvents::createNotificationData(
+                "Welcome to Restaurant POS System - POS Mode Ready",
+                "success",
+                3000
+            );
+            eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, welcomeEvent);
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[RestaurantPOSApp] ERROR ensuring POS mode default: " << e.what() << std::endl;
+    }
+}
+
+void RestaurantPOSApp::switchMode(OperatingMode mode) {
+    std::cout << "[RestaurantPOSApp] Switching to mode: " << getModeDisplayName(mode) << std::endl;
+    
+    try {
+        // Don't switch if already in the requested mode
+        if (currentMode_ == mode) {
+            std::cout << "[RestaurantPOSApp] Already in " << getModeDisplayName(mode) << ", skipping switch" << std::endl;
+            return;
+        }
+        
+        // Validate containers exist
+        if (!modeContainer_) {
+            std::cerr << "[RestaurantPOSApp] FATAL: modeContainer_ is null!" << std::endl;
+            return;
+        }
+        
+        if (!posModeContainer_ || !kitchenModeContainer_) {
+            std::cerr << "[RestaurantPOSApp] FATAL: Mode containers are null!" << std::endl;
+            return;
+        }
+        
+        // ENHANCED: Clear previous mode styling
+        modeContainer_->removeStyleClass("pos-mode-active kitchen-mode-active");
+        posModeContainer_->removeStyleClass("pos-mode-active pos-mode-inactive");
+        kitchenModeContainer_->removeStyleClass("kitchen-mode-active kitchen-mode-inactive");
+        
+        // Hide both containers first
+        posModeContainer_->hide();
+        kitchenModeContainer_->hide();
+        
+        // Update current mode
+        currentMode_ = mode;
+        
+        // Show the appropriate container and apply styling
+        if (mode == POS_MODE) {
+            std::cout << "[RestaurantPOSApp] Activating POS mode container" << std::endl;
+            
+            // Show and style POS container
+            posModeContainer_->show();
+            posModeContainer_->addStyleClass("pos-mode-active");
+            kitchenModeContainer_->addStyleClass("kitchen-mode-inactive");
+            modeContainer_->addStyleClass("pos-mode-active");
+            
+            // Refresh the container
+            try {
+                posModeContainer_->refresh();
+                std::cout << "[RestaurantPOSApp] ✓ POS mode container refreshed" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "[RestaurantPOSApp] Error refreshing POS container: " << e.what() << std::endl;
+            }
+            
+        } else if (mode == KITCHEN_MODE) {
+            std::cout << "[RestaurantPOSApp] Activating Kitchen mode container" << std::endl;
+            
+            // Show and style Kitchen container
+            kitchenModeContainer_->show();
+            kitchenModeContainer_->addStyleClass("kitchen-mode-active");
+            posModeContainer_->addStyleClass("pos-mode-inactive");
+            modeContainer_->addStyleClass("kitchen-mode-active");
+            
+            // Refresh the container
+            try {
+                kitchenModeContainer_->refresh();
+                std::cout << "[RestaurantPOSApp] ✓ Kitchen mode container refreshed" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "[RestaurantPOSApp] Error refreshing Kitchen container: " << e.what() << std::endl;
+            }
+        }
+        
+        // Update header
+        if (commonHeader_) {
+            try {
+                commonHeader_->setCurrentMode(mode == POS_MODE ? ModeSelector::POS_MODE : ModeSelector::KITCHEN_MODE);
+            } catch (const std::exception& e) {
+                std::cerr << "[RestaurantPOSApp] ERROR updating header: " << e.what() << std::endl;
+            }
+        }
+        
+        // Apply mode-specific styling to main container
+        applyModeSpecificStyling();
+        
+        // Trigger callbacks safely
+        try {
+            onModeChanged(mode);
+        } catch (const std::exception& e) {
+            std::cerr << "[RestaurantPOSApp] ERROR in mode change callback: " << e.what() << std::endl;
+        }
+        
+        // Log success
+        logModeSwitch(mode);
+        std::cout << "[RestaurantPOSApp] ✓ Successfully switched to " << getModeDisplayName(mode) << std::endl;
+        
+        // Show confirmation notification
+        if (eventManager_) {
+            auto modeChangeEvent = POSEvents::createNotificationData(
+                "Switched to " + getModeDisplayName(mode) + " mode",
+                "info",
+                2000
+            );
+            eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, modeChangeEvent);
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[RestaurantPOSApp] CRITICAL ERROR switching modes: " << e.what() << std::endl;
+        
+        // Emergency recovery to POS mode
+        if (posModeContainer_) {
+            kitchenModeContainer_->hide();
+            posModeContainer_->show();
+            currentMode_ = POS_MODE;
+            std::cout << "[RestaurantPOSApp] Emergency recovery: Restored to POS mode" << std::endl;
+        }
+    }
+}
+
+void RestaurantPOSApp::applyModeSpecificStyling() {
+    // Apply different styling based on current mode
+    if (mainContainer_) {
+        mainContainer_->removeStyleClass("pos-mode kitchen-mode");
+        
+        if (currentMode_ == POS_MODE) {
+            mainContainer_->addStyleClass("pos-mode");
+            setTitle("Restaurant POS System - Point of Sale");
+        } else {
+            mainContainer_->addStyleClass("kitchen-mode");
+            setTitle("Restaurant POS System - Kitchen Display");
+        }
+    }
+}
+
+void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
+    // Check if we're being destroyed
+    if (isDestroying_) {
+        return;
+    }
+    
+    // Log the mode change with enhanced detail
+    std::cout << "🔄 Mode Change Complete: " << getModeDisplayName(newMode) << std::endl;
+    
+    // Apply mode-specific behavior
+    if (newMode == POS_MODE) {
+        std::cout << "📋 POS Mode: Ready for order taking and management" << std::endl;
+        
+        // Ensure POS components are ready
+        if (posModeContainer_) {
+            // Any POS-specific initialization can go here
+        }
+        
+    } else if (newMode == KITCHEN_MODE) {
+        std::cout << "👨‍🍳 Kitchen Mode: Ready for order preparation tracking" << std::endl;
+        
+        // Ensure Kitchen components are ready
+        if (kitchenModeContainer_) {
+            // Any Kitchen-specific initialization can go here
+        }
+    }
+}
+
+// ... (rest of the implementation remains the same)
 
 void RestaurantPOSApp::initializeServices() {
     // Create event manager first (other services depend on it)
@@ -115,21 +373,21 @@ void RestaurantPOSApp::initializeComponentFactory() {
 }
 
 void RestaurantPOSApp::setupMainLayout() {
-    setTitle("Restaurant POS System");
+    setTitle("Restaurant POS System - Point of Sale");  // Default title shows POS mode
     
     // Set Bootstrap theme
     setupBootstrapTheme();
     
     // Create main container
     mainContainer_ = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
-    mainContainer_->setStyleClass("h-100");
+    mainContainer_->setStyleClass("h-100 pos-app-container");
     
     // Create main layout
     mainLayout_ = mainContainer_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     mainLayout_->setContentsMargins(0, 0, 0, 0);
     mainLayout_->setSpacing(0);
     
-    std::cout << "✓ Main layout initialized" << std::endl;
+    std::cout << "✓ Main layout initialized for POS mode" << std::endl;
 }
 
 void RestaurantPOSApp::createCommonComponents() {
@@ -144,57 +402,14 @@ void RestaurantPOSApp::createCommonComponents() {
     
     // Create mode container (will be populated based on current mode)
     modeContainer_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
-    modeContainer_->setStyleClass("flex-grow-1");
+    modeContainer_->setStyleClass("flex-grow-1 mode-container-wrapper");
+    modeContainer_->setId("main-mode-container");
     
     // Create footer
     commonFooter_ = mainLayout_->addWidget(
         std::make_unique<CommonFooter>(posService_, eventManager_));
     
     std::cout << "✓ Common components created" << std::endl;
-}
-
-// 2. FIXED createModeContainers() - PROPER INITIAL SETUP
-// ============================================================================
-
-void RestaurantPOSApp::createModeContainers() {
-    std::cout << "[RestaurantPOSApp] Creating mode containers..." << std::endl;
-    
-    try {
-        // Ensure services exist
-        if (!posService_ || !eventManager_) {
-            throw std::runtime_error("Services not initialized before creating mode containers");
-        }
-        
-        // Ensure mode container exists
-        if (!modeContainer_) {
-            throw std::runtime_error("Mode container not initialized");
-        }
-        
-        std::cout << "[RestaurantPOSApp] Creating POS mode container..." << std::endl;
-        
-        // FIXED: Create containers as children (they stay in the container)
-        posModeContainer_ = modeContainer_->addNew<POSModeContainer>(posService_, eventManager_);
-        if (!posModeContainer_) {
-            throw std::runtime_error("Failed to create POS mode container");
-        }
-        
-        std::cout << "[RestaurantPOSApp] Creating Kitchen mode container..." << std::endl;
-        
-        kitchenModeContainer_ = modeContainer_->addNew<KitchenModeContainer>(posService_, eventManager_);
-        if (!kitchenModeContainer_) {
-            throw std::runtime_error("Failed to create Kitchen mode container");
-        }
-        
-        // FIXED: Initially hide both containers instead of removing them
-        posModeContainer_->hide();
-        kitchenModeContainer_->hide();
-        
-        std::cout << "[RestaurantPOSApp] ✓ Mode containers created successfully" << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "[RestaurantPOSApp] CRITICAL ERROR creating mode containers: " << e.what() << std::endl;
-        throw;
-    }
 }
 
 void RestaurantPOSApp::setupEventListeners() {
@@ -218,146 +433,6 @@ void RestaurantPOSApp::setupRealTimeUpdates() {
     std::cout << "✓ Real-time updates enabled" << std::endl;
 }
 
-// ============================================================================
-// CRITICAL FIX FOR EXC_BAD_ACCESS in widgetAdded()
-// ============================================================================
-
-// The crash happens because widgets are being deleted and then accessed.
-// Root cause: Using clear() instead of removeWidget() when switching modes.
-
-// 1. FIXED RestaurantPOSApp.cpp - SAFE MODE SWITCHING
-// ============================================================================
-
-void RestaurantPOSApp::switchMode(OperatingMode mode) {
-    std::cout << "[RestaurantPOSApp] Switching to mode: " << getModeDisplayName(mode) << std::endl;
-    
-    try {
-        // Don't switch if already in the requested mode
-        if (currentMode_ == mode) {
-            std::cout << "[RestaurantPOSApp] Already in " << getModeDisplayName(mode) << ", skipping switch" << std::endl;
-            return;
-        }
-        
-        // Validate containers exist
-        if (!modeContainer_) {
-            std::cerr << "[RestaurantPOSApp] FATAL: modeContainer_ is null!" << std::endl;
-            return;
-        }
-        
-        if (!posModeContainer_ || !kitchenModeContainer_) {
-            std::cerr << "[RestaurantPOSApp] FATAL: Mode containers are null!" << std::endl;
-            return;
-        }
-        
-        // FIXED: Use show/hide instead of add/remove for modern Wt
-        // This avoids the unique_ptr issues while being safe
-        
-        // Hide both containers
-        posModeContainer_->hide();
-        kitchenModeContainer_->hide();
-        
-        // Update current mode
-        currentMode_ = mode;
-        
-        // Show the appropriate container
-        if (mode == POS_MODE) {
-            std::cout << "[RestaurantPOSApp] Showing POS mode container" << std::endl;
-            posModeContainer_->show();
-            
-            // Refresh the container
-            try {
-                posModeContainer_->refresh();
-            } catch (const std::exception& e) {
-                std::cerr << "[RestaurantPOSApp] Error refreshing POS container: " << e.what() << std::endl;
-            }
-            
-        } else if (mode == KITCHEN_MODE) {
-            std::cout << "[RestaurantPOSApp] Showing Kitchen mode container" << std::endl;
-            kitchenModeContainer_->show();
-            
-            // Refresh the container
-            try {
-                kitchenModeContainer_->refresh();
-            } catch (const std::exception& e) {
-                std::cerr << "[RestaurantPOSApp] Error refreshing Kitchen container: " << e.what() << std::endl;
-            }
-        }
-        
-        // Update header
-        if (commonHeader_) {
-            try {
-                commonHeader_->setCurrentMode(mode == POS_MODE ? ModeSelector::POS_MODE : ModeSelector::KITCHEN_MODE);
-            } catch (const std::exception& e) {
-                std::cerr << "[RestaurantPOSApp] ERROR updating header: " << e.what() << std::endl;
-            }
-        }
-        
-        // Trigger callbacks safely
-        try {
-            onModeChanged(mode);
-        } catch (const std::exception& e) {
-            std::cerr << "[RestaurantPOSApp] ERROR in mode change callback: " << e.what() << std::endl;
-        }
-        
-        logModeSwitch(mode);
-        std::cout << "[RestaurantPOSApp] ✓ Successfully switched to " << getModeDisplayName(mode) << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "[RestaurantPOSApp] CRITICAL ERROR switching modes: " << e.what() << std::endl;
-        
-        // Emergency recovery
-        if (posModeContainer_) {
-            kitchenModeContainer_->hide();
-            posModeContainer_->show();
-            currentMode_ = POS_MODE;
-        }
-    }
-}
-
-void RestaurantPOSApp::showPOSMode() {
-    modeContainer_->clear();
-    modeContainer_->addWidget(std::unique_ptr<Wt::WWidget>(posModeContainer_));
-    posModeContainer_->show();
-    posModeContainer_->refresh();
-    
-    std::cout << "✓ Switched to POS Mode" << std::endl;
-}
-
-void RestaurantPOSApp::showKitchenMode() {
-    modeContainer_->clear();
-    modeContainer_->addWidget(std::unique_ptr<Wt::WWidget>(kitchenModeContainer_));
-    kitchenModeContainer_->show();
-    kitchenModeContainer_->refresh();
-    
-    std::cout << "✓ Switched to Kitchen Mode" << std::endl;
-}
-
-void RestaurantPOSApp::hideModeContainers() {
-    if (posModeContainer_) {
-        posModeContainer_->hide();
-    }
-    if (kitchenModeContainer_) {
-        kitchenModeContainer_->hide();
-    }
-}
-
-void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
-    // Check if we're being destroyed
-    if (isDestroying_) {
-        return;
-    }
-    
-    // Log the mode change
-    std::cout << "🔄 Mode Switch: " << getModeDisplayName(newMode) << std::endl;
-    
-    // Apply any mode-specific styling or behavior here
-    if (newMode == POS_MODE) {
-        std::cout << "🔄 Mode Switch: Point of Sale" << std::endl;
-    } else if (newMode == KITCHEN_MODE) {
-        std::cout << "🔄 Mode Switch: Kitchen Display" << std::endl;
-    }
-}
-
 void RestaurantPOSApp::initializeThemeService() {
     if (themeService_) {
         themeService_->loadThemePreference();
@@ -379,19 +454,9 @@ void RestaurantPOSApp::addCustomCSS() {
     
     // Add responsive utilities
     useStyleSheet("assets/css/responsive.css");
-}
-
-void RestaurantPOSApp::applyModeSpecificStyling() {
-    // Apply different styling based on current mode
-    if (mainContainer_) {
-        mainContainer_->removeStyleClass("pos-mode kitchen-mode");
-        
-        if (currentMode_ == POS_MODE) {
-            mainContainer_->addStyleClass("pos-mode");
-        } else {
-            mainContainer_->addStyleClass("kitchen-mode");
-        }
-    }
+    
+    // Add mode-specific CSS
+    useStyleSheet("assets/css/mode-styles.css");
 }
 
 void RestaurantPOSApp::onPeriodicUpdate() {
@@ -424,11 +489,12 @@ void RestaurantPOSApp::onThemeChanged(ThemeService::Theme oldTheme, ThemeService
 void RestaurantPOSApp::logApplicationStart() {
     std::cout << "\n" << std::string(60, '=') << std::endl;
     std::cout << "🍽️  RESTAURANT POS SYSTEM STARTING" << std::endl;
+    std::cout << "📋 Default Mode: Point of Sale (POS)" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
 }
 
 void RestaurantPOSApp::logModeSwitch(OperatingMode mode) {
-    std::cout << "🔄 Mode Switch: " << getModeDisplayName(mode) << std::endl;
+    std::cout << "🔄 Mode Switch Complete: " << getModeDisplayName(mode) << std::endl;
 }
 
 std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
@@ -439,8 +505,6 @@ std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
     }
 }
 
-// 5. DEBUGGING HELPER - Add this method for troubleshooting
-// ============================================================================
 void RestaurantPOSApp::debugWidgetState() {
     std::cout << "[DEBUG] Widget State Check:" << std::endl;
     std::cout << "  - modeContainer_: " << (modeContainer_ ? "VALID" : "NULL") << std::endl;
@@ -456,10 +520,37 @@ void RestaurantPOSApp::debugWidgetState() {
         
         std::cout << "  - POS container index: " << posIndex << std::endl;
         std::cout << "  - Kitchen container index: " << kitchenIndex << std::endl;
+        
+        if (posModeContainer_) {
+            std::cout << "  - POS container visible: " << (posModeContainer_->isVisible() ? "YES" : "NO") << std::endl;
+        }
+        if (kitchenModeContainer_) {
+            std::cout << "  - Kitchen container visible: " << (kitchenModeContainer_->isVisible() ? "YES" : "NO") << std::endl;
+        }
     }
     
-    std::cout << "  - currentMode_: " << static_cast<int>(currentMode_) << std::endl;
+    std::cout << "  - currentMode_: " << static_cast<int>(currentMode_) << " (" << getModeDisplayName(currentMode_) << ")" << std::endl;
     std::cout << "  - isDestroying_: " << (isDestroying_ ? "TRUE" : "FALSE") << std::endl;
+}
+
+// Cleanup methods remain the same...
+void RestaurantPOSApp::showPOSMode() {
+    // This method is kept for compatibility but the main switching is handled by switchMode()
+    switchMode(POS_MODE);
+}
+
+void RestaurantPOSApp::showKitchenMode() {
+    // This method is kept for compatibility but the main switching is handled by switchMode()
+    switchMode(KITCHEN_MODE);
+}
+
+void RestaurantPOSApp::hideModeContainers() {
+    if (posModeContainer_) {
+        posModeContainer_->hide();
+    }
+    if (kitchenModeContainer_) {
+        kitchenModeContainer_->hide();
+    }
 }
 
 //============================================================================

@@ -145,6 +145,7 @@ private:
     void setupMainLayout();
     void createCommonComponents();
     void createModeContainers();
+    void ensurePOSModeDefault();
     void setupEventListeners();
     void setupRealTimeUpdates();
     
@@ -152,7 +153,7 @@ private:
     void showPOSMode();
     void showKitchenMode();
     void hideModeContainers();
-    
+
     // FIXED: Method signature for onModeChanged
     void onModeChanged(OperatingMode newMode);
     
