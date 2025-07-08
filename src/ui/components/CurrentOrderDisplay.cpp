@@ -2,17 +2,20 @@
 
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
-#include <Wt/WTableCell.h>
+#include <Wt/WLabel.h>
+#include <Wt/WSpinBox.h>
+#include <Wt/WPushButton.h>
 #include <Wt/WLineEdit.h>
-#include <Wt/WApplication.h>
-
+#include <Wt/WMessageBox.h>
+#include <Wt/WBreak.h>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 
 CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
-                                        std::shared_ptr<EventManager> eventManager)
-    : posService_(posService)
+                                         std::shared_ptr<EventManager> eventManager)
+    : Wt::WContainerWidget()
+    , posService_(posService)
     , eventManager_(eventManager)
     , editable_(true)
     , headerContainer_(nullptr)
@@ -23,258 +26,129 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
     , subtotalText_(nullptr)
     , taxText_(nullptr)
     , totalText_(nullptr)
-    , itemCountText_(nullptr) {
+    , itemCountText_(nullptr)
+{
+    if (!posService_ || !eventManager_) {
+        throw std::invalid_argument("CurrentOrderDisplay requires valid POSService and EventManager");
+    }
+    
+    setStyleClass("current-order-display p-3 bg-white border rounded shadow-sm");
     
     initializeUI();
     setupEventListeners();
     refresh();
+    
+    std::cout << "[CurrentOrderDisplay] Initialized" << std::endl;
 }
 
-// Fix 2: Complete corrected initializeUI method
 void CurrentOrderDisplay::initializeUI() {
-    addStyleClass("current-order-display");
+    // Use simple layout instead of complex initialization
+    initializeUI_Simple();
+}
+
+void CurrentOrderDisplay::initializeUI_Simple() {
+    // Main container with vertical layout
+    auto layout = setLayout(std::make_unique<Wt::WVBoxLayout>());
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(15);
     
     // Header section
-    auto headerContainer = std::make_unique<Wt::WContainerWidget>();
-    headerContainer->addStyleClass("order-header mb-3");
+    auto headerWidget = createOrderHeader();
+    headerContainer_ = static_cast<Wt::WContainerWidget*>(layout->addWidget(std::move(headerWidget)));
     
-    // Order info
-    auto orderInfo = std::make_unique<Wt::WText>("Current Order");
-    orderInfo->addStyleClass("h5");
-    headerContainer->addWidget(std::move(orderInfo));
+    // Items table
+    itemsTable_ = layout->addWidget(std::make_unique<Wt::WTable>());
+    itemsTable_->setStyleClass("table table-striped table-hover w-100");
     
-    // Table number text
-    auto tableText = std::make_unique<Wt::WText>("Table: --");
-    tableNumberText_ = tableText.get();
-    headerContainer->addWidget(std::move(tableText));
+    // Initialize table headers
+    itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
+    itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Price"));
+    itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Qty"));
+    itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
+    itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
     
-    // Order ID text  
-    auto orderText = std::make_unique<Wt::WText>("Order: New");
-    orderIdText_ = orderText.get();
-    headerContainer->addWidget(std::move(orderText));
-    
-    headerContainer_ = headerContainer.get();
-    addWidget(std::move(headerContainer));
-    
-    // Items table section
-    createOrderItemsTable();
+    // Style headers
+    for (int col = 0; col < 5; ++col) {
+        auto headerCell = itemsTable_->elementAt(0, col);
+        headerCell->setStyleClass("bg-success text-white fw-bold text-center p-2");
+    }
     
     // Summary section
-    auto summaryContainer = std::make_unique<Wt::WContainerWidget>();
-    summaryContainer->addStyleClass("order-summary mt-3 p-3 border");
+    auto summaryWidget = createOrderSummary();
+    summaryContainer_ = static_cast<Wt::WContainerWidget*>(layout->addWidget(std::move(summaryWidget)));
     
-    auto summaryTitle = std::make_unique<Wt::WText>("Order Total");
-    summaryTitle->addStyleClass("h6");
-    summaryContainer->addWidget(std::move(summaryTitle));
+    applyTableStyling();
+}
+
+std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderHeader() {
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->setStyleClass("d-flex justify-content-between align-items-center p-3 bg-light border rounded");
     
-    // Subtotal
-    auto subtotalText = std::make_unique<Wt::WText>("Subtotal: $0.00");
-    subtotalText_ = subtotalText.get();
-    summaryContainer->addWidget(std::move(subtotalText));
+    // Left side: Order info
+    auto leftSide = header->addNew<Wt::WContainerWidget>();
+    leftSide->setStyleClass("d-flex flex-column");
     
-    // Tax
-    auto taxText = std::make_unique<Wt::WText>("Tax: $0.00");  
-    taxText_ = taxText.get();
-    summaryContainer->addWidget(std::move(taxText));
+    auto titleText = leftSide->addNew<Wt::WText>("📋 Current Order");
+    titleText->setStyleClass("h5 text-primary mb-1");
     
-    // Total
-    auto totalText = std::make_unique<Wt::WText>("Total: $0.00");
-    totalText->addStyleClass("fw-bold");
-    totalText_ = totalText.get();
-    summaryContainer->addWidget(std::move(totalText));
+    orderIdText_ = leftSide->addNew<Wt::WText>("No active order");
+    orderIdText_->setStyleClass("text-muted small");
+    
+    // Right side: Table info
+    auto rightSide = header->addNew<Wt::WContainerWidget>();
+    rightSide->setStyleClass("text-end");
+    
+    tableNumberText_ = rightSide->addNew<Wt::WText>("No table selected");
+    tableNumberText_->setStyleClass("badge bg-secondary");
+    
+    return std::move(header);
+}
+
+std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderSummary() {
+    auto summary = std::make_unique<Wt::WContainerWidget>();
+    summary->setStyleClass("p-3 bg-light border rounded");
+    
+    auto layout = summary->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(5);
+    
+    // Title
+    auto titleText = layout->addWidget(std::make_unique<Wt::WText>("💰 Order Summary"));
+    titleText->setStyleClass("h6 text-success mb-2");
+    
+    // Summary lines
+    auto summaryGrid = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     
     // Item count
-    auto itemCountText = std::make_unique<Wt::WText>("0 items");
-    itemCountText_ = itemCountText.get();
-    summaryContainer->addWidget(std::move(itemCountText));
+    auto itemCountRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    itemCountRow->setStyleClass("d-flex justify-content-between");
+    itemCountRow->addNew<Wt::WText>("Items:")->setStyleClass("fw-bold");
+    itemCountText_ = itemCountRow->addNew<Wt::WText>("0");
     
-    summaryContainer_ = summaryContainer.get();
-    addWidget(std::move(summaryContainer));
-}
-
-// Fix 5: Alternative simple approach - add directly to container
-void CurrentOrderDisplay::initializeUI_Simple() {
-    addStyleClass("current-order-display");
+    // Subtotal
+    auto subtotalRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    subtotalRow->setStyleClass("d-flex justify-content-between");
+    subtotalRow->addNew<Wt::WText>("Subtotal:")->setStyleClass("fw-bold");
+    subtotalText_ = subtotalRow->addNew<Wt::WText>("$0.00");
     
-    // Create header directly in container
-    auto header = createOrderHeader();
-    addWidget(std::move(header));
+    // Tax
+    auto taxRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    taxRow->setStyleClass("d-flex justify-content-between");
+    taxRow->addNew<Wt::WText>("Tax:")->setStyleClass("fw-bold");
+    taxText_ = taxRow->addNew<Wt::WText>("$0.00");
     
-    // Create table directly in container
-    auto table = std::make_unique<Wt::WTable>();
-    table->addStyleClass("table table-striped order-items-table");
-    itemsTable_ = table.get();
-    addWidget(std::move(table));
+    // Total
+    auto totalRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    totalRow->setStyleClass("d-flex justify-content-between border-top pt-2 mt-2");
+    totalRow->addNew<Wt::WText>("TOTAL:")->setStyleClass("h6 fw-bold text-success");
+    totalText_ = totalRow->addNew<Wt::WText>("$0.00");
+    totalText_->setStyleClass("h6 fw-bold text-success");
     
-    // Create summary directly in container
-    auto summary = createOrderSummary();
-    addWidget(std::move(summary));
-    
-    // Apply styling
-    applyTableStyling();
-    applySummaryStyling();
-}
-
-void CurrentOrderDisplay::setupEventListeners() {
-    if (!eventManager_) {
-        std::cerr << "Warning: EventManager not available for CurrentOrderDisplay" << std::endl;
-        return;
-    }
-    
-    // Subscribe to order events
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_CREATED,
-            [this](const std::any& data) { handleOrderCreated(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
-            [this](const std::any& data) { handleOrderModified(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_ITEM_ADDED,
-            [this](const std::any& data) { handleOrderModified(data); }));
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_ITEM_REMOVED,
-            [this](const std::any& data) { handleOrderModified(data); }));
-    
-    std::cout << "✓ CurrentOrderDisplay event listeners setup complete" << std::endl;
-}
-
-// Fix 3: Correct createOrderHeader implementation
-std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderHeader() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("order-header");
-    
-    auto title = std::make_unique<Wt::WText>("Current Order");
-    title->addStyleClass("h4");
-    container->addWidget(std::move(title));
-    
-    return container;
-}
-
-
-// CORRECT way - Option A: Create widget and store pointer
-void CurrentOrderDisplay::createOrderItemsTable() {
-    // Create table container
-    auto tableContainer = std::make_unique<Wt::WContainerWidget>();
-    tableContainer->addStyleClass("table-container");
-    
-    // Create table
-    auto table = std::make_unique<Wt::WTable>();
-    table->addStyleClass("table table-striped");
-    
-    // Add header row
-    table->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
-    table->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Quantity"));
-    table->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Price"));
-    table->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
-    if (editable_) {
-        table->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
-    }
-    
-    // Store pointer for later access
-    itemsTable_ = table.get();
-    
-    // Add table to container
-    tableContainer->addWidget(std::move(table));
-    
-    // Add container to this widget
-    addWidget(std::move(tableContainer));
-}
-
-// Fix 4: Correct createOrderSummary implementation
-std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderSummary() {
-    auto container = std::make_unique<Wt::WContainerWidget>();
-    container->addStyleClass("order-summary mt-3 p-3 border rounded");
-    
-    auto layout = std::make_unique<Wt::WVBoxLayout>();
-    
-    // Summary title
-    auto titleText = std::make_unique<Wt::WText>("Order Summary");
-    titleText->addStyleClass("h6 mb-2");
-    layout->addWidget(std::move(titleText));
-    
-    // Subtotal row
-    auto subtotalContainer = std::make_unique<Wt::WContainerWidget>();
-    auto subtotalLayout = std::make_unique<Wt::WHBoxLayout>();
-    
-    subtotalLayout->addWidget(std::make_unique<Wt::WText>("Subtotal:"));
-    
-    auto subtotalText = std::make_unique<Wt::WText>("$0.00");
-    subtotalText->addStyleClass("text-end");
-    subtotalText_ = subtotalText.get();
-    subtotalLayout->addWidget(std::move(subtotalText));
-    
-    subtotalContainer->setLayout(std::move(subtotalLayout));
-    layout->addWidget(std::move(subtotalContainer));
-    
-    // Tax row
-    auto taxContainer = std::make_unique<Wt::WContainerWidget>();
-    auto taxLayout = std::make_unique<Wt::WHBoxLayout>();
-    
-    taxLayout->addWidget(std::make_unique<Wt::WText>("Tax:"));
-    
-    auto taxText = std::make_unique<Wt::WText>("$0.00");
-    taxText->addStyleClass("text-end");
-    taxText_ = taxText.get();
-    taxLayout->addWidget(std::move(taxText));
-    
-    taxContainer->setLayout(std::move(taxLayout));
-    layout->addWidget(std::move(taxContainer));
-    
-    // Total row
-    auto totalContainer = std::make_unique<Wt::WContainerWidget>();
-    totalContainer->addStyleClass("border-top pt-2 mt-2");
-    auto totalLayout = std::make_unique<Wt::WHBoxLayout>();
-    
-    auto totalLabel = std::make_unique<Wt::WText>("Total:");
-    totalLabel->addStyleClass("fw-bold");
-    totalLayout->addWidget(std::move(totalLabel));
-    
-    auto totalText = std::make_unique<Wt::WText>("$0.00");
-    totalText->addStyleClass("text-end fw-bold h5");
-    totalText_ = totalText.get();
-    totalLayout->addWidget(std::move(totalText));
-    
-    totalContainer->setLayout(std::move(totalLayout));
-    layout->addWidget(std::move(totalContainer));
-    
-    container->setLayout(std::move(layout));
-    return container;
-}
-
-void CurrentOrderDisplay::refresh() {
-    if (!posService_) {
-        std::cerr << "Error: POSService not available for order refresh" << std::endl;
-        return;
-    }
-    
-    updateOrderItemsTable();
-    updateOrderSummary();
-    
-    auto currentOrder = getCurrentOrder();
-    if (currentOrder) {
-        // Update header information - FIXED: use getOrderId() instead of getId()
-        tableNumberText_->setText(std::to_string(currentOrder->getTableNumber()));
-        orderIdText_->setText(std::to_string(currentOrder->getOrderId()));
-        
-        hideEmptyOrderMessage();
-    } else {
-        // Clear header information
-        tableNumberText_->setText("--");
-        orderIdText_->setText("--");
-        
-        showEmptyOrderMessage();
-    }
-    
-    validateOrderDisplay();
+    return std::move(summary);
 }
 
 void CurrentOrderDisplay::updateOrderItemsTable() {
-    if (!itemsTable_) {
-        return;
-    }
+    if (!itemsTable_) return;
     
     // Clear existing rows (except header)
     while (itemsTable_->rowCount() > 1) {
@@ -283,327 +157,366 @@ void CurrentOrderDisplay::updateOrderItemsTable() {
     
     auto currentOrder = getCurrentOrder();
     if (!currentOrder) {
+        showEmptyOrderMessage();
         return;
     }
     
     const auto& items = currentOrder->getItems();
+    if (items.empty()) {
+        showEmptyOrderMessage();
+        return;
+    }
     
+    // Add item rows
     for (size_t i = 0; i < items.size(); ++i) {
         addOrderItemRow(items[i], i);
     }
     
-    // Update item count
-    itemCountText_->setText(std::to_string(items.size()) + " items");
-    
-    std::cout << "Order items table updated with " << items.size() << " items" << std::endl;
+    hideEmptyOrderMessage();
+    updateOrderSummary();
 }
 
-// FIXED: Changed Order::OrderItem to OrderItem and used getter methods
 void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
-    int row = itemsTable_->rowCount();
+    if (!itemsTable_) return;
     
-    // Item name and description
-    auto itemContainer = std::make_unique<Wt::WContainerWidget>();
-    auto itemLayout = std::make_unique<Wt::WVBoxLayout>();
+    int row = static_cast<int>(index + 1); // +1 for header row
     
-    // FIXED: Use getMenuItem().getName() instead of menuItem->getName()
-    auto nameText = std::make_unique<Wt::WText>(item.getMenuItem().getName());
-    nameText->addStyleClass("font-weight-bold");
-    itemLayout->addWidget(std::move(nameText));
-    
-    // FIXED: Use getSpecialInstructions() instead of specialInstructions
-    if (!item.getSpecialInstructions().empty()) {
-        auto instructionsText = std::make_unique<Wt::WText>("Note: " + item.getSpecialInstructions());
-        instructionsText->addStyleClass("text-muted small font-italic");
-        itemLayout->addWidget(std::move(instructionsText));
-    }
-    
-    itemContainer->setLayout(std::move(itemLayout));
-    itemsTable_->elementAt(row, 0)->addWidget(std::move(itemContainer));
-    
-    // Quantity
-    if (editable_) {
-        auto quantitySpinBox = std::make_unique<Wt::WSpinBox>();
-        quantitySpinBox->setRange(1, 99);
-        // FIXED: Use getQuantity() instead of quantity
-        quantitySpinBox->setValue(item.getQuantity());
-        quantitySpinBox->addStyleClass("form-control-sm");
-        quantitySpinBox->valueChanged().connect([this, index](int newQuantity) {
-            onQuantityChanged(index, newQuantity);
-        });
-        itemsTable_->elementAt(row, 1)->addWidget(std::move(quantitySpinBox));
-    } else {
-        // FIXED: Use getQuantity() instead of quantity
-        auto quantityText = std::make_unique<Wt::WText>(std::to_string(item.getQuantity()));
-        quantityText->addStyleClass("text-center");
-        itemsTable_->elementAt(row, 1)->addWidget(std::move(quantityText));
-    }
-    
-    // Unit price
-    // FIXED: Use getMenuItem().getPrice() instead of menuItem->getPrice()
-    auto priceText = std::make_unique<Wt::WText>(formatCurrency(item.getMenuItem().getPrice()));
-    itemsTable_->elementAt(row, 2)->addWidget(std::move(priceText));
-    
-    // Line total
-    // FIXED: Use getter methods instead of direct member access
-    double lineTotal = item.getMenuItem().getPrice() * item.getQuantity();
-    auto totalText = std::make_unique<Wt::WText>(formatCurrency(lineTotal));
-    totalText->addStyleClass("font-weight-bold");
-    itemsTable_->elementAt(row, 3)->addWidget(std::move(totalText));
-    
-    // Actions (if editable)
-    if (editable_) {
+    try {
+        // Item name with special instructions
+        auto nameContainer = std::make_unique<Wt::WContainerWidget>();
+        auto nameText = nameContainer->addNew<Wt::WText>(item.getMenuItem().getName());
+        nameText->setStyleClass("fw-bold text-dark");
+        
+        // Show special instructions if any
+        if (!item.getSpecialInstructions().empty()) {
+            nameContainer->addNew<Wt::WBreak>();
+            auto instructionsText = nameContainer->addNew<Wt::WText>("📝 " + item.getSpecialInstructions());
+            instructionsText->setStyleClass("small text-muted fst-italic");
+        }
+        
+        itemsTable_->elementAt(row, 0)->addWidget(std::move(nameContainer));
+        
+        // Unit price
+        auto priceText = std::make_unique<Wt::WText>(formatCurrency(item.getMenuItem().getPrice()));
+        priceText->setStyleClass("text-success");
+        itemsTable_->elementAt(row, 1)->addWidget(std::move(priceText));
+        
+        // Quantity controls (editable spinner + buttons)
+        auto qtyContainer = std::make_unique<Wt::WContainerWidget>();
+        qtyContainer->setStyleClass("d-flex align-items-center justify-content-center gap-1");
+        
+        if (editable_) {
+            // Decrease button
+            auto decreaseBtn = qtyContainer->addNew<Wt::WPushButton>("-");
+            decreaseBtn->setStyleClass("btn btn-outline-secondary btn-sm");
+            decreaseBtn->setWidth(30);
+            
+            // Quantity display/spinner
+            auto qtySpinner = qtyContainer->addNew<Wt::WSpinBox>();
+            qtySpinner->setRange(1, 99);
+            qtySpinner->setValue(item.getQuantity());
+            qtySpinner->setWidth(60);
+            qtySpinner->setStyleClass("form-control form-control-sm text-center");
+            
+            // Increase button
+            auto increaseBtn = qtyContainer->addNew<Wt::WPushButton>("+");
+            increaseBtn->setStyleClass("btn btn-outline-secondary btn-sm");
+            increaseBtn->setWidth(30);
+            
+            // Connect quantity change handlers
+            decreaseBtn->clicked().connect([this, index, qtySpinner]() {
+                int newQty = qtySpinner->value() - 1;
+                if (newQty >= 1) {
+                    qtySpinner->setValue(newQty);
+                    onQuantityChanged(index, newQty);
+                }
+            });
+            
+            increaseBtn->clicked().connect([this, index, qtySpinner]() {
+                int newQty = qtySpinner->value() + 1;
+                if (newQty <= 99) {
+                    qtySpinner->setValue(newQty);
+                    onQuantityChanged(index, newQty);
+                }
+            });
+            
+            qtySpinner->valueChanged().connect([this, index, qtySpinner]() {
+                onQuantityChanged(index, qtySpinner->value());
+            });
+            
+        } else {
+            // Read-only quantity
+            auto qtyText = qtyContainer->addNew<Wt::WText>(std::to_string(item.getQuantity()));
+            qtyText->setStyleClass("fw-bold");
+        }
+        
+        itemsTable_->elementAt(row, 2)->addWidget(std::move(qtyContainer));
+        
+        // Total price for this item
+        auto totalText = std::make_unique<Wt::WText>(formatCurrency(item.getTotalPrice()));
+        totalText->setStyleClass("fw-bold text-success");
+        itemsTable_->elementAt(row, 3)->addWidget(std::move(totalText));
+        
+        // Actions (remove button)
         auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
-        auto actionsLayout = std::make_unique<Wt::WHBoxLayout>();
+        actionsContainer->setStyleClass("d-flex justify-content-center gap-1");
         
-        auto removeButton = std::make_unique<Wt::WPushButton>("×");
-        removeButton->addStyleClass("btn btn-sm btn-outline-danger");
-        removeButton->setToolTip("Remove item");
-        removeButton->clicked().connect([this, index]() {
-            onRemoveItemClicked(index);
-        });
-        actionsLayout->addWidget(std::move(removeButton));
+        if (editable_) {
+            // Remove item button
+            auto removeBtn = actionsContainer->addNew<Wt::WPushButton>("🗑️ Remove");
+            removeBtn->setStyleClass("btn btn-outline-danger btn-sm");
+            removeBtn->clicked().connect([this, index]() {
+                onRemoveItemClicked(index);
+            });
+            
+            // Quick duplicate button
+            auto duplicateBtn = actionsContainer->addNew<Wt::WPushButton>("📋 +1");
+            duplicateBtn->setStyleClass("btn btn-outline-info btn-sm");
+            duplicateBtn->setToolTip("Add another of this item");
+            duplicateBtn->clicked().connect([this, index]() {
+                auto currentOrder = getCurrentOrder();
+                if (currentOrder && index < currentOrder->getItems().size()) {
+                    const auto& orderItem = currentOrder->getItems()[index];
+                    // Add the same item again
+                    posService_->addItemToCurrentOrder(orderItem.getMenuItem(), 1, orderItem.getSpecialInstructions());
+                }
+            });
+        }
         
-        actionsContainer->setLayout(std::move(actionsLayout));
         itemsTable_->elementAt(row, 4)->addWidget(std::move(actionsContainer));
+        
+        // Apply row styling
+        bool isEven = (row % 2 == 0);
+        for (int col = 0; col < 5; ++col) {
+            auto cell = itemsTable_->elementAt(row, col);
+            cell->setStyleClass("p-2 align-middle");
+            if (col >= 1) { // Price, Qty, Total, Actions - center aligned
+                cell->addStyleClass("text-center");
+            }
+            if (isEven) {
+                cell->addStyleClass("table-light");
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[CurrentOrderDisplay] Error adding order item row: " << e.what() << std::endl;
+    }
+}
+
+void CurrentOrderDisplay::onQuantityChanged(size_t itemIndex, int newQuantity) {
+    std::cout << "[CurrentOrderDisplay] Quantity changed for item " << itemIndex 
+              << " to " << newQuantity << std::endl;
+    
+    if (!posService_) {
+        std::cerr << "[CurrentOrderDisplay] No POS service available" << std::endl;
+        return;
     }
     
-    // Apply row styling
-    updateRowStyling(row, (index % 2) == 0);
+    if (newQuantity <= 0) {
+        // Remove the item if quantity is 0 or less
+        onRemoveItemClicked(itemIndex);
+        return;
+    }
+    
+    try {
+        bool success = posService_->updateCurrentOrderItemQuantity(itemIndex, newQuantity);
+        if (success) {
+            std::cout << "[CurrentOrderDisplay] ✓ Quantity updated successfully" << std::endl;
+            // The order modification event will trigger a refresh
+        } else {
+            std::cerr << "[CurrentOrderDisplay] ✗ Failed to update quantity" << std::endl;
+            refresh(); // Refresh to revert changes
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurrentOrderDisplay] Exception updating quantity: " << e.what() << std::endl;
+        refresh(); // Refresh to revert changes
+    }
+}
+
+void CurrentOrderDisplay::onRemoveItemClicked(size_t itemIndex) {
+    std::cout << "[CurrentOrderDisplay] Remove item clicked for index " << itemIndex << std::endl;
+    
+    if (!posService_) {
+        std::cerr << "[CurrentOrderDisplay] No POS service available" << std::endl;
+        return;
+    }
+    
+    try {
+        bool success = posService_->removeItemFromCurrentOrder(itemIndex);
+        if (success) {
+            std::cout << "[CurrentOrderDisplay] ✓ Item removed successfully" << std::endl;
+            // The order modification event will trigger a refresh
+        } else {
+            std::cerr << "[CurrentOrderDisplay] ✗ Failed to remove item" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurrentOrderDisplay] Exception removing item: " << e.what() << std::endl;
+    }
 }
 
 void CurrentOrderDisplay::updateOrderSummary() {
     auto currentOrder = getCurrentOrder();
     
     if (!currentOrder) {
-        subtotalText_->setText("$0.00");
-        taxText_->setText("$0.00");
-        totalText_->setText("$0.00");
+        // Clear summary
+        if (itemCountText_) itemCountText_->setText("0");
+        if (subtotalText_) subtotalText_->setText("$0.00");
+        if (taxText_) taxText_->setText("$0.00");
+        if (totalText_) totalText_->setText("$0.00");
         return;
     }
     
-    double subtotal = currentOrder->getSubtotal();
-    double tax = currentOrder->getTax();
-    double total = currentOrder->getTotal();
+    // Update all summary fields
+    const auto& items = currentOrder->getItems();
+    if (itemCountText_) itemCountText_->setText(std::to_string(items.size()));
+    if (subtotalText_) subtotalText_->setText(formatCurrency(currentOrder->getSubtotal()));
+    if (taxText_) taxText_->setText(formatCurrency(currentOrder->getTax()));
+    if (totalText_) totalText_->setText(formatCurrency(currentOrder->getTotal()));
     
-    subtotalText_->setText(formatCurrency(subtotal));
-    taxText_->setText(formatCurrency(tax));
-    totalText_->setText(formatCurrency(total));
+    // Update header
+    if (orderIdText_) {
+        orderIdText_->setText("Order #" + std::to_string(currentOrder->getOrderId()));
+        orderIdText_->setStyleClass("text-success small fw-bold");
+    }
     
-    std::cout << "Order summary updated - Total: " << formatCurrency(total) << std::endl;
+    if (tableNumberText_) {
+        std::string tableInfo = currentOrder->getTableIdentifier();
+        if (currentOrder->isDineIn()) {
+            tableInfo = "🪑 " + tableInfo;
+            tableNumberText_->setStyleClass("badge bg-primary");
+        } else if (currentOrder->isDelivery()) {
+            tableInfo = "🚗 " + tableInfo;
+            tableNumberText_->setStyleClass("badge bg-warning text-dark");
+        } else if (currentOrder->isWalkIn()) {
+            tableInfo = "🚶 " + tableInfo;
+            tableNumberText_->setStyleClass("badge bg-info");
+        }
+        tableNumberText_->setText(tableInfo);
+    }
 }
 
-// =================================================================
-// Event Handlers
-// =================================================================
+void CurrentOrderDisplay::showEmptyOrderMessage() {
+    if (!itemsTable_) return;
+    
+    // Add empty message row
+    auto emptyRow = itemsTable_->elementAt(1, 0);
+    emptyRow->setColumnSpan(5);
+    auto emptyText = emptyRow->addWidget(std::make_unique<Wt::WText>("🛒 No items in order yet"));
+    emptyText->setStyleClass("text-center text-muted p-4 fst-italic");
+    emptyRow->setStyleClass("bg-light");
+}
+
+void CurrentOrderDisplay::hideEmptyOrderMessage() {
+    // The empty message is automatically hidden when rows are added
+}
+
+std::shared_ptr<Order> CurrentOrderDisplay::getCurrentOrder() const {
+    return posService_ ? posService_->getCurrentOrder() : nullptr;
+}
+
+bool CurrentOrderDisplay::hasCurrentOrder() const {
+    return getCurrentOrder() != nullptr;
+}
+
+std::string CurrentOrderDisplay::formatCurrency(double amount) const {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << "$" << amount;
+    return oss.str();
+}
+
+// EVENT HANDLERS
+void CurrentOrderDisplay::setupEventListeners() {
+    if (!eventManager_) return;
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CREATED,
+            [this](const std::any& data) { handleOrderCreated(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
+            [this](const std::any& data) { handleOrderModified(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED,
+            [this](const std::any& data) { handleCurrentOrderChanged(data); })
+    );
+}
 
 void CurrentOrderDisplay::handleOrderCreated(const std::any& eventData) {
-    std::cout << "Order created event received, refreshing current order display" << std::endl;
+    std::cout << "[CurrentOrderDisplay] Order created event received" << std::endl;
     refresh();
 }
 
 void CurrentOrderDisplay::handleOrderModified(const std::any& eventData) {
-    std::cout << "Order modified event received, refreshing current order display" << std::endl;
+    std::cout << "[CurrentOrderDisplay] Order modified event received" << std::endl;
     refresh();
 }
 
 void CurrentOrderDisplay::handleCurrentOrderChanged(const std::any& eventData) {
-    std::cout << "Current order changed event received, refreshing display" << std::endl;
+    std::cout << "[CurrentOrderDisplay] Current order changed event received" << std::endl;
     refresh();
 }
 
-// =================================================================
-// UI Action Handlers
-// =================================================================
-
-void CurrentOrderDisplay::onQuantityChanged(size_t itemIndex, int newQuantity) {
-    if (!posService_) {
-        std::cerr << "Error: POSService not available for quantity change" << std::endl;
-        return;
-    }
-    
-    bool success = posService_->updateCurrentOrderItemQuantity(itemIndex, newQuantity);
-    
-    if (!success) {
-        std::cerr << "Failed to update item quantity" << std::endl;
-        // Refresh to revert the UI change
-        refresh();
-    }
+// PUBLIC INTERFACE
+void CurrentOrderDisplay::refresh() {
+    updateOrderItemsTable();
+    std::cout << "[CurrentOrderDisplay] Refreshed" << std::endl;
 }
 
-void CurrentOrderDisplay::onRemoveItemClicked(size_t itemIndex) {
-    if (!posService_) {
-        std::cerr << "Error: POSService not available for item removal" << std::endl;
-        return;
-    }
-    
-    bool success = posService_->removeItemFromCurrentOrder(itemIndex);
-    
-    if (!success) {
-        std::cerr << "Failed to remove item from order" << std::endl;
-    }
-}
-
-void CurrentOrderDisplay::onSpecialInstructionsChanged(size_t itemIndex, const std::string& instructions) {
-    // This would update special instructions if the Order class supports it
-    // For now, we'll just log it
-    std::cout << "Special instructions updated for item " << itemIndex << ": " << instructions << std::endl;
-}
-
-// =================================================================
-// Public Interface Methods
-// =================================================================
-
-std::shared_ptr<Order> CurrentOrderDisplay::getCurrentOrder() const {
-    if (!posService_) {
-        return nullptr;
-    }
-    
-    return posService_->getCurrentOrder();
+void CurrentOrderDisplay::clearOrder() {
+    updateOrderItemsTable();
+    updateOrderSummary();
+    std::cout << "[CurrentOrderDisplay] Order cleared" << std::endl;
 }
 
 void CurrentOrderDisplay::setEditable(bool editable) {
-    if (editable_ != editable) {
-        editable_ = editable;
-        refresh(); // Rebuild table with/without edit controls
-        std::cout << "CurrentOrderDisplay editable mode set to: " << (editable ? "true" : "false") << std::endl;
-    }
+    editable_ = editable;
+    updateOrderItemsTable(); // Refresh to show/hide edit controls
 }
 
 bool CurrentOrderDisplay::isEditable() const {
     return editable_;
 }
 
-void CurrentOrderDisplay::clearOrder() {
-    // Clear current order through service
-    if (posService_) {
-        posService_->setCurrentOrder(nullptr);
-    }
-    
-    refresh();
-    std::cout << "Current order display cleared" << std::endl;
-}
-
-// =================================================================
-// Helper Methods
-// =================================================================
-
-std::string CurrentOrderDisplay::formatCurrency(double amount) const {
-    std::ostringstream oss;
-    oss << "$" << std::fixed << std::setprecision(2) << amount;
-    return oss.str();
-}
-
-// FIXED: Changed Order::OrderItem to OrderItem and used getter methods
-std::string CurrentOrderDisplay::formatItemName(const OrderItem& item) const {
-    return item.getMenuItem().getName();
-}
-
-// FIXED: Changed Order::OrderItem to OrderItem and used getter methods
-std::string CurrentOrderDisplay::formatItemPrice(const OrderItem& item) const {
-    return formatCurrency(item.getMenuItem().getPrice());
-}
-
-void CurrentOrderDisplay::showEmptyOrderMessage() {
-    if (!itemsTable_) {
-        return;
-    }
-    
-    // Add empty message row if not already present
-    if (itemsTable_->rowCount() == 1) {
-        int row = itemsTable_->rowCount();
-        auto emptyMessage = std::make_unique<Wt::WText>("No items in order");
-        emptyMessage->addStyleClass("text-muted text-center py-3");
-        
-        int colspan = editable_ ? 5 : 4;
-        itemsTable_->elementAt(row, 0)->addWidget(std::move(emptyMessage));
-        itemsTable_->elementAt(row, 0)->setColumnSpan(colspan);
-    }
-}
-
-void CurrentOrderDisplay::hideEmptyOrderMessage() {
-    // Empty message is automatically hidden when real items are added
-}
-
-bool CurrentOrderDisplay::hasCurrentOrder() const {
-    auto order = getCurrentOrder();
-    return order && !order->getItems().empty();
-}
-
 void CurrentOrderDisplay::validateOrderDisplay() {
-    // Perform any validation or consistency checks
+    // Ensure display is consistent with current order state
     auto currentOrder = getCurrentOrder();
-    
-    if (currentOrder) {
-        // Ensure table number and order ID are displayed correctly
-        if (tableNumberText_->text().toUTF8() == "--") {
-            tableNumberText_->setText(std::to_string(currentOrder->getTableNumber()));
-        }
-        
-        if (orderIdText_->text().toUTF8() == "--") {
-            // FIXED: Use getOrderId() instead of getId()
-            orderIdText_->setText(std::to_string(currentOrder->getOrderId()));
-        }
+    if (!currentOrder) {
+        clearOrder();
+    } else {
+        updateOrderItemsTable();
+        updateOrderSummary();
     }
 }
-
-// =================================================================
-// Styling Methods
-// =================================================================
 
 void CurrentOrderDisplay::applyTableStyling() {
-    if (!itemsTable_) {
-        return;
-    }
-    
-    // Style table headers
-    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
-        auto headerCell = itemsTable_->elementAt(0, col);
-        headerCell->addStyleClass("table-header bg-light font-weight-bold");
-        
-        // Set column widths
-        switch (col) {
-            case 0: // Item name
-                headerCell->setWidth(Wt::WLength("40%"));
-                break;
-            case 1: // Quantity
-                headerCell->setWidth(Wt::WLength("15%"));
-                break;
-            case 2: // Price
-                headerCell->setWidth(Wt::WLength("20%"));
-                break;
-            case 3: // Total
-                headerCell->setWidth(Wt::WLength("20%"));
-                break;
-            case 4: // Actions
-                if (editable_) {
-                    headerCell->setWidth(Wt::WLength("5%"));
-                }
-                break;
-        }
+    if (itemsTable_) {
+        itemsTable_->setWidth(Wt::WLength("100%"));
+        itemsTable_->addStyleClass("table-responsive");
     }
 }
 
 void CurrentOrderDisplay::applySummaryStyling() {
-    if (summaryContainer_) {
-        summaryContainer_->addStyleClass("bg-light");
-    }
+    // Summary styling is handled in createOrderSummary
 }
 
 void CurrentOrderDisplay::updateRowStyling(int row, bool isEven) {
-    if (!itemsTable_ || row == 0) { // Don't style header row
-        return;
-    }
-    
-    std::string rowClass = isEven ? "table-row-even" : "table-row-odd";
-    
-    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
-        auto cell = itemsTable_->elementAt(row, col);
-        cell->addStyleClass("order-item-cell " + rowClass);
-        
-        // Center align quantity and price columns
-        if (col == 1 || col == 2 || col == 3) {
-            cell->addStyleClass("text-center");
-        }
-    }
+    // Row styling is handled in addOrderItemRow
+}
+
+// Additional helper methods for interface compliance
+std::string CurrentOrderDisplay::formatItemName(const OrderItem& item) const {
+    return item.getMenuItem().getName();
+}
+
+std::string CurrentOrderDisplay::formatItemPrice(const OrderItem& item) const {
+    return formatCurrency(item.getTotalPrice());
+}
+
+void CurrentOrderDisplay::onSpecialInstructionsChanged(size_t itemIndex, const std::string& instructions) {
+    // Special instructions editing could be added in future
+    std::cout << "[CurrentOrderDisplay] Special instructions changed for item " << itemIndex 
+              << ": " << instructions << std::endl;
 }

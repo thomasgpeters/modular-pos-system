@@ -7,6 +7,7 @@
 #include <Wt/WComboBox.h>
 #include <Wt/WPushButton.h>
 #include <Wt/WText.h>
+#include <Wt/WBreak.h>
 #include <iostream>
 
 OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,

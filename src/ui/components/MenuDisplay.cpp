@@ -4,7 +4,6 @@
 #include <Wt/WHBoxLayout.h>
 #include <Wt/WSpinBox.h>
 #include <Wt/WLineEdit.h>
-#include <Wt/WDialog.h>
 #include <Wt/WMessageBox.h>
 #include <Wt/WLabel.h>
 #include <Wt/WBreak.h>
@@ -45,7 +44,7 @@ MenuDisplay::MenuDisplay(std::shared_ptr<POSService> posService,
 void MenuDisplay::initializeUI() {
     // Create main group container
     menuGroup_ = addNew<Wt::WGroupBox>("🍽️ Restaurant Menu");
-    menuGroup_->setStyleClass("border border-primary rounded");
+    UIStyleHelper::styleGroupBox(menuGroup_, "primary");
     
     // Create header with category filter
     auto header = createMenuHeader();
@@ -57,7 +56,7 @@ void MenuDisplay::initializeUI() {
     
     // Create menu items table
     itemsTable_ = tableContainer->addNew<Wt::WTable>();
-    itemsTable_->setStyleClass("table table-striped table-hover w-100");
+    UIStyleHelper::styleTable(itemsTable_, "menu");
     
     initializeTableHeaders();
     
@@ -67,15 +66,14 @@ void MenuDisplay::initializeUI() {
 void MenuDisplay::initializeTableHeaders() {
     if (!itemsTable_) return;
     
-    // Create table headers
+    // Create table headers - simplified columns
     itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
     itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Price"));
     itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Category"));
-    itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Status"));
-    itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
+    itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Add to Order"));
     
     // Style headers
-    for (int col = 0; col < 5; ++col) {
+    for (int col = 0; col < 4; ++col) {
         auto headerCell = itemsTable_->elementAt(0, col);
         headerCell->setStyleClass("bg-primary text-white fw-bold text-center p-2");
     }
@@ -84,14 +82,21 @@ void MenuDisplay::initializeTableHeaders() {
 std::unique_ptr<Wt::WWidget> MenuDisplay::createMenuHeader() {
     // Create header container
     auto headerContainer = std::make_unique<Wt::WContainerWidget>();
-    headerContainer->setStyleClass("d-flex justify-content-between align-items-center mb-3");
+    UIStyleHelper::styleFlexRow(headerContainer.get(), "between", "center");
     
     // Store raw pointer for later reference
     headerContainer_ = headerContainer.get();
     
-    // Category filter
-    categoryCombo_ = headerContainer->addNew<Wt::WComboBox>();
-    categoryCombo_->setStyleClass("form-select me-3");
+    // Left side: Category filter
+    auto leftSide = headerContainer->addNew<Wt::WContainerWidget>();
+    UIStyleHelper::styleFlexRow(leftSide, "start", "center");
+    
+    auto categoryLabel = leftSide->addNew<Wt::WLabel>("Category: ");
+    categoryLabel->setStyleClass("form-label fw-bold me-2");
+    
+    categoryCombo_ = leftSide->addNew<Wt::WComboBox>();
+    UIStyleHelper::styleComboBox(categoryCombo_);
+    categoryCombo_->setWidth(200);
     populateCategoryCombo();
     
     // Connect category change handler
@@ -99,12 +104,29 @@ std::unique_ptr<Wt::WWidget> MenuDisplay::createMenuHeader() {
         onCategoryChanged();
     });
     
-    // Item count display
-    itemCountText_ = headerContainer->addNew<Wt::WText>("0 items");
-    itemCountText_->setStyleClass("badge bg-info");
+    // Right side: Item count and current order status
+    auto rightSide = headerContainer->addNew<Wt::WContainerWidget>();
+    UIStyleHelper::styleFlexRow(rightSide, "end", "center");
+    
+    itemCountText_ = rightSide->addNew<Wt::WText>("0 items");
+    UIStyleHelper::styleBadge(itemCountText_, "info");
+    
+    // Current order indicator
+    auto orderStatusText = rightSide->addNew<Wt::WText>();
+    auto currentOrder = posService_->getCurrentOrder();
+    if (currentOrder) {
+        int itemCount = currentOrder->getItems().size();
+        orderStatusText->setText("Current Order: " + std::to_string(itemCount) + " items");
+        orderStatusText->setStyleClass("badge bg-success ms-2");
+    } else {
+        orderStatusText->setText("No Active Order");
+        orderStatusText->setStyleClass("badge bg-secondary ms-2");
+    }
     
     return std::move(headerContainer);
 }
+
+
 
 void MenuDisplay::loadMenuItems() {
     if (!posService_) {
@@ -162,7 +184,7 @@ void MenuDisplay::updateMenuItemsTable() {
     if (filteredItems.empty()) {
         // Show empty message
         auto emptyRow = itemsTable_->elementAt(1, 0);
-        emptyRow->setColumnSpan(5);
+        emptyRow->setColumnSpan(4);
         emptyRow->addWidget(std::make_unique<Wt::WText>("No items in this category"));
         emptyRow->setStyleClass("text-center text-muted p-4");
         return;
@@ -174,6 +196,8 @@ void MenuDisplay::updateMenuItemsTable() {
     }
     
     updateItemCount();
+    
+    // The order status will be updated when the event system triggers refresh
 }
 
 void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t index) {
@@ -182,10 +206,20 @@ void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t i
     int row = static_cast<int>(index + 1); // +1 for header row
     
     try {
-        // Item name
-        auto nameText = std::make_unique<Wt::WText>(item->getName());
-        nameText->setStyleClass("fw-bold text-dark");
-        itemsTable_->elementAt(row, 0)->addWidget(std::move(nameText));
+        // Item name and description
+        auto nameContainer = std::make_unique<Wt::WContainerWidget>();
+        auto itemName = nameContainer->addNew<Wt::WText>(item->getName());
+        itemName->setStyleClass("fw-bold text-dark");
+        
+        // Add a subtle description if available
+        std::string description = formatItemDescription(item);
+        if (!description.empty()) {
+            nameContainer->addNew<Wt::WBreak>();
+            auto descText = nameContainer->addNew<Wt::WText>(description);
+            descText->setStyleClass("small text-muted");
+        }
+        
+        itemsTable_->elementAt(row, 0)->addWidget(std::move(nameContainer));
         
         // Price
         auto priceText = std::make_unique<Wt::WText>(formatCurrency(item->getPrice()));
@@ -194,45 +228,64 @@ void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t i
         
         // Category
         auto categoryText = std::make_unique<Wt::WText>(MenuItem::categoryToString(item->getCategory()));
-        categoryText->setStyleClass("badge bg-secondary");
+        UIStyleHelper::styleBadge(categoryText.get(), "secondary");
         itemsTable_->elementAt(row, 2)->addWidget(std::move(categoryText));
         
-        // Status
-        auto statusText = std::make_unique<Wt::WText>(item->isAvailable() ? "Available" : "Unavailable");
-        statusText->setStyleClass(item->isAvailable() ? "badge bg-success" : "badge bg-danger");
-        itemsTable_->elementAt(row, 3)->addWidget(std::move(statusText));
-        
-        // Actions
+        // Add to Order Controls - SIMPLIFIED NO DIALOG
         auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
-        actionsContainer->setStyleClass("d-flex gap-1");
+        UIStyleHelper::styleFlexRow(actionsContainer.get(), "center", "center");
         
         if (selectionEnabled_ && item->isAvailable() && canAddToOrder()) {
-            // Add to Order button (opens dialog)
-            auto addBtn = actionsContainer->addNew<Wt::WPushButton>("Add to Order");
-            addBtn->setStyleClass("btn btn-success btn-sm");
-            addBtn->clicked().connect([this, item]() {
-                std::cout << "[MenuDisplay] Add to order clicked for: " << item->getName() << std::endl;
-                showAddToOrderDialog(item);
-            });
-        } else {
-            auto disabledBtn = actionsContainer->addNew<Wt::WPushButton>("Unavailable");
-            disabledBtn->setStyleClass("btn btn-outline-secondary btn-sm");
-            disabledBtn->setEnabled(false);
+            // Quantity spinner (small)
+            auto qtySpinner = actionsContainer->addNew<Wt::WSpinBox>();
+            qtySpinner->setRange(1, 10);
+            qtySpinner->setValue(1);
+            qtySpinner->setWidth(60);
+            qtySpinner->setStyleClass("form-control form-control-sm me-2");
             
-            if (!canAddToOrder()) {
-                disabledBtn->setText("No Order");
-                disabledBtn->setToolTip("Create a new order first");
+            // Direct Add button - no dialog!
+            auto addBtn = actionsContainer->addNew<Wt::WPushButton>("+ Add");
+            UIStyleHelper::styleButton(addBtn, "success", "sm");
+            
+            // DIRECT ADD - no dialog popup
+            addBtn->clicked().connect([this, item, qtySpinner]() {
+                int quantity = qtySpinner->value();
+                std::cout << "[MenuDisplay] Adding " << quantity << "x " << item->getName() 
+                          << " directly to order" << std::endl;
+                
+                // Add directly to current order
+                addItemToCurrentOrder(*item, quantity, "");
+                
+                // Note: Don't reset spinner here as the table refresh will recreate everything
+            });
+            
+        } else {
+            auto statusBtn = actionsContainer->addNew<Wt::WPushButton>();
+            
+            if (!item->isAvailable()) {
+                statusBtn->setText("Unavailable");
+                UIStyleHelper::styleButton(statusBtn, "outline-secondary", "sm");
+                statusBtn->setEnabled(false);
+            } else if (!canAddToOrder()) {
+                statusBtn->setText("No Order");
+                UIStyleHelper::styleButton(statusBtn, "outline-warning", "sm");
+                statusBtn->setEnabled(false);
+                statusBtn->setToolTip("Create a new order first");
             }
         }
         
-        itemsTable_->elementAt(row, 4)->addWidget(std::move(actionsContainer));
+        itemsTable_->elementAt(row, 3)->addWidget(std::move(actionsContainer));
         
         // Apply row styling
-        for (int col = 0; col < 5; ++col) {
+        bool isEven = (row % 2 == 0);
+        for (int col = 0; col < 4; ++col) {
             auto cell = itemsTable_->elementAt(row, col);
-            cell->setStyleClass("p-2 align-middle");
-            if (col == 1 || col == 2 || col == 3) { // Price, Category, Status
+            cell->setStyleClass("p-3 align-middle");
+            if (col == 1 || col == 2 || col == 3) { // Price, Category, Actions
                 cell->addStyleClass("text-center");
+            }
+            if (isEven) {
+                cell->addStyleClass("bg-light");
             }
         }
         
@@ -241,133 +294,9 @@ void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t i
     }
 }
 
-// FIXED: Proper dialog with working Enter key and cleanup
-void MenuDisplay::showAddToOrderDialog(const std::shared_ptr<MenuItem>& item) {
-    if (!item) return;
-    
-    std::cout << "[MenuDisplay] Showing add to order dialog for: " << item->getName() << std::endl;
-    
-    // Create dialog with proper sizing and styling
-    auto dialog = addChild(std::make_unique<Wt::WDialog>("Add " + item->getName() + " to Order"));
-    dialog->setModal(true);
-    dialog->setResizable(false);
-    dialog->resize(450, 350);
-    
-    // Add proper styling for visibility
-    dialog->addStyleClass("pos-dialog");
-    
-    // Create content container with proper layout
-    auto content = dialog->contents()->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto layout = content->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    layout->setContentsMargins(20, 20, 20, 20);
-    layout->setSpacing(15);
-    
-    // Item information header
-    auto itemInfo = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    itemInfo->setStyleClass("bg-light p-3 rounded border mb-3");
-    
-    auto itemName = itemInfo->addWidget(std::make_unique<Wt::WText>(item->getName()));
-    itemName->setStyleClass("h5 text-primary mb-1");
-    
-    auto itemPrice = itemInfo->addWidget(std::make_unique<Wt::WText>(
-        "Price: " + formatCurrency(item->getPrice())));
-    itemPrice->setStyleClass("text-success fw-bold");
-    
-    auto itemCategory = itemInfo->addWidget(std::make_unique<Wt::WText>(
-        "Category: " + MenuItem::categoryToString(item->getCategory())));
-    itemCategory->setStyleClass("text-muted small");
-    
-    // Quantity selection with label
-    auto qtyContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto qtyLayout = qtyContainer->setLayout(std::make_unique<Wt::WHBoxLayout>());
-    
-    auto qtyLabel = qtyLayout->addWidget(std::make_unique<Wt::WLabel>("Quantity:"));
-    qtyLabel->setStyleClass("form-label fw-bold");
-    
-    auto quantitySpinBox = qtyLayout->addWidget(std::make_unique<Wt::WSpinBox>());
-    quantitySpinBox->setRange(1, MAX_QUANTITY);
-    quantitySpinBox->setValue(1);
-    quantitySpinBox->setStyleClass("form-control");
-    quantitySpinBox->setWidth(100);
-    
-    qtyLayout->addStretch(1); // Push quantity input to the left
-    
-    // Special instructions with label
-    auto instrContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto instrLayout = instrContainer->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    
-    auto instrLabel = instrLayout->addWidget(std::make_unique<Wt::WLabel>("Special Instructions:"));
-    instrLabel->setStyleClass("form-label fw-bold");
-    
-    auto instructionsEdit = instrLayout->addWidget(std::make_unique<Wt::WLineEdit>());
-    instructionsEdit->setPlaceholderText("Optional: cooking preferences, allergies, etc.");
-    instructionsEdit->setStyleClass("form-control");
-    
-    // Total display (updates when quantity changes)
-    auto totalContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    totalContainer->setStyleClass("bg-success-subtle p-3 rounded border");
-    
-    auto totalText = totalContainer->addWidget(std::make_unique<Wt::WText>(
-        "Total: " + formatCurrency(item->getPrice())));
-    totalText->setStyleClass("h6 text-success mb-0 text-center");
-    
-    // Update total when quantity changes
-    quantitySpinBox->valueChanged().connect([=]() {
-        double total = item->getPrice() * quantitySpinBox->value();
-        totalText->setText("Total: " + formatCurrency(total));
-    });
-    
-    // Button container
-    auto buttonContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto buttonLayout = buttonContainer->setLayout(std::make_unique<Wt::WHBoxLayout>());
-    buttonLayout->addStretch(1); // Push buttons to the right
-    
-    auto cancelButton = buttonLayout->addWidget(std::make_unique<Wt::WPushButton>("Cancel"));
-    cancelButton->setStyleClass("btn btn-outline-secondary me-2");
-    
-    auto addButton = buttonLayout->addWidget(std::make_unique<Wt::WPushButton>("Add to Order"));
-    addButton->setStyleClass("btn btn-success");
-    
-    // FIXED: Proper event handlers with correct cleanup
-    auto addToOrderHandler = [this, item, quantitySpinBox, instructionsEdit, dialog]() {
-        int quantity = quantitySpinBox->value();
-        std::string instructions = instructionsEdit->text().toUTF8();
-        
-        std::cout << "[MenuDisplay] Adding " << quantity << "x " << item->getName() 
-                  << " with instructions: '" << instructions << "'" << std::endl;
-        
-        // Actually add the item to the order
-        addItemToCurrentOrder(*item, quantity, instructions);
-        
-        // Close dialog properly
-        dialog->accept();
-    };
-    
-    auto cancelHandler = [dialog]() {
-        std::cout << "[MenuDisplay] Dialog cancelled" << std::endl;
-        dialog->reject();
-    };
-    
-    // Connect button handlers
-    addButton->clicked().connect(addToOrderHandler);
-    cancelButton->clicked().connect(cancelHandler);
-    
-    // FIXED: Add Enter key support
-    instructionsEdit->enterPressed().connect(addToOrderHandler);
-    quantitySpinBox->enterPressed().connect(addToOrderHandler);
-    
-    // Set focus to quantity input for immediate use
-    quantitySpinBox->setFocus(true);
-    
-    // Show the dialog
-    dialog->show();
-    
-    std::cout << "[MenuDisplay] ✓ Add to order dialog displayed and ready" << std::endl;
-}
-
 void MenuDisplay::addItemToCurrentOrder(const MenuItem& item, int quantity, const std::string& instructions) {
     std::cout << "[MenuDisplay] Adding to order: " << item.getName() 
-              << " (qty: " << quantity << ", instructions: '" << instructions << "')" << std::endl;
+              << " (qty: " << quantity << ")" << std::endl;
     
     if (!posService_) {
         showMessage("Service not available", "error");
@@ -384,9 +313,13 @@ void MenuDisplay::addItemToCurrentOrder(const MenuItem& item, int quantity, cons
         bool success = posService_->addItemToCurrentOrder(item, quantity, instructions);
         
         if (success) {
-            std::string message = "Added " + std::to_string(quantity) + "x " + item.getName() + " to order";
+            std::string message = "Added " + std::to_string(quantity) + "x " + item.getName();
             showMessage(message, "success");
             std::cout << "[MenuDisplay] ✓ Successfully added item to current order" << std::endl;
+            
+            // Refresh the table to update order status
+            updateMenuItemsTable();
+            
         } else {
             showMessage("Failed to add item to order", "error");
             std::cout << "[MenuDisplay] ✗ Failed to add item to current order" << std::endl;
@@ -411,18 +344,8 @@ void MenuDisplay::showMessage(const std::string& message, const std::string& typ
         auto notificationData = POSEvents::createNotificationData(message, type, 3000);
         eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, notificationData);
     } else {
-        // Fallback to message box
-        Wt::StandardButton button = Wt::StandardButton::Ok;
-        
-        if (type == "error") {
-            Wt::WMessageBox::show("Error", message, button);
-        } else if (type == "warning") {
-            Wt::WMessageBox::show("Warning", message, button);
-        } else if (type == "success") {
-            Wt::WMessageBox::show("Success", message, button);
-        } else {
-            Wt::WMessageBox::show("Info", message, button);
-        }
+        // Fallback to console log only (no blocking message box)
+        std::cout << "[MenuDisplay] Notification: " << message << std::endl;
     }
 }
 
@@ -471,6 +394,26 @@ std::string MenuDisplay::formatCurrency(double amount) const {
     return oss.str();
 }
 
+std::string MenuDisplay::formatItemDescription(const std::shared_ptr<MenuItem>& item) const {
+    // Simple description based on category
+    if (!item) return "";
+    
+    switch (item->getCategory()) {
+        case MenuItem::APPETIZER:
+            return "Perfect for sharing";
+        case MenuItem::MAIN_COURSE:
+            return "Served with side dish";
+        case MenuItem::DESSERT:
+            return "Sweet ending to your meal";
+        case MenuItem::BEVERAGE:
+            return "Refreshing drink";
+        case MenuItem::SPECIAL:
+            return "Chef's recommendation";
+        default:
+            return "";
+    }
+}
+
 // EVENT HANDLERS
 void MenuDisplay::setupEventListeners() {
     if (!eventManager_) return;
@@ -484,6 +427,8 @@ void MenuDisplay::setupEventListeners() {
         eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED,
             [this](const std::any& data) { handleCurrentOrderChanged(data); })
     );
+    
+    // Removed ORDER_MODIFIED subscription to avoid unnecessary table refreshes
 }
 
 void MenuDisplay::handleMenuUpdated(const std::any& eventData) {
@@ -494,7 +439,9 @@ void MenuDisplay::handleMenuUpdated(const std::any& eventData) {
 
 void MenuDisplay::handleCurrentOrderChanged(const std::any& eventData) {
     std::cout << "[MenuDisplay] Current order changed event received" << std::endl;
-    updateMenuItemsTable(); // Refresh to update button states
+    // Only refresh when the current order itself changes (created/cleared)
+    // This recreates the table with updated button states
+    updateMenuItemsTable();
 }
 
 void MenuDisplay::handleThemeChanged(const std::any& eventData) {
@@ -554,11 +501,16 @@ bool MenuDisplay::validateSpecialInstructions(const std::string& instructions) c
     return instructions.length() <= MAX_INSTRUCTIONS_LENGTH;
 }
 
-// UNUSED HANDLER PLACEHOLDERS (keep for header compatibility)
+// REMOVED: All dialog-related methods
+// - showAddToOrderDialog() - completely removed
+// - Dialog event handlers - removed
+
+// PLACEHOLDER IMPLEMENTATIONS (keep for header compatibility)
 void MenuDisplay::onAddToOrderClicked(const std::shared_ptr<MenuItem>& item, int quantity, const std::string& instructions) {
     addItemToCurrentOrder(*item, quantity, instructions);
 }
 
 void MenuDisplay::onItemRowClicked(const std::shared_ptr<MenuItem>& item) {
-    // Could be used for item details view
+    // Could be used for item details view in the future
+    std::cout << "[MenuDisplay] Item clicked: " << item->getName() << std::endl;
 }
