@@ -169,6 +169,9 @@ if(TARGET ${POS_TARGET_NAME})
     # Theme CSS files
     set(THEME_CSS_FILES
         theme-framework.css
+        pos-dialogs.css
+        pos-system.css
+        responsive.css
         theme-light.css
         theme-dark.css
         theme-warm.css
