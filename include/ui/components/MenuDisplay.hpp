@@ -23,6 +23,9 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <iomanip>
+#include <sstream>
+#include <algorithm>
 
 /**
  * @file MenuDisplay.hpp
@@ -32,7 +35,7 @@
  * users to add items to the current order with quantity and special instructions.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0 - Enhanced with theme support
+ * @version 2.1.0 - Enhanced with improved dialog and user experience
  */
 
 /**
@@ -164,10 +167,16 @@ private:
     void onAddToOrderClicked(const std::shared_ptr<MenuItem>& item, int quantity, const std::string& instructions);
     void onItemRowClicked(const std::shared_ptr<MenuItem>& item);
     
+    // NEW: Add to order dialog method
+    /**
+     * @brief Shows the add to order dialog for an item
+     * @param item Menu item to add to order
+     */
+    void showAddToOrderDialog(const std::shared_ptr<MenuItem>& item);
+    
     // Business logic methods
     void addItemToCurrentOrder(const MenuItem& item, int quantity, const std::string& instructions);
     bool canAddToOrder() const;
-    void showAddToOrderDialog(const std::shared_ptr<MenuItem>& item);
     
     // Data management methods
     void loadMenuItems();
