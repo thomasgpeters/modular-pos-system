@@ -423,16 +423,6 @@ void RestaurantPOSApp::setupEventListeners() {
     std::cout << "✓ Event listeners set up" << std::endl;
 }
 
-void RestaurantPOSApp::setupRealTimeUpdates() {
-    // Create timer for periodic updates
-    updateTimer_ = std::make_unique<Wt::WTimer>();
-    updateTimer_->setInterval(std::chrono::seconds(5)); // Update every 5 seconds
-    updateTimer_->timeout().connect(this, &RestaurantPOSApp::onPeriodicUpdate);
-    updateTimer_->start();
-    
-    std::cout << "✓ Real-time updates enabled" << std::endl;
-}
-
 void RestaurantPOSApp::initializeThemeService() {
     if (themeService_) {
         themeService_->loadThemePreference();
@@ -459,15 +449,30 @@ void RestaurantPOSApp::addCustomCSS() {
     useStyleSheet("assets/css/mode-styles.css");
 }
 
+// In RestaurantPOSApp.cpp - Keep responsive 5-second updates but make them smarter
+
+void RestaurantPOSApp::setupRealTimeUpdates() {
+    // Create timer for periodic updates - keep responsive 5-second interval
+    updateTimer_ = std::make_unique<Wt::WTimer>();
+    updateTimer_->setInterval(std::chrono::seconds(5)); // Keep 5 seconds for responsiveness
+    updateTimer_->timeout().connect(this, &RestaurantPOSApp::onPeriodicUpdate);
+    updateTimer_->start();
+    
+    std::cout << "✓ Real-time updates enabled (5 second interval with smart refresh)" << std::endl;
+}
+
 void RestaurantPOSApp::onPeriodicUpdate() {
+    // Smart periodic update - only refresh data, never recreate UI components
+    std::cout << "[RestaurantPOSApp] Periodic data refresh (preserving UI state)" << std::endl;
+    
     // Update footer status
     if (commonFooter_) {
         commonFooter_->updateStatus();
     }
     
-    // Refresh current mode container
+    // Smart refresh that only updates data, never recreates UI components
     if (currentMode_ == POS_MODE && posModeContainer_) {
-        posModeContainer_->refresh();
+        posModeContainer_->refreshDataOnly(); // New method for data-only refresh
     } else if (currentMode_ == KITCHEN_MODE && kitchenModeContainer_) {
         kitchenModeContainer_->refresh();
     }

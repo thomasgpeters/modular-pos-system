@@ -27,6 +27,15 @@
 class POSModeContainer : public Wt::WContainerWidget {
 public:
     /**
+     * @enum UIMode
+     * @brief Track current UI display mode to avoid unnecessary recreation
+     */
+    enum UIMode {
+        UI_MODE_NONE,
+        UI_MODE_ORDER_ENTRY,
+        UI_MODE_ORDER_EDIT
+    };
+    /**
      * @brief Constructs the POS mode container
      * @param posService POS service for business operations
      * @param eventManager Event manager for notifications
@@ -35,9 +44,19 @@ public:
                     std::shared_ptr<EventManager> eventManager);
     
     /**
+     * @brief Virtual destructor
+     */
+    virtual ~POSModeContainer();
+    
+    /**
      * @brief Refreshes all components
      */
     void refresh();
+    
+    /**
+     * @brief Refreshes only data without recreating UI components (for periodic updates)
+     */
+    void refreshDataOnly();
     
     /**
      * @brief Creates a new order
@@ -122,20 +141,6 @@ protected:
      * @brief Shows the Active Orders display
      */
     void showActiveOrdersDisplay();
-    
-    /**
-     * @brief Stores current work area content before switching
-     */
-    void storeCurrentWorkArea();
-    
-    /**
-     * @brief Safely extracts a widget from its parent
-     * @tparam T Widget type
-     * @param widget Widget to extract
-     * @return Unique pointer to the extracted widget
-     */
-    template<typename T>
-    std::unique_ptr<T> extractWidget(T* widget);
 
 private:
     std::shared_ptr<POSService> posService_;
@@ -154,10 +159,17 @@ private:
     
     // UI state management
     Wt::WText* workAreaTitle_;
-    std::unique_ptr<Wt::WContainerWidget> orderEntryArea_;
-    std::unique_ptr<Wt::WContainerWidget> orderEditArea_;
     Wt::WPushButton* newOrderButton_;
     Wt::WPushButton* closeOrderButton_;
+    
+    // FIXED: Added missing member variable for toggle button
+    Wt::WPushButton* toggleOrdersButton_;
+    
+    // Track current UI mode to avoid unnecessary recreation
+    UIMode currentUIMode_;
+    
+    // Destruction safety flag
+    bool isDestroying_;
     
     // Event handlers
     void handleOrderCreated(const std::any& eventData);
