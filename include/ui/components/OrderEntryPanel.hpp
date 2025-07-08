@@ -1,3 +1,7 @@
+//============================================================================
+// Fixed OrderEntryPanel.hpp - Updated Method Signatures to Match Implementation
+//============================================================================
+
 #ifndef ORDERENTRYPANEL_H
 #define ORDERENTRYPANEL_H
 
@@ -133,8 +137,9 @@ protected:
     
     /**
      * @brief Creates the table identifier combo box
+     * @param parent Parent container to add the combo box to
      */
-    void createTableIdentifierCombo();
+    void createTableIdentifierCombo(Wt::WContainerWidget* parent);
     
     /**
      * @brief Populates the table identifier combo box
@@ -182,7 +187,7 @@ private:
     // Helper methods
     void updateOrderActionButtons();
     bool validateCurrentOrder();
-    bool validateTableIdentifierSelection();
+    bool validateTableIdentifierSelection() const;
     bool hasCurrentOrder() const;
     bool hasOrderWithItems() const;
     void showOrderValidationError(const std::string& message);

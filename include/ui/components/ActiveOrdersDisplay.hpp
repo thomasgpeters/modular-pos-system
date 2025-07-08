@@ -113,6 +113,13 @@ protected:
      * @param row Row number in the table
      */
     void addOrderRow(std::shared_ptr<Order> order, int row);
+    
+    /**
+     * @brief Applies consistent styling to a table row
+     * @param row Row number to style
+     * @param isEven True if this is an even-numbered row
+     */
+    void applyRowStyling(int row, bool isEven);
 
 private:
     // Services and dependencies
@@ -149,7 +156,14 @@ private:
     std::string formatOrderStatus(Order::Status status) const;
     std::string formatOrderTime(const std::shared_ptr<Order>& order) const;
     std::string formatCurrency(double amount) const;
-    std::string getStatusBadgeClass(Order::Status status) const;
+    
+    /**
+     * @brief Gets the appropriate badge variant for an order status
+     * @param status Order status
+     * @return Bootstrap badge variant string (e.g., "success", "warning", "danger")
+     */
+    std::string getStatusBadgeVariant(Order::Status status) const;
+    
     void showEmptyOrdersMessage();
     void hideEmptyOrdersMessage();
     void applyTableStyling();

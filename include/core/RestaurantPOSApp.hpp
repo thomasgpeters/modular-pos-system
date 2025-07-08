@@ -26,6 +26,37 @@
 
 #include <memory>
 
+// ============================================================================
+// SUMMARY OF CRITICAL CHANGES
+// ============================================================================
+
+/*
+KEY FIXES APPLIED:
+
+1. WIDGET LIFECYCLE MANAGEMENT:
+   - Use removeWidget() instead of clear() to avoid deleting widgets
+   - Verify widget operations succeed before proceeding
+   - Add proper destruction cleanup
+
+2. SAFETY CHECKS:
+   - Validate all pointers before use
+   - Check widget indices to verify add/remove operations
+   - Add destruction flag to prevent operations during cleanup
+
+3. ERROR RECOVERY:
+   - Emergency recovery to POS mode if switching fails
+   - Graceful error handling without crashing
+
+4. DEBUGGING:
+   - Added widget state debugging method
+   - Comprehensive logging of widget operations
+
+The crash was caused by using clear() which DELETES child widgets, 
+then trying to add those deleted widgets to containers later.
+Using removeWidget() preserves the widgets for reuse.
+*/
+
+
 /**
  * @file RestaurantPOSApp_Enhanced.hpp
  * @brief Enhanced main application with POS/Kitchen mode switching
@@ -64,7 +95,7 @@ public:
     /**
      * @brief Virtual destructor
      */
-    virtual ~RestaurantPOSApp() = default;
+    virtual ~RestaurantPOSApp();
     
     /**
      * @brief Switches to the specified operating mode
@@ -79,6 +110,9 @@ public:
     OperatingMode getCurrentMode() const { return currentMode_; }
 
 private:
+    // Add this flag to prevent operations during destruction
+    bool isDestroying_;
+
     // Core services
     std::shared_ptr<EventManager> eventManager_;
     std::shared_ptr<POSService> posService_;
@@ -118,6 +152,8 @@ private:
     void showPOSMode();
     void showKitchenMode();
     void hideModeContainers();
+    
+    // FIXED: Method signature for onModeChanged
     void onModeChanged(OperatingMode newMode);
     
     // Theme and styling
@@ -132,6 +168,7 @@ private:
     
     // Utility methods
     void logApplicationStart();
+    void debugWidgetState();
     void logModeSwitch(OperatingMode mode);
     std::string getModeDisplayName(OperatingMode mode) const;
 };

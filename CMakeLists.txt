@@ -16,6 +16,9 @@ project(RestaurantPOS
     LANGUAGES CXX
 )
 
+# Or for all targets:
+add_compile_options(-Wno-deprecated-declarations)
+
 # C++ Standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -92,6 +95,13 @@ set_target_properties(${EXECUTABLE_NAME} PROPERTIES
 )
 
 message(STATUS "Creating executable: ${EXECUTABLE_NAME}")
+
+# Configure the Wt config file
+configure_file(
+    ${CMAKE_SOURCE_DIR}/config/wt_config.xml.in
+    ${CMAKE_BINARY_DIR}/config/wt_config.xml
+    COPYONLY
+)
 
 # ============================================================================
 # Include Directories

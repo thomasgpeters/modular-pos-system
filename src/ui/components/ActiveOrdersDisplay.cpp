@@ -260,7 +260,6 @@ void ActiveOrdersDisplay::updateOrderCount() {
     }
 }
 
-// Helper method to get consistent badge variants for order status
 std::string ActiveOrdersDisplay::getStatusBadgeVariant(Order::Status status) const {
     switch (status) {
         case Order::PENDING:         return "secondary";
@@ -273,5 +272,196 @@ std::string ActiveOrdersDisplay::getStatusBadgeVariant(Order::Status status) con
     }
 }
 
-// Rest of the methods remain the same, but with consistent styling applied...
-// (Event handlers, business logic methods, etc. remain unchanged)
+// =================================================================
+// MISSING METHOD IMPLEMENTATIONS
+// =================================================================
+
+void ActiveOrdersDisplay::refresh() {
+    updateOrdersTable();
+    updateOrderCount();
+}
+
+void ActiveOrdersDisplay::setMaxOrdersToDisplay(int maxOrders) {
+    maxOrdersToDisplay_ = maxOrders;
+    refresh();
+}
+
+int ActiveOrdersDisplay::getMaxOrdersToDisplay() const {
+    return maxOrdersToDisplay_;
+}
+
+void ActiveOrdersDisplay::setShowCompletedOrders(bool showCompleted) {
+    showCompletedOrders_ = showCompleted;
+    refresh();
+}
+
+bool ActiveOrdersDisplay::getShowCompletedOrders() const {
+    return showCompletedOrders_;
+}
+
+void ActiveOrdersDisplay::setupEventListeners() {
+    if (!eventManager_) return;
+    
+    // Subscribe to order events
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CREATED, 
+            [this](const std::any& data) { handleOrderCreated(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
+            [this](const std::any& data) { handleOrderModified(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_COMPLETED,
+            [this](const std::any& data) { handleOrderCompleted(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CANCELLED,
+            [this](const std::any& data) { handleOrderCancelled(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::KITCHEN_STATUS_CHANGED,
+            [this](const std::any& data) { handleKitchenStatusChanged(data); })
+    );
+}
+
+void ActiveOrdersDisplay::updateOrdersTable() {
+    if (!ordersTable_) return;
+    
+    // Clear existing rows (except header)
+    while (ordersTable_->rowCount() > 1) {
+        ordersTable_->removeRow(1);
+    }
+    
+    auto orders = getDisplayOrders();
+    
+    if (orders.empty()) {
+        showEmptyOrdersMessage();
+        return;
+    }
+    
+    // Add order rows
+    for (size_t i = 0; i < orders.size(); ++i) {
+        if (maxOrdersToDisplay_ > 0 && i >= static_cast<size_t>(maxOrdersToDisplay_)) {
+            break;
+        }
+        addOrderRow(orders[i], static_cast<int>(i + 1));
+    }
+}
+
+std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::getDisplayOrders() const {
+    if (!posService_) return {};
+    
+    auto orders = posService_->getActiveOrders();
+    
+    // Filter orders based on configuration
+    if (!showCompletedOrders_) {
+        orders.erase(
+            std::remove_if(orders.begin(), orders.end(),
+                [](const std::shared_ptr<Order>& order) {
+                    return order->getStatus() == Order::SERVED ||
+                           order->getStatus() == Order::CANCELLED;
+                }),
+            orders.end()
+        );
+    }
+    
+    // Sort by creation time (newest first)
+    std::sort(orders.begin(), orders.end(),
+        [](const std::shared_ptr<Order>& a, const std::shared_ptr<Order>& b) {
+            return a->getTimestamp() > b->getTimestamp();
+        });
+    
+    return orders;
+}
+
+// Event handlers (placeholder implementations)
+void ActiveOrdersDisplay::handleOrderCreated(const std::any& eventData) {
+    refresh();
+}
+
+void ActiveOrdersDisplay::handleOrderModified(const std::any& eventData) {
+    refresh();
+}
+
+void ActiveOrdersDisplay::handleOrderCompleted(const std::any& eventData) {
+    refresh();
+}
+
+void ActiveOrdersDisplay::handleOrderCancelled(const std::any& eventData) {
+    refresh();
+}
+
+void ActiveOrdersDisplay::handleKitchenStatusChanged(const std::any& eventData) {
+    refresh();
+}
+
+// UI action handlers (placeholder implementations)
+void ActiveOrdersDisplay::onViewOrderClicked(int orderId) {
+    std::cout << "[ActiveOrdersDisplay] View order #" << orderId << " (not implemented)" << std::endl;
+}
+
+void ActiveOrdersDisplay::onCompleteOrderClicked(int orderId) {
+    std::cout << "[ActiveOrdersDisplay] Complete order #" << orderId << " (not implemented)" << std::endl;
+    // TODO: Implement order completion logic
+}
+
+void ActiveOrdersDisplay::onCancelOrderClicked(int orderId) {
+    if (posService_) {
+        bool success = posService_->cancelOrder(orderId);
+        if (success) {
+            std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " cancelled successfully" << std::endl;
+            refresh();
+        } else {
+            std::cout << "[ActiveOrdersDisplay] Failed to cancel order #" << orderId << std::endl;
+        }
+    }
+}
+
+// Helper method implementations
+std::string ActiveOrdersDisplay::formatOrderId(int orderId) const {
+    return "#" + std::to_string(orderId);
+}
+
+std::string ActiveOrdersDisplay::formatOrderStatus(Order::Status status) const {
+    return Order::statusToString(status);
+}
+
+std::string ActiveOrdersDisplay::formatOrderTime(const std::shared_ptr<Order>& order) const {
+    auto now = std::chrono::system_clock::now();
+    auto orderTime = order->getTimestamp();
+    auto duration = std::chrono::duration_cast<std::chrono::minutes>(now - orderTime);
+    
+    int minutes = static_cast<int>(duration.count());
+    
+    if (minutes < 1) {
+        return "Just now";
+    } else if (minutes < 60) {
+        return std::to_string(minutes) + "m ago";
+    } else {
+        int hours = minutes / 60;
+        int remainingMinutes = minutes % 60;
+        return std::to_string(hours) + "h " + std::to_string(remainingMinutes) + "m ago";
+    }
+}
+
+std::string ActiveOrdersDisplay::formatCurrency(double amount) const {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << "$" << amount;
+    return oss.str();
+}
+
+void ActiveOrdersDisplay::hideEmptyOrdersMessage() {
+    // This method can be used to explicitly hide empty state
+    // Currently handled by refresh() and updateOrdersTable()
+}
+
+void ActiveOrdersDisplay::applyTableStyling() {
+    if (ordersTable_) {
+        UIStyleHelper::styleTable(ordersTable_, "orders");
+    }
+}
