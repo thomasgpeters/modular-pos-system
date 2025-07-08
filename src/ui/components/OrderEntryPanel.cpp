@@ -15,6 +15,7 @@ OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
     : Wt::WContainerWidget()
     , posService_(posService)
     , eventManager_(eventManager)
+    , isDestroying_(false)  // Add destruction flag
     , tableSelectionGroup_(nullptr)
     , tableIdentifierLabel_(nullptr)
     , tableIdentifierCombo_(nullptr)
@@ -37,6 +38,28 @@ OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
     refresh();
     
     std::cout << "[OrderEntryPanel] Initialized and ready" << std::endl;
+}
+
+OrderEntryPanel::~OrderEntryPanel() {
+    std::cout << "[OrderEntryPanel] Destructor called - setting destruction flag" << std::endl;
+    
+    // Set destruction flag to prevent further widget access
+    isDestroying_ = true;
+    
+    try {
+        // Unsubscribe from all events
+        if (eventManager_) {
+            for (auto handle : eventSubscriptions_) {
+                eventManager_->unsubscribe(handle);
+            }
+            eventSubscriptions_.clear();
+        }
+        
+        std::cout << "[OrderEntryPanel] Cleanup completed" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderEntryPanel] Error during destruction: " << e.what() << std::endl;
+    }
 }
 
 void OrderEntryPanel::initializeUI() {

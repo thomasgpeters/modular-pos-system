@@ -16,14 +16,14 @@
 #include <vector>
 
 /**
- * @file CurrentOrderDisplay.hpp
+ * @file CurrentOrderDisplay.hpp - Enhanced with Destruction Safety
  * @brief Current order display component for the Restaurant POS System
  * 
  * This component displays the items in the current order being built,
  * allowing for quantity modifications and item removal.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0 - Enhanced with destruction safety
  */
 
 /**
@@ -45,9 +45,9 @@ public:
                        std::shared_ptr<EventManager> eventManager);
     
     /**
-     * @brief Virtual destructor
+     * @brief Virtual destructor with cleanup
      */
-    virtual ~CurrentOrderDisplay() = default;
+    virtual ~CurrentOrderDisplay();
     
     /**
      * @brief Refreshes the order display from the service
@@ -132,6 +132,9 @@ private:
     // Services and dependencies
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
+    
+    // ADDED: Destruction safety flag
+    bool isDestroying_;
     
     // Configuration
     bool editable_;

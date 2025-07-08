@@ -17,6 +17,7 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
     : Wt::WContainerWidget()
     , posService_(posService)
     , eventManager_(eventManager)
+    , isDestroying_(false)  // Add destruction flag
     , editable_(true)
     , headerContainer_(nullptr)
     , tableNumberText_(nullptr)
@@ -39,6 +40,28 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
     refresh();
     
     std::cout << "[CurrentOrderDisplay] Initialized" << std::endl;
+}
+
+CurrentOrderDisplay::~CurrentOrderDisplay() {
+    std::cout << "[CurrentOrderDisplay] Destructor called - setting destruction flag" << std::endl;
+    
+    // Set destruction flag to prevent further widget access
+    isDestroying_ = true;
+    
+    try {
+        // Unsubscribe from all events
+        if (eventManager_) {
+            for (auto handle : eventSubscriptions_) {
+                eventManager_->unsubscribe(handle);
+            }
+            eventSubscriptions_.clear();
+        }
+        
+        std::cout << "[CurrentOrderDisplay] Cleanup completed" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[CurrentOrderDisplay] Error during destruction: " << e.what() << std::endl;
+    }
 }
 
 void CurrentOrderDisplay::initializeUI() {

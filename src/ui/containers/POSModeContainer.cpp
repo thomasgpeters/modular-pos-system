@@ -663,7 +663,7 @@ void POSModeContainer::closeCurrentOrder() {
         return;
     }
     
-    std::cout << "[POSModeContainer] Closing current order - immediate UI update without events" << std::endl;
+    std::cout << "[POSModeContainer] Closing current order - safe UI cleanup" << std::endl;
     
     try {
         // Step 1: Process any pending events to clear the queue
@@ -679,37 +679,44 @@ void POSModeContainer::closeCurrentOrder() {
         menuDisplay_ = nullptr;
         currentOrderDisplay_ = nullptr;
         
-        // Step 3: Clear the current order from the service
-        std::cout << "[POSModeContainer] Clearing current order from service" << std::endl;
+        // Step 3: CLEAR THE WIDGETS FIRST to destroy them and unsubscribe from events
+        std::cout << "[POSModeContainer] Clearing work area widgets to stop event subscriptions" << std::endl;
+        if (workArea_ && workArea_->children().size() > 0) {
+            // Process events one more time before clearing
+            Wt::WApplication::instance()->processEvents();
+            workArea_->clear();  // This destroys widgets and their event subscriptions
+        }
+        
+        // Step 4: Process events again to ensure widget destruction is complete
+        std::cout << "[POSModeContainer] Processing events after widget destruction" << std::endl;
+        for (int i = 0; i < 3; ++i) {
+            Wt::WApplication::instance()->processEvents();
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        
+        // Step 5: NOW safely clear the current order from the service
+        std::cout << "[POSModeContainer] Clearing current order from service (widgets destroyed)" << std::endl;
         if (posService_) {
             posService_->setCurrentOrder(nullptr);
         }
         
-        // Step 4: Force UI mode change and immediate update
+        // Step 6: Force UI mode change
         std::cout << "[POSModeContainer] Forcing UI mode change" << std::endl;
         currentUIMode_ = UI_MODE_NONE;
         
-        // Step 5: Clear work area immediately and recreate order entry
-        std::cout << "[POSModeContainer] Clearing work area and recreating UI" << std::endl;
-        if (workArea_ && workArea_->children().size() > 0) {
-            // Process events one more time before clearing
-            Wt::WApplication::instance()->processEvents();
-            workArea_->clear();
-        }
-        
-        // Step 6: Show order entry immediately (synchronous)
+        // Step 7: Show order entry immediately (synchronous)
         showOrderEntry();
         
-        // Step 7: Show active orders display
+        // Step 8: Show active orders display
         showActiveOrdersDisplay();
         
-        // Step 8: Update UI mode
+        // Step 9: Update UI mode
         currentUIMode_ = UI_MODE_ORDER_ENTRY;
         
-        std::cout << "[POSModeContainer] Order closed and UI updated successfully (synchronous)" << std::endl;
+        std::cout << "[POSModeContainer] Order closed and UI updated successfully (safe sequence)" << std::endl;
         
     } catch (const std::exception& e) {
-        std::cerr << "[POSModeContainer] Error during synchronous close order: " << e.what() << std::endl;
+        std::cerr << "[POSModeContainer] Error during safe close order: " << e.what() << std::endl;
         
         // Emergency fallback - just clear everything
         if (workArea_) {

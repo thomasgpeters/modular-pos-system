@@ -19,6 +19,7 @@ MenuDisplay::MenuDisplay(std::shared_ptr<POSService> posService,
     , posService_(posService)
     , eventManager_(eventManager)
     , themeService_(themeService)
+    , isDestroying_(false)  // Add destruction flag
     , currentCategory_("")
     , selectionEnabled_(true)
     , menuGroup_(nullptr)
@@ -39,6 +40,28 @@ MenuDisplay::MenuDisplay(std::shared_ptr<POSService> posService,
     refresh();
     
     std::cout << "[MenuDisplay] Initialized with " << menuItems_.size() << " menu items" << std::endl;
+}
+
+MenuDisplay::~MenuDisplay() {
+    std::cout << "[MenuDisplay] Destructor called - setting destruction flag" << std::endl;
+    
+    // Set destruction flag to prevent further widget access
+    isDestroying_ = true;
+    
+    try {
+        // Unsubscribe from all events
+        if (eventManager_) {
+            for (auto handle : eventSubscriptions_) {
+                eventManager_->unsubscribe(handle);
+            }
+            eventSubscriptions_.clear();
+        }
+        
+        std::cout << "[MenuDisplay] Cleanup completed" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[MenuDisplay] Error during destruction: " << e.what() << std::endl;
+    }
 }
 
 void MenuDisplay::initializeUI() {

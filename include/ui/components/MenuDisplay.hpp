@@ -28,14 +28,14 @@
 #include <algorithm>
 
 /**
- * @file MenuDisplay.hpp
+ * @file MenuDisplay.hpp - Enhanced with Destruction Safety
  * @brief Menu display component for the Restaurant POS System
  * 
  * This component displays the restaurant menu with categories and allows
  * users to add items to the current order with quantity and special instructions.
  * 
  * @author Restaurant POS Team
- * @version 2.1.0 - Enhanced with improved dialog and user experience
+ * @version 2.2.0 - Enhanced with destruction safety
  */
 
 /**
@@ -59,9 +59,9 @@ public:
                 std::shared_ptr<ThemeService> themeService = nullptr);
     
     /**
-     * @brief Virtual destructor
+     * @brief Virtual destructor with cleanup
      */
-    virtual ~MenuDisplay() = default;
+    virtual ~MenuDisplay();
     
     /**
      * @brief Refreshes the menu display from the service
@@ -138,6 +138,9 @@ private:
     std::shared_ptr<EventManager> eventManager_;
     std::shared_ptr<ThemeService> themeService_;
     
+    // ADDED: Destruction safety flag
+    bool isDestroying_;
+    
     // Configuration
     std::string currentCategory_;
     bool selectionEnabled_;
@@ -166,13 +169,6 @@ private:
     void onCategoryChanged();
     void onAddToOrderClicked(const std::shared_ptr<MenuItem>& item, int quantity, const std::string& instructions);
     void onItemRowClicked(const std::shared_ptr<MenuItem>& item);
-    
-    // NEW: Add to order dialog method
-    /**
-     * @brief Shows the add to order dialog for an item
-     * @param item Menu item to add to order
-     */
-    void showAddToOrderDialog(const std::shared_ptr<MenuItem>& item);
     
     // Business logic methods
     void addItemToCurrentOrder(const MenuItem& item, int quantity, const std::string& instructions);

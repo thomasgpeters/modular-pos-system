@@ -1,5 +1,5 @@
 //============================================================================
-// Fixed OrderEntryPanel.hpp - Updated Method Signatures to Match Implementation
+// Fixed OrderEntryPanel.hpp - Added Destruction Safety
 //============================================================================
 
 #ifndef ORDERENTRYPANEL_H
@@ -23,14 +23,14 @@
 #include <memory>
 
 /**
- * @file OrderEntryPanel.hpp - Simplified Version
+ * @file OrderEntryPanel.hpp - Simplified Version with Destruction Safety
  * @brief Simple order entry controls without embedded components
  * 
  * This simplified version focuses only on table selection and order actions.
  * MenuDisplay and CurrentOrderDisplay are handled separately in the main app.
  * 
  * @author Restaurant POS Team
- * @version 2.3.0 - Simplified for flat architecture
+ * @version 2.4.0 - Added destruction safety
  */
 
 /**
@@ -56,9 +56,9 @@ public:
                    std::shared_ptr<EventManager> eventManager);
     
     /**
-     * @brief Virtual destructor
+     * @brief Virtual destructor with cleanup
      */
-    virtual ~OrderEntryPanel() = default;
+    virtual ~OrderEntryPanel();
     
     /**
      * @brief Refreshes the panel data from the service
@@ -150,6 +150,9 @@ private:
     // Services and dependencies
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
+    
+    // ADDED: Destruction safety flag
+    bool isDestroying_;
     
     // UI components (raw pointers - Wt manages lifetime)
     Wt::WGroupBox* tableSelectionGroup_;
