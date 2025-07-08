@@ -1,16 +1,14 @@
-//============================================================================
-// POSModeContainer Implementation
-//============================================================================
-
 #include "../../../include/ui/containers/POSModeContainer.hpp"
 
+#include <Wt/WVBoxLayout.h>
+#include <Wt/WHBoxLayout.h>
 #include <Wt/WGroupBox.h>
-#include <Wt/WLabel.h>
 #include <iostream>
 
 POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
                                   std::shared_ptr<EventManager> eventManager)
-    : posService_(posService)
+    : Wt::WContainerWidget()
+    , posService_(posService)
     , eventManager_(eventManager)
     , leftPanel_(nullptr)
     , rightPanel_(nullptr)
@@ -22,254 +20,405 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     , workAreaTitle_(nullptr)
     , orderEntryArea_(nullptr)
     , orderEditArea_(nullptr)
+    , newOrderButton_(nullptr)
+    , closeOrderButton_(nullptr)
 {
+    if (!posService_ || !eventManager_) {
+        throw std::invalid_argument("POSModeContainer requires valid POSService and EventManager");
+    }
+    
+    setStyleClass("pos-mode-container h-100");
+    
     initializeUI();
     setupEventListeners();
+    updateWorkArea();
+    
+    std::cout << "[POSModeContainer] Initialized with smart Active Orders toggle" << std::endl;
 }
 
 void POSModeContainer::initializeUI() {
-    addStyleClass("pos-mode-container h-100");
     setupLayout();
     createLeftPanel();
     createRightPanel();
+    createOrderEntryArea();
+    createOrderEditArea();
 }
 
 void POSModeContainer::setupLayout() {
+    // Create main horizontal layout
     auto layout = setLayout(std::make_unique<Wt::WHBoxLayout>());
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(15);
     
-    // Left panel (40% width) - Active Orders
+    // Create panels
     leftPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    leftPanel_->addStyleClass("bg-white rounded shadow-sm p-3");
-    leftPanel_->setWidth(Wt::WLength(40, Wt::WLength::Unit::Percentage));
-    
-    // Right panel (60% width) - Order Work Area
     rightPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    rightPanel_->addStyleClass("bg-white rounded shadow-sm p-3");
-    rightPanel_->setWidth(Wt::WLength(60, Wt::WLength::Unit::Percentage));
+    
+    // Initial layout proportions
+    // When both panels visible: 30% left (orders), 70% right (work area)
+    // When left panel hidden: 0% left, 100% right (full screen for work)
+    layout->addWidget(leftPanel_, 3);   // 30%
+    layout->addWidget(rightPanel_, 7);  // 70%
+    
+    leftPanel_->setStyleClass("pos-left-panel");
+    rightPanel_->setStyleClass("pos-right-panel");
 }
 
 void POSModeContainer::createLeftPanel() {
+    // Left panel contains Active Orders Display
+    leftPanel_->setStyleClass("border-end bg-light p-3");
+    
     auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(10);
     
-    // Panel title
-    auto title = leftLayout->addWidget(
-        std::make_unique<Wt::WText>("📋 Active Orders")
-    );
-    title->addStyleClass("h5 mb-3 text-primary fw-bold");
-    
-    // Active orders display
+    // Create Active Orders Display
     activeOrdersDisplay_ = leftLayout->addWidget(
-        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_)
-    );
+        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_));
     
-    std::cout << "✓ POS Mode: Left panel (Active Orders) created" << std::endl;
+    std::cout << "[POSModeContainer] Left panel (Active Orders) created" << std::endl;
 }
 
 void POSModeContainer::createRightPanel() {
+    // Right panel contains the work area
+    rightPanel_->setStyleClass("pos-work-panel p-3");
+    
     auto rightLayout = rightPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(15);
     
-    // Work area title
-    workAreaTitle_ = rightLayout->addWidget(
-        std::make_unique<Wt::WText>("🍽️ Order Work Area")
-    );
-    workAreaTitle_->addStyleClass("h5 mb-3 text-primary fw-bold");
+    // Work area title and controls
+    auto headerContainer = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    headerContainer->setStyleClass("d-flex justify-content-between align-items-center mb-3");
     
-    // Work area container
-    workArea_ = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    workArea_->addStyleClass("flex-grow-1");
+    workAreaTitle_ = headerContainer->addNew<Wt::WText>("🍽️ Order Management");
+    workAreaTitle_->setStyleClass("h4 text-primary mb-0");
     
-    // Create order entry area (shown when no current order)
-    createOrderEntryArea();
+    // Control buttons container
+    auto controlsContainer = headerContainer->addNew<Wt::WContainerWidget>();
+    controlsContainer->setStyleClass("d-flex gap-2");
     
-    // Create order edit area (shown when editing an order)
-    createOrderEditArea();
-    
-    // Initially show order entry
-    updateWorkArea();
-    
-    std::cout << "✓ POS Mode: Right panel (Work Area) created" << std::endl;
-}
-
-void POSModeContainer::createOrderEntryArea() {
-    orderEntryArea_ = workArea_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto entryLayout = orderEntryArea_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    
-    // Welcome message
-    auto welcomeText = entryLayout->addWidget(
-        std::make_unique<Wt::WText>(
-            "<h6>👋 Welcome to POS Mode</h6>"
-            "<p class='text-muted'>Create a new order or select an existing order from the Active Orders list to begin.</p>"
-        )
-    );
-    welcomeText->setTextFormat(Wt::TextFormat::UnsafeXHTML);
-    
-    // Order entry panel
-    orderEntryPanel_ = entryLayout->addWidget(
-        std::make_unique<OrderEntryPanel>(posService_, eventManager_)
-    );
-    
-    // Action buttons
-    auto buttonContainer = entryLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    buttonContainer->addStyleClass("d-flex gap-2 mt-3");
-    
-    newOrderButton_ = buttonContainer->addWidget(
-        std::make_unique<Wt::WPushButton>("🆕 Create New Order")
-    );
-    newOrderButton_->addStyleClass("btn btn-primary btn-lg");
-    newOrderButton_->clicked().connect([this]() {
-        createNewOrder("table 1"); // Default table for demo
+    // Toggle Active Orders button (shows when orders display is hidden)
+    auto toggleOrdersButton = controlsContainer->addNew<Wt::WPushButton>("📋 Show Orders");
+    toggleOrdersButton->setStyleClass("btn btn-outline-info btn-sm");
+    toggleOrdersButton->clicked().connect([this]() {
+        showActiveOrdersDisplay();
     });
-}
-
-void POSModeContainer::createOrderEditArea() {
-    orderEditArea_ = workArea_->addWidget(std::make_unique<Wt::WContainerWidget>());
-    auto editLayout = orderEditArea_->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    toggleOrdersButton->setId("toggle-orders-button");
+    toggleOrdersButton->hide(); // Hidden initially when orders display is visible
     
-    // Order edit header
-    auto headerContainer = editLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    headerContainer->addStyleClass("d-flex justify-content-between align-items-center mb-3");
-    
-    auto editTitle = headerContainer->addWidget(
-        std::make_unique<Wt::WText>("✏️ Editing Order")
-    );
-    editTitle->addStyleClass("h6 mb-0 text-success");
-    
-    closeOrderButton_ = headerContainer->addWidget(
-        std::make_unique<Wt::WPushButton>("❌ Close Order")
-    );
-    closeOrderButton_->addStyleClass("btn btn-outline-secondary btn-sm");
+    // Close current order button (shows when editing an order)
+    closeOrderButton_ = controlsContainer->addNew<Wt::WPushButton>("❌ Close Order");
+    closeOrderButton_->setStyleClass("btn btn-outline-secondary btn-sm");
     closeOrderButton_->clicked().connect([this]() {
         closeCurrentOrder();
     });
+    closeOrderButton_->hide(); // Hidden initially
     
-    // Create split layout for menu and current order
-    auto contentContainer = editLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    contentContainer->addStyleClass("flex-grow-1");
-    auto contentLayout = contentContainer->setLayout(std::make_unique<Wt::WHBoxLayout>());
-    contentLayout->setSpacing(15);
+    // Work area (changes based on state)
+    workArea_ = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
+    workArea_->setStyleClass("pos-dynamic-work-area");
     
-    // Menu display (left side)
-    auto menuContainer = contentLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    menuContainer->addStyleClass("border rounded p-3");
-    menuContainer->setWidth(Wt::WLength(60, Wt::WLength::Unit::Percentage));
+    std::cout << "[POSModeContainer] Right panel (Work Area) created" << std::endl;
+}
+
+void POSModeContainer::createOrderEntryArea() {
+    // Order entry area - shown when no current order
+    orderEntryArea_ = std::make_unique<Wt::WContainerWidget>();
+    orderEntryArea_->setStyleClass("order-entry-area");
     
-    auto menuTitle = menuContainer->addWidget(
-        std::make_unique<Wt::WText>("📖 Menu")
+    auto layout = orderEntryArea_->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(20);
+    
+    // Welcome message
+    auto welcomeText = layout->addWidget(std::make_unique<Wt::WText>(
+        "Welcome to the Restaurant POS System"));
+    welcomeText->setStyleClass("h5 text-center text-muted mb-4");
+    
+    // Order entry panel
+    orderEntryPanel_ = layout->addWidget(
+        std::make_unique<OrderEntryPanel>(posService_, eventManager_));
+    
+    // Instructions
+    auto instructionsText = layout->addWidget(std::make_unique<Wt::WText>(
+        "💡 Select a table/location and click 'Start New Order' to begin"));
+    instructionsText->setStyleClass("text-center text-muted small");
+    
+    std::cout << "[POSModeContainer] Order entry area created" << std::endl;
+}
+
+void POSModeContainer::createOrderEditArea() {
+    // Order edit area - shown when editing an order
+    orderEditArea_ = std::make_unique<Wt::WContainerWidget>();
+    orderEditArea_->setStyleClass("order-edit-area");
+    
+    auto layout = orderEditArea_->setLayout(std::make_unique<Wt::WHBoxLayout>());
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(20);
+    
+    // Left side: Menu Display (takes more space when active orders are hidden)
+    auto menuContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    menuContainer->setStyleClass("menu-section");
+    
+    auto menuLayout = menuContainer->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    menuLayout->setContentsMargins(0, 0, 0, 0);
+    menuLayout->setSpacing(10);
+    
+    menuDisplay_ = menuLayout->addWidget(
+        std::make_unique<MenuDisplay>(posService_, eventManager_));
+    
+    // Right side: Current Order Display
+    auto orderContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    orderContainer->setStyleClass("current-order-section");
+    
+    auto orderLayout = orderContainer->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    orderLayout->setContentsMargins(0, 0, 0, 0);
+    orderLayout->setSpacing(10);
+    
+    currentOrderDisplay_ = orderLayout->addWidget(
+        std::make_unique<CurrentOrderDisplay>(posService_, eventManager_));
+    
+    // Set layout proportions: Menu gets more space (65%), Current Order (35%)
+    layout->addWidget(menuContainer, 65);
+    layout->addWidget(orderContainer, 35);
+    
+    std::cout << "[POSModeContainer] Order edit area created" << std::endl;
+}
+
+void POSModeContainer::setupEventListeners() {
+    if (!eventManager_) return;
+    
+    // Listen for current order changes to toggle display visibility
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED,
+            [this](const std::any& data) { handleCurrentOrderChanged(data); })
     );
-    menuTitle->addStyleClass("h6 mb-3 text-primary");
     
-    menuDisplay_ = menuContainer->addWidget(
-        std::make_unique<MenuDisplay>(posService_, eventManager_)
+    // Listen for order creation
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CREATED,
+            [this](const std::any& data) { handleOrderCreated(data); })
     );
     
-    // Current order display (right side)
-    auto orderContainer = contentLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    orderContainer->addStyleClass("border rounded p-3");
-    orderContainer->setWidth(Wt::WLength(40, Wt::WLength::Unit::Percentage));
-    
-    auto orderTitle = orderContainer->addWidget(
-        std::make_unique<Wt::WText>("🧾 Current Order")
-    );
-    orderTitle->addStyleClass("h6 mb-3 text-primary");
-    
-    currentOrderDisplay_ = orderContainer->addWidget(
-        std::make_unique<CurrentOrderDisplay>(posService_, eventManager_)
-    );
-    
-    // Initially hide order edit area
-    orderEditArea_->hide();
+    std::cout << "[POSModeContainer] Event listeners set up" << std::endl;
 }
 
 void POSModeContainer::updateWorkArea() {
-    bool hasOrder = hasCurrentOrder();
+    bool hasCurrentOrder = this->hasCurrentOrder();
     
-    if (hasOrder) {
+    std::cout << "[POSModeContainer] Updating work area - hasCurrentOrder: " << hasCurrentOrder << std::endl;
+    
+    // Update title
+    if (workAreaTitle_) {
+        if (hasCurrentOrder) {
+            auto order = posService_->getCurrentOrder();
+            workAreaTitle_->setText("🍽️ Editing Order #" + std::to_string(order->getOrderId()) + 
+                                   " - " + order->getTableIdentifier());
+        } else {
+            workAreaTitle_->setText("🍽️ Order Management");
+        }
+    }
+    
+    // Update close button visibility
+    if (closeOrderButton_) {
+        if (hasCurrentOrder) {
+            closeOrderButton_->show();
+        } else {
+            closeOrderButton_->hide();
+        }
+    }
+    
+    // Clear work area and add appropriate content
+    workArea_->clear();
+    
+    if (hasCurrentOrder) {
         showOrderEdit();
+        hideActiveOrdersDisplay(); // Hide orders list when editing
     } else {
         showOrderEntry();
+        showActiveOrdersDisplay();  // Show orders list when not editing
     }
 }
 
 void POSModeContainer::showOrderEntry() {
-    orderEditArea_->hide();
-    orderEntryArea_->show();
-    workAreaTitle_->setText("🍽️ Order Work Area - Ready for New Order");
+    if (orderEntryArea_) {
+        workArea_->addWidget(std::unique_ptr<Wt::WWidget>(orderEntryArea_.release()));
+        orderEntryArea_ = nullptr; // Transfer ownership
+    }
+    std::cout << "[POSModeContainer] Showing order entry area" << std::endl;
 }
 
 void POSModeContainer::showOrderEdit() {
-    orderEntryArea_->hide();
-    orderEditArea_->show();
+    if (orderEditArea_) {
+        workArea_->addWidget(std::unique_ptr<Wt::WWidget>(orderEditArea_.release()));
+        orderEditArea_ = nullptr; // Transfer ownership
+    }
+    std::cout << "[POSModeContainer] Showing order edit area" << std::endl;
+}
+
+void POSModeContainer::hideActiveOrdersDisplay() {
+    if (!leftPanel_) return;
     
-    auto currentOrder = posService_->getCurrentOrder();
-    if (currentOrder) {
-        workAreaTitle_->setText("✏️ Editing Order #" + std::to_string(currentOrder->getOrderId()) + 
-                               " - " + currentOrder->getTableIdentifier());
+    std::cout << "[POSModeContainer] Hiding Active Orders Display - giving more space to work area" << std::endl;
+    
+    // Hide the left panel
+    leftPanel_->hide();
+    
+    // Update layout to give right panel full width
+    auto layout = dynamic_cast<Wt::WHBoxLayout*>(this->layout());
+    if (layout) {
+        // Temporarily store the current stretch factors
+        layout->setStretchFactor(leftPanel_, 0);   // 0% - hidden
+        layout->setStretchFactor(rightPanel_, 1);  // 100% - full width
+    }
+    
+    // Show the toggle button to bring orders back
+    auto toggleButton = findWidget("toggle-orders-button");
+    if (toggleButton) {
+        toggleButton->show();
+    }
+    
+    // Update styling for full-width mode
+    rightPanel_->addStyleClass("pos-full-width-mode");
+}
+
+void POSModeContainer::showActiveOrdersDisplay() {
+    if (!leftPanel_) return;
+    
+    std::cout << "[POSModeContainer] Showing Active Orders Display - restoring split layout" << std::endl;
+    
+    // Show the left panel
+    leftPanel_->show();
+    
+    // Restore layout proportions
+    auto layout = dynamic_cast<Wt::WHBoxLayout*>(this->layout());
+    if (layout) {
+        layout->setStretchFactor(leftPanel_, 3);   // 30%
+        layout->setStretchFactor(rightPanel_, 7);  // 70%
+    }
+    
+    // Hide the toggle button
+    auto toggleButton = findWidget("toggle-orders-button");
+    if (toggleButton) {
+        toggleButton->hide();
+    }
+    
+    // Remove full-width styling
+    rightPanel_->removeStyleClass("pos-full-width-mode");
+    
+    // Refresh the active orders to ensure current data
+    if (activeOrdersDisplay_) {
+        activeOrdersDisplay_->refresh();
     }
 }
 
-void POSModeContainer::setupEventListeners() {
-    // Listen for order creation
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_CREATED, [this](const std::any& data) {
-            handleOrderCreated(data);
-        })
-    );
+// Event handlers
+void POSModeContainer::handleCurrentOrderChanged(const std::any& eventData) {
+    std::cout << "[POSModeContainer] Current order changed - updating work area" << std::endl;
+    updateWorkArea();
+}
+
+void POSModeContainer::handleOrderCreated(const std::any& eventData) {
+    std::cout << "[POSModeContainer] Order created - updating work area" << std::endl;
+    updateWorkArea();
+}
+
+// Public interface methods
+void POSModeContainer::refresh() {
+    updateWorkArea();
     
-    // Listen for current order changes
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED, [this](const std::any& data) {
-            handleCurrentOrderChanged(data);
-        })
-    );
+    // Refresh all components
+    if (activeOrdersDisplay_) {
+        activeOrdersDisplay_->refresh();
+    }
+    if (orderEntryPanel_) {
+        orderEntryPanel_->refresh();
+    }
+    if (menuDisplay_) {
+        menuDisplay_->refresh();
+    }
+    if (currentOrderDisplay_) {
+        currentOrderDisplay_->refresh();
+    }
     
-    std::cout << "✓ POS Mode: Event listeners configured" << std::endl;
+    std::cout << "[POSModeContainer] All components refreshed" << std::endl;
 }
 
 void POSModeContainer::createNewOrder(const std::string& tableIdentifier) {
-    auto order = posService_->createOrder(tableIdentifier);
-    if (order) {
-        posService_->setCurrentOrder(order);
-        std::cout << "📝 Created new order #" << order->getOrderId() 
-                  << " for " << tableIdentifier << std::endl;
+    if (posService_) {
+        auto order = posService_->createOrder(tableIdentifier);
+        if (order) {
+            posService_->setCurrentOrder(order);
+            std::cout << "[POSModeContainer] New order created: #" << order->getOrderId() << std::endl;
+        }
     }
 }
 
 void POSModeContainer::openOrderForEditing(std::shared_ptr<Order> order) {
-    if (order) {
+    if (order && posService_) {
         posService_->setCurrentOrder(order);
-        std::cout << "✏️ Opened order #" << order->getOrderId() << " for editing" << std::endl;
+        std::cout << "[POSModeContainer] Order #" << order->getOrderId() << " opened for editing" << std::endl;
     }
 }
 
 void POSModeContainer::closeCurrentOrder() {
-    posService_->setCurrentOrder(nullptr);
-    std::cout << "❌ Closed current order" << std::endl;
+    std::cout << "[POSModeContainer] Closing current order - returning to order selection" << std::endl;
+    
+    if (posService_) {
+        // Clear the current order (but don't delete it - it stays in active orders)
+        posService_->setCurrentOrder(nullptr);
+    }
+    
+    // This will trigger the CURRENT_ORDER_CHANGED event, which will:
+    // 1. Show the Active Orders Display again
+    // 2. Show the Order Entry area
+    // 3. Hide the Close Order button
+    
+    // Publish the event manually if needed
+    if (eventManager_) {
+        auto orderChangedEvent = POSEvents::createCurrentOrderChangedData(
+            nullptr, nullptr, "closed");
+        eventManager_->publish(POSEvents::CURRENT_ORDER_CHANGED, orderChangedEvent);
+    }
 }
 
 bool POSModeContainer::hasCurrentOrder() const {
-    return posService_->getCurrentOrder() != nullptr;
+    return posService_ && posService_->getCurrentOrder() != nullptr;
 }
 
-void POSModeContainer::refresh() {
-    if (activeOrdersDisplay_) {
-        activeOrdersDisplay_->refresh();
+// Utility method to safely transfer widget ownership back to unique_ptr
+template<typename T>
+std::unique_ptr<T> POSModeContainer::extractWidget(T* widget) {
+    if (!widget) return nullptr;
+    
+    // Remove from parent if it has one
+    if (widget->parent()) {
+        widget->parent()->removeWidget(widget);
     }
     
-    if (hasCurrentOrder()) {
-        if (menuDisplay_) menuDisplay_->refresh();
-        if (currentOrderDisplay_) currentOrderDisplay_->refresh();
+    // Return as unique_ptr (assuming we have ownership)
+    return std::unique_ptr<T>(widget);
+}
+
+// Store widgets when switching between areas
+void POSModeContainer::storeCurrentWorkArea() {
+    if (!workArea_ || workArea_->children().empty()) return;
+    
+    // Store the current work area content
+    auto currentWidget = workArea_->children()[0];
+    
+    if (dynamic_cast<Wt::WContainerWidget*>(currentWidget)) {
+        // Figure out which area this is and store it appropriately
+        bool isOrderEntry = (orderEntryPanel_ && 
+                           currentWidget->findWidget(orderEntryPanel_));
+        
+        if (isOrderEntry && !orderEntryArea_) {
+            orderEntryArea_ = extractWidget(
+                dynamic_cast<Wt::WContainerWidget*>(currentWidget));
+        } else if (!isOrderEntry && !orderEditArea_) {
+            orderEditArea_ = extractWidget(
+                dynamic_cast<Wt::WContainerWidget*>(currentWidget));
+        }
     }
-}
-
-void POSModeContainer::handleOrderCreated(const std::any& eventData) {
-    updateWorkArea();
-    refresh();
-}
-
-void POSModeContainer::handleCurrentOrderChanged(const std::any& eventData) {
-    updateWorkArea();
 }

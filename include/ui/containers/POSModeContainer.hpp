@@ -19,7 +19,10 @@
 
 /**
  * @class POSModeContainer
- * @brief Container for POS mode layout and components
+ * @brief Container for POS mode layout and components with smart Active Orders toggle
+ * 
+ * Enhanced version that intelligently shows/hides the Active Orders display
+ * to give more screen real estate when working on an order.
  */
 class POSModeContainer : public Wt::WContainerWidget {
 public:
@@ -109,6 +112,30 @@ protected:
      * @brief Shows the order edit interface
      */
     void showOrderEdit();
+    
+    /**
+     * @brief Hides the Active Orders display for more screen space
+     */
+    void hideActiveOrdersDisplay();
+    
+    /**
+     * @brief Shows the Active Orders display
+     */
+    void showActiveOrdersDisplay();
+    
+    /**
+     * @brief Stores current work area content before switching
+     */
+    void storeCurrentWorkArea();
+    
+    /**
+     * @brief Safely extracts a widget from its parent
+     * @tparam T Widget type
+     * @param widget Widget to extract
+     * @return Unique pointer to the extracted widget
+     */
+    template<typename T>
+    std::unique_ptr<T> extractWidget(T* widget);
 
 private:
     std::shared_ptr<POSService> posService_;
@@ -125,10 +152,10 @@ private:
     MenuDisplay* menuDisplay_;
     CurrentOrderDisplay* currentOrderDisplay_;
     
-    // UI state
+    // UI state management
     Wt::WText* workAreaTitle_;
-    Wt::WContainerWidget* orderEntryArea_;
-    Wt::WContainerWidget* orderEditArea_;
+    std::unique_ptr<Wt::WContainerWidget> orderEntryArea_;
+    std::unique_ptr<Wt::WContainerWidget> orderEditArea_;
     Wt::WPushButton* newOrderButton_;
     Wt::WPushButton* closeOrderButton_;
     

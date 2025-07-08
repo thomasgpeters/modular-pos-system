@@ -171,6 +171,7 @@ if(TARGET ${POS_TARGET_NAME})
         theme-framework.css
         pos-dialogs.css
         pos-system.css
+        pos-enhanced.css
         responsive.css
         theme-light.css
         theme-dark.css
