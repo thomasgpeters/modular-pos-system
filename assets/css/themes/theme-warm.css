@@ -1,0 +1,344 @@
+/* ============================================================================
+   Warm Theme CSS - Restaurant-Friendly Earth Tones
+   File: resources/css/theme-warm.css
+   ============================================================================ */
+
+/* Warm Theme CSS Variables */
+:root {
+  /* Primary Colors - Warm Brown/Orange */
+  --pos-primary: #8b4513;
+  --pos-primary-dark: #654321;
+  --pos-primary-light: #a0522d;
+  
+  /* Secondary Colors - Warm Gray */
+  --pos-secondary: #8d6e63;
+  --pos-secondary-dark: #6d4c41;
+  --pos-secondary-light: #a1887f;
+  
+  /* Success/Error Colors - Warm Tones */
+  --pos-success: #689f38;
+  --pos-warning: #ff8f00;
+  --pos-danger: #d84315;
+  --pos-info: #6d4c41;
+  
+  /* Background Colors - Warm Cream Base */
+  --pos-bg-primary: #fef7f0;
+  --pos-bg-secondary: #f5e6d3;
+  --pos-bg-tertiary: #efdfcc;
+  --pos-bg-dark: #3e2723;
+  
+  /* Text Colors - Warm Brown */
+  --pos-text-primary: #5d4037;
+  --pos-text-secondary: #6d4c41;
+  --pos-text-muted: #8d6e63;
+  --pos-text-light: #fef7f0;
+  
+  /* Border Colors - Warm Tones */
+  --pos-border: #d7ccc8;
+  --pos-border-light: #efebe9;
+  --pos-border-dark: #a1887f;
+  
+  /* Shadow - Warm */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(93, 64, 55, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(93, 64, 55, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(93, 64, 55, 0.2);
+}
+
+/* Warm Theme Body */
+body.theme-warm {
+  background-color: #fef7f0;
+  color: #5d4037;
+}
+
+/* Warm Theme Header */
+body.theme-warm .pos-header {
+  background-color: #f5e6d3;
+  border-bottom: 1px solid #d7ccc8;
+  box-shadow: 0 0.125rem 0.25rem rgba(93, 64, 55, 0.1);
+}
+
+body.theme-warm .pos-header .brand {
+  color: #8b4513;
+}
+
+/* Warm Theme Footer */
+body.theme-warm .pos-footer {
+  background-color: #f5e6d3;
+  border-top: 1px solid #d7ccc8;
+  color: #8d6e63;
+}
+
+/* Warm Theme Cards */
+body.theme-warm .pos-card {
+  background-color: #fef7f0;
+  border: 1px solid #d7ccc8;
+  box-shadow: 0 0.125rem 0.25rem rgba(93, 64, 55, 0.1);
+}
+
+/* Warm Theme Tables */
+body.theme-warm .pos-table {
+  background-color: #fef7f0;
+  border: 1px solid #d7ccc8;
+}
+
+body.theme-warm .pos-table th {
+  background-color: #f5e6d3;
+  color: #5d4037;
+  border-bottom: 2px solid #d7ccc8;
+}
+
+body.theme-warm .pos-table td {
+  color: #5d4037;
+  border-bottom: 1px solid #efebe9;
+}
+
+body.theme-warm .pos-table tr:hover {
+  background-color: #f5e6d3;
+}
+
+/* Warm Theme Buttons */
+body.theme-warm .pos-btn-primary {
+  background-color: #8b4513;
+  border-color: #8b4513;
+  color: white;
+}
+
+body.theme-warm .pos-btn-primary:hover {
+  background-color: #654321;
+  border-color: #654321;
+}
+
+body.theme-warm .pos-btn-secondary {
+  background-color: #8d6e63;
+  border-color: #8d6e63;
+  color: white;
+}
+
+body.theme-warm .pos-btn-secondary:hover {
+  background-color: #6d4c41;
+  border-color: #6d4c41;
+}
+
+/* Warm Theme Form Controls */
+body.theme-warm .pos-form-control {
+  background-color: #fef7f0;
+  border: 1px solid #d7ccc8;
+  color: #5d4037;
+}
+
+body.theme-warm .pos-form-control:focus {
+  border-color: #8b4513;
+  box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+body.theme-warm .pos-form-control::placeholder {
+  color: #8d6e63;
+}
+
+/* Warm Theme Mode Selector */
+body.theme-warm .pos-mode-selector {
+  background-color: #f5e6d3;
+  border: 1px solid #d7ccc8;
+}
+
+body.theme-warm .pos-mode-selector .pos-btn.active {
+  background-color: #8b4513;
+  color: white;
+}
+
+/* Warm Theme Badges */
+body.theme-warm .pos-badge-success {
+  background-color: #689f38;
+  color: white;
+}
+
+body.theme-warm .pos-badge-warning {
+  background-color: #ff8f00;
+  color: white;
+}
+
+body.theme-warm .pos-badge-danger {
+  background-color: #d84315;
+  color: white;
+}
+
+body.theme-warm .pos-badge-info {
+  background-color: #6d4c41;
+  color: white;
+}
+
+/* Warm Theme Notifications */
+body.theme-warm .pos-notification {
+  background-color: #fef7f0;
+  border: 1px solid #d7ccc8;
+  box-shadow: 0 0.5rem 1rem rgba(93, 64, 55, 0.15);
+}
+
+body.theme-warm .pos-notification-success {
+  border-left: 4px solid #689f38;
+}
+
+body.theme-warm .pos-notification-warning {
+  border-left: 4px solid #ff8f00;
+}
+
+body.theme-warm .pos-notification-danger {
+  border-left: 4px solid #d84315;
+}
+
+body.theme-warm .pos-notification-info {
+  border-left: 4px solid #6d4c41;
+}
+
+/* Warm Theme Loading States */
+body.theme-warm .pos-loading::after {
+  border-color: #efebe9;
+  border-top-color: #8b4513;
+}
+
+/* Warm Theme Bootstrap Overrides */
+body.theme-warm .navbar-brand {
+  color: #8b4513 !important;
+}
+
+body.theme-warm .btn-outline-primary {
+  color: #8b4513;
+  border-color: #8b4513;
+}
+
+body.theme-warm .btn-outline-primary:hover {
+  background-color: #8b4513;
+  border-color: #8b4513;
+  color: white;
+}
+
+body.theme-warm .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #f5e6d3;
+}
+
+body.theme-warm .table-hover tbody tr:hover {
+  background-color: #efdfcc;
+}
+
+body.theme-warm .card {
+  background-color: #fef7f0;
+  border-color: #d7ccc8;
+}
+
+body.theme-warm .card-header {
+  background-color: #f5e6d3;
+  border-bottom-color: #d7ccc8;
+}
+
+body.theme-warm .list-group-item {
+  background-color: #fef7f0;
+  border-color: #d7ccc8;
+  color: #5d4037;
+}
+
+body.theme-warm .list-group-item:hover {
+  background-color: #f5e6d3;
+}
+
+/* Warm Theme Menu Categories */
+body.theme-warm .menu-category {
+  background-color: #f5e6d3;
+  border: 1px solid #d7ccc8;
+  color: #5d4037;
+}
+
+body.theme-warm .menu-category:hover {
+  background-color: #efdfcc;
+}
+
+body.theme-warm .menu-item {
+  background-color: #fef7f0;
+  border: 1px solid #d7ccc8;
+  color: #5d4037;
+}
+
+body.theme-warm .menu-item:hover {
+  background-color: #f5e6d3;
+  border-color: #8b4513;
+}
+
+/* Warm Theme Order States */
+body.theme-warm .order-pending {
+  background-color: #fff8e1;
+  border: 1px solid #ffcc02;
+}
+
+body.theme-warm .order-preparing {
+  background-color: #e8f5e8;
+  border: 1px solid #4caf50;
+}
+
+body.theme-warm .order-ready {
+  background-color: #e3f2fd;
+  border: 1px solid #2196f3;
+}
+
+body.theme-warm .order-served {
+  background-color: #f5e6d3;
+  border: 1px solid #d7ccc8;
+}
+
+/* Warm Theme Kitchen Display */
+body.theme-warm .kitchen-ticket {
+  background-color: #fef7f0;
+  border: 2px solid #d7ccc8;
+  box-shadow: 0 0.25rem 0.5rem rgba(93, 64, 55, 0.15);
+  color: #5d4037;
+}
+
+body.theme-warm .kitchen-ticket.urgent {
+  border-color: #d84315;
+  background-color: #ffebee;
+}
+
+body.theme-warm .kitchen-ticket.ready {
+  border-color: #689f38;
+  background-color: #f1f8e9;
+}
+
+/* Warm Theme Focus Indicators */
+body.theme-warm *:focus {
+  outline: 2px solid #8b4513;
+  outline-offset: 2px;
+}
+
+/* Warm Theme High Contrast Elements */
+body.theme-warm .text-muted {
+  color: #8d6e63 !important;
+}
+
+body.theme-warm .text-primary {
+  color: #8b4513 !important;
+}
+
+body.theme-warm .bg-primary {
+  background-color: #8b4513 !important;
+}
+
+body.theme-warm .border-primary {
+  border-color: #8b4513 !important;
+}
+
+/* Warm Theme Restaurant Specific */
+body.theme-warm .restaurant-atmosphere {
+  background: linear-gradient(135deg, #fef7f0 0%, #f5e6d3 100%);
+}
+
+body.theme-warm .coffee-theme {
+  background-color: #6f4e37;
+  color: #fef7f0;
+}
+
+body.theme-warm .wood-texture {
+  background-image: linear-gradient(45deg, #8b4513 25%, transparent 25%), 
+                    linear-gradient(-45deg, #8b4513 25%, transparent 25%), 
+                    linear-gradient(45deg, transparent 75%, #8b4513 75%), 
+                    linear-gradient(-45deg, transparent 75%, #8b4513 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}

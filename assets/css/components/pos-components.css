@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Restaurant POS System Custom Styles */
 
 /* Layout */
@@ -216,4 +217,236 @@
 @keyframes loading {
     0% { left: -100%; }
     100% { left: 100%; }
+=======
+/* ============================================================================
+   Enhanced POS System CSS - Smart Active Orders Toggle Support
+   File: assets/css/pos-enhanced.css
+   ============================================================================ */
+
+/* POS Mode Container Layout */
+.pos-mode-container {
+    height: 100%;
+    transition: all 0.3s ease-in-out;
+}
+
+.pos-left-panel {
+    transition: all 0.3s ease-in-out;
+    border-right: 2px solid #dee2e6;
+    background-color: #f8f9fa;
+}
+
+.pos-right-panel {
+    transition: all 0.3s ease-in-out;
+    background-color: white;
+}
+
+/* Full-width mode when Active Orders are hidden */
+.pos-full-width-mode {
+    max-width: 100% !important;
+    animation: expandToFull 0.3s ease-out;
+}
+
+@keyframes expandToFull {
+    from {
+        max-width: 70%;
+    }
+    to {
+        max-width: 100%;
+    }
+}
+
+/* Work area styling */
+.pos-dynamic-work-area {
+    min-height: 500px;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Order entry area */
+.order-entry-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    border: 2px dashed #6c757d;
+}
+
+.order-entry-area:hover {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+/* Order edit area - enhanced for full-width mode */
+.order-edit-area {
+    animation: slideInFromLeft 0.3s ease-out;
+}
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Menu section gets more space when Active Orders are hidden */
+.pos-full-width-mode .menu-section {
+    flex: 0 0 70% !important; /* 70% instead of 65% */
+    max-width: 70%;
+}
+
+.pos-full-width-mode .current-order-section {
+    flex: 0 0 30% !important; /* 30% instead of 35% */
+    max-width: 30%;
+}
+
+/* Toggle button styling */
+#toggle-orders-button {
+    animation: pulseGlow 2s infinite;
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+    }
+}
+
+/* Close order button styling */
+.pos-mode-container .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* Enhanced work area title */
+.pos-work-panel h4 {
+    background: linear-gradient(45deg, #0d6efd, #6f42c1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 600;
+}
+
+/* Active Orders Display enhancements */
+.pos-left-panel .active-orders-display {
+    height: 100%;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Menu Display enhancements for full-width mode */
+.pos-full-width-mode .menu-display {
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+/* Current Order Display enhancements */
+.current-order-display {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+/* Responsive behavior */
+@media (max-width: 1200px) {
+    .pos-left-panel {
+        min-width: 300px;
+    }
+    
+    .pos-full-width-mode .menu-section {
+        flex: 0 0 65% !important;
+        max-width: 65%;
+    }
+    
+    .pos-full-width-mode .current-order-section {
+        flex: 0 0 35% !important;
+        max-width: 35%;
+    }
+}
+
+@media (max-width: 768px) {
+    .pos-mode-container .layout {
+        flex-direction: column;
+    }
+    
+    .pos-left-panel,
+    .pos-right-panel {
+        flex: none;
+        width: 100%;
+    }
+    
+    .order-edit-area .layout {
+        flex-direction: column;
+    }
+    
+    .menu-section,
+    .current-order-section {
+        flex: none !important;
+        max-width: 100% !important;
+    }
+}
+
+/* State transition animations */
+.pos-mode-container * {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Focus states for accessibility */
+.pos-mode-container button:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Loading states */
+.pos-loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.pos-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success states */
+.pos-success-flash {
+    animation: successFlash 0.6s ease-out;
+}
+
+@keyframes successFlash {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(25, 135, 84, 0.2); }
+    100% { background-color: transparent; }
+>>>>>>> 06826b188e869b4ef8eb6983f5b9b410fdee5926
 }

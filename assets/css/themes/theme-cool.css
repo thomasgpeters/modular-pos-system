@@ -1,0 +1,363 @@
+/* ============================================================================
+   Cool Theme CSS - Modern Tech-Focused Blue/Gray
+   File: resources/css/theme-cool.css
+   ============================================================================ */
+
+/* Cool Theme CSS Variables */
+:root {
+  /* Primary Colors - Cool Blue */
+  --pos-primary: #1e3a8a;
+  --pos-primary-dark: #1e40af;
+  --pos-primary-light: #3b82f6;
+  
+  /* Secondary Colors - Cool Gray */
+  --pos-secondary: #64748b;
+  --pos-secondary-dark: #475569;
+  --pos-secondary-light: #94a3b8;
+  
+  /* Success/Error Colors - Cool Tones */
+  --pos-success: #059669;
+  --pos-warning: #d97706;
+  --pos-danger: #dc2626;
+  --pos-info: #0284c7;
+  
+  /* Background Colors - Cool Blue Base */
+  --pos-bg-primary: #f0f8ff;
+  --pos-bg-secondary: #e0f2fe;
+  --pos-bg-tertiary: #b3e5fc;
+  --pos-bg-dark: #0f172a;
+  
+  /* Text Colors - Cool Dark */
+  --pos-text-primary: #1e3a8a;
+  --pos-text-secondary: #475569;
+  --pos-text-muted: #64748b;
+  --pos-text-light: #f8fafc;
+  
+  /* Border Colors - Cool Tones */
+  --pos-border: #cbd5e1;
+  --pos-border-light: #e2e8f0;
+  --pos-border-dark: #94a3b8;
+  
+  /* Shadow - Cool */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(30, 58, 138, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(30, 58, 138, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(30, 58, 138, 0.2);
+}
+
+/* Cool Theme Body */
+body.theme-cool {
+  background-color: #f0f8ff;
+  color: #1e3a8a;
+}
+
+/* Cool Theme Header */
+body.theme-cool .pos-header {
+  background-color: #e0f2fe;
+  border-bottom: 1px solid #cbd5e1;
+  box-shadow: 0 0.125rem 0.25rem rgba(30, 58, 138, 0.1);
+}
+
+body.theme-cool .pos-header .brand {
+  color: #1e3a8a;
+}
+
+/* Cool Theme Footer */
+body.theme-cool .pos-footer {
+  background-color: #e0f2fe;
+  border-top: 1px solid #cbd5e1;
+  color: #64748b;
+}
+
+/* Cool Theme Cards */
+body.theme-cool .pos-card {
+  background-color: #f0f8ff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 0.125rem 0.25rem rgba(30, 58, 138, 0.1);
+}
+
+/* Cool Theme Tables */
+body.theme-cool .pos-table {
+  background-color: #f0f8ff;
+  border: 1px solid #cbd5e1;
+}
+
+body.theme-cool .pos-table th {
+  background-color: #e0f2fe;
+  color: #1e3a8a;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+body.theme-cool .pos-table td {
+  color: #1e3a8a;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+body.theme-cool .pos-table tr:hover {
+  background-color: #e0f2fe;
+}
+
+/* Cool Theme Buttons */
+body.theme-cool .pos-btn-primary {
+  background-color: #1e3a8a;
+  border-color: #1e3a8a;
+  color: white;
+}
+
+body.theme-cool .pos-btn-primary:hover {
+  background-color: #1e40af;
+  border-color: #1e40af;
+}
+
+body.theme-cool .pos-btn-secondary {
+  background-color: #64748b;
+  border-color: #64748b;
+  color: white;
+}
+
+body.theme-cool .pos-btn-secondary:hover {
+  background-color: #475569;
+  border-color: #475569;
+}
+
+/* Cool Theme Form Controls */
+body.theme-cool .pos-form-control {
+  background-color: #f0f8ff;
+  border: 1px solid #cbd5e1;
+  color: #1e3a8a;
+}
+
+body.theme-cool .pos-form-control:focus {
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.25);
+}
+
+body.theme-cool .pos-form-control::placeholder {
+  color: #64748b;
+}
+
+/* Cool Theme Mode Selector */
+body.theme-cool .pos-mode-selector {
+  background-color: #e0f2fe;
+  border: 1px solid #cbd5e1;
+}
+
+body.theme-cool .pos-mode-selector .pos-btn.active {
+  background-color: #1e3a8a;
+  color: white;
+}
+
+/* Cool Theme Badges */
+body.theme-cool .pos-badge-success {
+  background-color: #059669;
+  color: white;
+}
+
+body.theme-cool .pos-badge-warning {
+  background-color: #d97706;
+  color: white;
+}
+
+body.theme-cool .pos-badge-danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+body.theme-cool .pos-badge-info {
+  background-color: #0284c7;
+  color: white;
+}
+
+/* Cool Theme Notifications */
+body.theme-cool .pos-notification {
+  background-color: #f0f8ff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 0.5rem 1rem rgba(30, 58, 138, 0.15);
+}
+
+body.theme-cool .pos-notification-success {
+  border-left: 4px solid #059669;
+}
+
+body.theme-cool .pos-notification-warning {
+  border-left: 4px solid #d97706;
+}
+
+body.theme-cool .pos-notification-danger {
+  border-left: 4px solid #dc2626;
+}
+
+body.theme-cool .pos-notification-info {
+  border-left: 4px solid #0284c7;
+}
+
+/* Cool Theme Loading States */
+body.theme-cool .pos-loading::after {
+  border-color: #e2e8f0;
+  border-top-color: #1e3a8a;
+}
+
+/* Cool Theme Bootstrap Overrides */
+body.theme-cool .navbar-brand {
+  color: #1e3a8a !important;
+}
+
+body.theme-cool .btn-outline-primary {
+  color: #1e3a8a;
+  border-color: #1e3a8a;
+}
+
+body.theme-cool .btn-outline-primary:hover {
+  background-color: #1e3a8a;
+  border-color: #1e3a8a;
+  color: white;
+}
+
+body.theme-cool .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #e0f2fe;
+}
+
+body.theme-cool .table-hover tbody tr:hover {
+  background-color: #b3e5fc;
+}
+
+body.theme-cool .card {
+  background-color: #f0f8ff;
+  border-color: #cbd5e1;
+}
+
+body.theme-cool .card-header {
+  background-color: #e0f2fe;
+  border-bottom-color: #cbd5e1;
+}
+
+body.theme-cool .list-group-item {
+  background-color: #f0f8ff;
+  border-color: #cbd5e1;
+  color: #1e3a8a;
+}
+
+body.theme-cool .list-group-item:hover {
+  background-color: #e0f2fe;
+}
+
+/* Cool Theme Menu Categories */
+body.theme-cool .menu-category {
+  background-color: #e0f2fe;
+  border: 1px solid #cbd5e1;
+  color: #1e3a8a;
+}
+
+body.theme-cool .menu-category:hover {
+  background-color: #b3e5fc;
+}
+
+body.theme-cool .menu-item {
+  background-color: #f0f8ff;
+  border: 1px solid #cbd5e1;
+  color: #1e3a8a;
+}
+
+body.theme-cool .menu-item:hover {
+  background-color: #e0f2fe;
+  border-color: #1e3a8a;
+}
+
+/* Cool Theme Order States */
+body.theme-cool .order-pending {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+}
+
+body.theme-cool .order-preparing {
+  background-color: #dcfce7;
+  border: 1px solid #16a34a;
+}
+
+body.theme-cool .order-ready {
+  background-color: #dbeafe;
+  border: 1px solid #2563eb;
+}
+
+body.theme-cool .order-served {
+  background-color: #e0f2fe;
+  border: 1px solid #cbd5e1;
+}
+
+/* Cool Theme Kitchen Display */
+body.theme-cool .kitchen-ticket {
+  background-color: #f0f8ff;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 0.25rem 0.5rem rgba(30, 58, 138, 0.15);
+  color: #1e3a8a;
+}
+
+body.theme-cool .kitchen-ticket.urgent {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+body.theme-cool .kitchen-ticket.ready {
+  border-color: #059669;
+  background-color: #f0fdf4;
+}
+
+/* Cool Theme Focus Indicators */
+body.theme-cool *:focus {
+  outline: 2px solid #1e3a8a;
+  outline-offset: 2px;
+}
+
+/* Cool Theme High Contrast Elements */
+body.theme-cool .text-muted {
+  color: #64748b !important;
+}
+
+body.theme-cool .text-primary {
+  color: #1e3a8a !important;
+}
+
+body.theme-cool .bg-primary {
+  background-color: #1e3a8a !important;
+}
+
+body.theme-cool .border-primary {
+  border-color: #1e3a8a !important;
+}
+
+/* Cool Theme Tech-Specific */
+body.theme-cool .tech-gradient {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e0f2fe 50%, #b3e5fc 100%);
+}
+
+body.theme-cool .digital-pattern {
+  background-image: radial-gradient(circle at 1px 1px, #cbd5e1 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+body.theme-cool .circuit-board {
+  background-color: #1e3a8a;
+  background-image: 
+    linear-gradient(45deg, #3b82f6 25%, transparent 25%), 
+    linear-gradient(-45deg, #3b82f6 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #3b82f6 75%), 
+    linear-gradient(-45deg, transparent 75%, #3b82f6 75%);
+  background-size: 30px 30px;
+  background-position: 0 0, 0 15px, 15px -15px, -15px 0px;
+}
+
+/* Cool Theme Glass Effect */
+body.theme-cool .glass-effect {
+  background: rgba(240, 248, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(203, 213, 225, 0.3);
+}
+
+/* Cool Theme Neon Accents */
+body.theme-cool .neon-accent {
+  box-shadow: 0 0 5px #1e3a8a, 0 0 10px #1e3a8a, 0 0 15px #1e3a8a;
+}
+
+body.theme-cool .neon-text {
+  color: #1e3a8a;
+  text-shadow: 0 0 5px #1e3a8a, 0 0 10px #1e3a8a;
+}
