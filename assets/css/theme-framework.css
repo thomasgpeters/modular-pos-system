@@ -1,0 +1,446 @@
+/* ============================================================================
+   Theme Framework CSS - Base Variables and Common Styles
+   File: resources/css/theme-framework.css
+   ============================================================================ */
+
+/* Bootstrap 5 Import */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css');
+
+/* Base CSS Variables - Will be overridden by theme-specific files */
+:root {
+  /* Primary Colors */
+  --pos-primary: #007bff;
+  --pos-primary-dark: #0056b3;
+  --pos-primary-light: #66b3ff;
+  
+  /* Secondary Colors */
+  --pos-secondary: #6c757d;
+  --pos-secondary-dark: #545b62;
+  --pos-secondary-light: #9ca3af;
+  
+  /* Success/Error Colors */
+  --pos-success: #28a745;
+  --pos-warning: #ffc107;
+  --pos-danger: #dc3545;
+  --pos-info: #17a2b8;
+  
+  /* Background Colors */
+  --pos-bg-primary: #ffffff;
+  --pos-bg-secondary: #f8f9fa;
+  --pos-bg-tertiary: #e9ecef;
+  --pos-bg-dark: #343a40;
+  
+  /* Text Colors */
+  --pos-text-primary: #212529;
+  --pos-text-secondary: #6c757d;
+  --pos-text-muted: #9ca3af;
+  --pos-text-light: #ffffff;
+  
+  /* Border Colors */
+  --pos-border: #dee2e6;
+  --pos-border-light: #f1f3f4;
+  --pos-border-dark: #adb5bd;
+  
+  /* Shadow */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  
+  /* Border Radius */
+  --pos-border-radius: 0.25rem;
+  --pos-border-radius-sm: 0.125rem;
+  --pos-border-radius-lg: 0.5rem;
+  
+  /* Spacing */
+  --pos-spacing-xs: 0.25rem;
+  --pos-spacing-sm: 0.5rem;
+  --pos-spacing-md: 1rem;
+  --pos-spacing-lg: 1.5rem;
+  --pos-spacing-xl: 3rem;
+  
+  /* Typography */
+  --pos-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --pos-font-size-base: 1rem;
+  --pos-font-size-sm: 0.875rem;
+  --pos-font-size-lg: 1.125rem;
+  --pos-line-height-base: 1.5;
+  
+  /* Transitions */
+  --pos-transition: all 0.2s ease-in-out;
+  --pos-transition-fast: all 0.1s ease-in-out;
+  --pos-transition-slow: all 0.3s ease-in-out;
+}
+
+/* ============================================================================
+   Global Styles
+   ============================================================================ */
+
+body {
+  font-family: var(--pos-font-family);
+  font-size: var(--pos-font-size-base);
+  line-height: var(--pos-line-height-base);
+  color: var(--pos-text-primary);
+  background-color: var(--pos-bg-primary);
+  transition: var(--pos-transition);
+}
+
+/* ============================================================================
+   Theme-specific Body Classes
+   ============================================================================ */
+
+/* Base Theme (Bootstrap Default) */
+body.theme-base {
+  /* Uses default Bootstrap colors */
+}
+
+/* Light Theme */
+body.theme-light {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+/* Dark Theme */
+body.theme-dark {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+/* Warm Theme */
+body.theme-warm {
+  background-color: #fef7f0;
+  color: #5d4037;
+}
+
+/* Cool Theme */
+body.theme-cool {
+  background-color: #f0f8ff;
+  color: #1e3a8a;
+}
+
+/* ============================================================================
+   Common Component Styles
+   ============================================================================ */
+
+/* Header Styles */
+.pos-header {
+  background-color: var(--pos-bg-secondary);
+  border-bottom: 1px solid var(--pos-border);
+  padding: var(--pos-spacing-md);
+  box-shadow: var(--pos-shadow-sm);
+}
+
+.pos-header .brand {
+  font-size: var(--pos-font-size-lg);
+  font-weight: 600;
+  color: var(--pos-primary);
+}
+
+/* Footer Styles */
+.pos-footer {
+  background-color: var(--pos-bg-secondary);
+  border-top: 1px solid var(--pos-border);
+  padding: var(--pos-spacing-sm) var(--pos-spacing-md);
+  font-size: var(--pos-font-size-sm);
+  color: var(--pos-text-secondary);
+}
+
+/* Card Styles */
+.pos-card {
+  background-color: var(--pos-bg-primary);
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-border-radius);
+  box-shadow: var(--pos-shadow-sm);
+  padding: var(--pos-spacing-md);
+  margin-bottom: var(--pos-spacing-md);
+}
+
+/* Table Styles */
+.pos-table {
+  background-color: var(--pos-bg-primary);
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-border-radius);
+  overflow: hidden;
+}
+
+.pos-table th {
+  background-color: var(--pos-bg-secondary);
+  color: var(--pos-text-primary);
+  font-weight: 600;
+  padding: var(--pos-spacing-sm);
+  border-bottom: 2px solid var(--pos-border);
+}
+
+.pos-table td {
+  padding: var(--pos-spacing-sm);
+  border-bottom: 1px solid var(--pos-border-light);
+}
+
+.pos-table tr:hover {
+  background-color: var(--pos-bg-tertiary);
+}
+
+/* Button Styles */
+.pos-btn {
+  display: inline-block;
+  padding: var(--pos-spacing-sm) var(--pos-spacing-md);
+  font-size: var(--pos-font-size-base);
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--pos-border-radius);
+  cursor: pointer;
+  transition: var(--pos-transition);
+}
+
+.pos-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--pos-shadow);
+}
+
+.pos-btn-primary {
+  background-color: var(--pos-primary);
+  color: white;
+  border-color: var(--pos-primary);
+}
+
+.pos-btn-primary:hover {
+  background-color: var(--pos-primary-dark);
+  border-color: var(--pos-primary-dark);
+}
+
+.pos-btn-secondary {
+  background-color: var(--pos-secondary);
+  color: white;
+  border-color: var(--pos-secondary);
+}
+
+.pos-btn-success {
+  background-color: var(--pos-success);
+  color: white;
+  border-color: var(--pos-success);
+}
+
+.pos-btn-warning {
+  background-color: var(--pos-warning);
+  color: var(--pos-text-primary);
+  border-color: var(--pos-warning);
+}
+
+.pos-btn-danger {
+  background-color: var(--pos-danger);
+  color: white;
+  border-color: var(--pos-danger);
+}
+
+/* Form Styles */
+.pos-form-control {
+  display: block;
+  width: 100%;
+  padding: var(--pos-spacing-sm);
+  font-size: var(--pos-font-size-base);
+  color: var(--pos-text-primary);
+  background-color: var(--pos-bg-primary);
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-border-radius);
+  transition: var(--pos-transition);
+}
+
+.pos-form-control:focus {
+  outline: none;
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Mode Selector Styles */
+.pos-mode-selector {
+  display: flex;
+  gap: var(--pos-spacing-sm);
+  padding: var(--pos-spacing-sm);
+  background-color: var(--pos-bg-secondary);
+  border-radius: var(--pos-border-radius);
+}
+
+.pos-mode-selector .pos-btn {
+  flex: 1;
+  text-align: center;
+}
+
+.pos-mode-selector .pos-btn.active {
+  background-color: var(--pos-primary);
+  color: white;
+}
+
+/* Theme Selector Styles */
+.pos-theme-selector {
+  position: relative;
+}
+
+.pos-theme-selector select {
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+}
+
+/* Status Badge Styles */
+.pos-badge {
+  display: inline-block;
+  padding: var(--pos-spacing-xs) var(--pos-spacing-sm);
+  font-size: var(--pos-font-size-sm);
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  border-radius: var(--pos-border-radius-sm);
+}
+
+.pos-badge-success {
+  background-color: var(--pos-success);
+  color: white;
+}
+
+.pos-badge-warning {
+  background-color: var(--pos-warning);
+  color: var(--pos-text-primary);
+}
+
+.pos-badge-danger {
+  background-color: var(--pos-danger);
+  color: white;
+}
+
+.pos-badge-info {
+  background-color: var(--pos-info);
+  color: white;
+}
+
+/* Notification Styles */
+.pos-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1050;
+  max-width: 400px;
+  padding: var(--pos-spacing-md);
+  background-color: var(--pos-bg-primary);
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-border-radius);
+  box-shadow: var(--pos-shadow-lg);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.pos-notification-success {
+  border-left: 4px solid var(--pos-success);
+}
+
+.pos-notification-warning {
+  border-left: 4px solid var(--pos-warning);
+}
+
+.pos-notification-danger {
+  border-left: 4px solid var(--pos-danger);
+}
+
+.pos-notification-info {
+  border-left: 4px solid var(--pos-info);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pos-card {
+    padding: var(--pos-spacing-sm);
+  }
+  
+  .pos-table {
+    font-size: var(--pos-font-size-sm);
+  }
+  
+  .pos-mode-selector {
+    flex-direction: column;
+  }
+  
+  .pos-notification {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+/* Loading States */
+.pos-loading {
+  position: relative;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.pos-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid var(--pos-border);
+  border-radius: 50%;
+  border-top-color: var(--pos-primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Accessibility */
+.pos-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Focus styles for better accessibility */
+.pos-btn:focus,
+.pos-form-control:focus {
+  outline: 2px solid var(--pos-primary);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .pos-header,
+  .pos-footer,
+  .pos-mode-selector,
+  .pos-theme-selector,
+  .pos-notification {
+    display: none !important;
+  }
+  
+  .pos-card {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .pos-table {
+    box-shadow: none;
+  }
+}

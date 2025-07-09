@@ -35,7 +35,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 # ============================================================================
 
 # Find Wt
-find_package(Wt REQUIRED)
+find_package(Wt REQUIRED) 
 if(Wt_FOUND)
     message(STATUS "Found Wt: ${Wt_VERSION}")
 else()

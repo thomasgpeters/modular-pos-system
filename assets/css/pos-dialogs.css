@@ -1,0 +1,253 @@
+/* ============================================================================
+   POS Dialog and Modal Styling
+   File: assets/css/pos-dialogs.css
+   ============================================================================ */
+
+/* Modal Dialog Styling */
+.pos-dialog {
+    border: 2px solid #0d6efd;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: white;
+    z-index: 1050;
+}
+
+.pos-dialog .Wt-dialog-titlebar {
+    background: linear-gradient(135deg, #0d6efd, #0056b3);
+    color: white;
+    border-radius: 10px 10px 0 0;
+    padding: 15px 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.pos-dialog .Wt-dialog-body {
+    background: white;
+    border-radius: 0 0 10px 10px;
+}
+
+/* Modal Overlay */
+.Wt-dialog-cover {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    z-index: 1040;
+}
+
+/* Form Elements in Dialog */
+.pos-dialog .form-label {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.pos-dialog .form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.pos-dialog .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+/* Button Styling in Dialogs */
+.pos-dialog .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin: 0 5px;
+}
+
+.pos-dialog .btn-success {
+    background: linear-gradient(135deg, #198754, #157347);
+    border: none;
+    color: white;
+}
+
+.pos-dialog .btn-success:hover {
+    background: linear-gradient(135deg, #157347, #146c43);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(21, 115, 71, 0.3);
+}
+
+.pos-dialog .btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    background: white;
+}
+
+.pos-dialog .btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* Item Information Display */
+.pos-dialog .item-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.pos-dialog .item-name {
+    color: #0d6efd;
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.pos-dialog .item-price {
+    color: #198754;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.pos-dialog .item-category {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Total Display */
+.pos-dialog .total-display {
+    background: linear-gradient(135deg, #e8f5e8, #d1edcc);
+    border: 2px solid #198754;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.pos-dialog .total-amount {
+    color: #198754;
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+/* Quantity Input Special Styling */
+.pos-dialog .quantity-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.pos-dialog .quantity-container .form-control {
+    width: 80px;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Instructions Input */
+.pos-dialog .instructions-container {
+    margin: 15px 0;
+}
+
+.pos-dialog .instructions-container .form-control {
+    min-height: 50px;
+    resize: vertical;
+}
+
+/* Animation for Dialog Appearance */
+.pos-dialog {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translate3d(0, -100%, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Responsive Dialog */
+@media (max-width: 768px) {
+    .pos-dialog {
+        margin: 10px;
+        width: calc(100% - 20px) !important;
+        max-width: none !important;
+    }
+    
+    .pos-dialog .Wt-dialog-titlebar {
+        padding: 12px 15px;
+        font-size: 1rem;
+    }
+}
+
+/* Focus States for Accessibility */
+.pos-dialog .btn:focus,
+.pos-dialog .form-control:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+/* Loading State (if needed) */
+.pos-dialog.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.pos-dialog.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success/Error States */
+.pos-dialog .alert {
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border: none;
+}
+
+.pos-dialog .alert-success {
+    background: linear-gradient(135deg, #d1edcc, #c3e6c3);
+    color: #0f5132;
+    border-left: 4px solid #198754;
+}
+
+.pos-dialog .alert-danger {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+/* Table styling within dialogs (if needed) */
+.pos-dialog .table {
+    margin: 0;
+    background: white;
+}
+
+.pos-dialog .table th {
+    border-top: none;
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.pos-dialog .table td {
+    border-top: 1px solid #e9ecef;
+    vertical-align: middle;
+}

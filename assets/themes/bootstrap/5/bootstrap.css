@@ -1,0 +1,57 @@
+/* Wt Bootstrap 5 Theme CSS */
+@import url('bootstrap.min.css');
+
+/* Additional Wt-specific styles */
+.Wt-domRoot {
+    height: 100vh;
+}
+
+/* POS System specific overrides */
+.pos-mode {
+    background-color: var(--bs-light);
+}
+
+.kitchen-mode {
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+}
+
+/* Table styling for POS displays */
+.table-pos {
+    font-size: 0.9rem;
+}
+
+.table-pos th {
+    background-color: var(--bs-primary);
+    color: white;
+    border: none;
+}
+
+/* Button styling */
+.btn-pos-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-pos-success {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+/* Card styling for containers */
+.card-pos {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .table-pos {
+        font-size: 0.8rem;
+    }
+    
+    .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+}

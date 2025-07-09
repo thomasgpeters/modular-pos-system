@@ -1,0 +1,345 @@
+/* ============================================================================
+   Dark Theme CSS - Modern Dark Mode
+   File: resources/css/theme-dark.css
+   ============================================================================ */
+
+/* Dark Theme CSS Variables */
+:root {
+  /* Primary Colors - Bright Blue for Dark */
+  --pos-primary: #4dabf7;
+  --pos-primary-dark: #339af0;
+  --pos-primary-light: #74c0fc;
+  
+  /* Secondary Colors - Dark Gray */
+  --pos-secondary: #868e96;
+  --pos-secondary-dark: #6c757d;
+  --pos-secondary-light: #adb5bd;
+  
+  /* Success/Error Colors - Muted for Dark */
+  --pos-success: #51cf66;
+  --pos-warning: #ffd43b;
+  --pos-danger: #ff6b6b;
+  --pos-info: #22d3ee;
+  
+  /* Background Colors - Dark Base */
+  --pos-bg-primary: #1a1a1a;
+  --pos-bg-secondary: #2d2d2d;
+  --pos-bg-tertiary: #404040;
+  --pos-bg-dark: #0a0a0a;
+  
+  /* Text Colors - Light for Dark Background */
+  --pos-text-primary: #ffffff;
+  --pos-text-secondary: #e9ecef;
+  --pos-text-muted: #adb5bd;
+  --pos-text-light: #f8f9fa;
+  
+  /* Border Colors - Dark */
+  --pos-border: #404040;
+  --pos-border-light: #333333;
+  --pos-border-dark: #555555;
+  
+  /* Shadow - Dark Mode */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+/* Dark Theme Body */
+body.theme-dark {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+/* Dark Theme Header */
+body.theme-dark .pos-header {
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #404040;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .pos-header .brand {
+  color: #4dabf7;
+}
+
+/* Dark Theme Footer */
+body.theme-dark .pos-footer {
+  background-color: #2d2d2d;
+  border-top: 1px solid #404040;
+  color: #adb5bd;
+}
+
+/* Dark Theme Cards */
+body.theme-dark .pos-card {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+}
+
+/* Dark Theme Tables */
+body.theme-dark .pos-table {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  color: #ffffff;
+}
+
+body.theme-dark .pos-table th {
+  background-color: #404040;
+  color: #f8f9fa;
+  border-bottom: 2px solid #555555;
+}
+
+body.theme-dark .pos-table td {
+  color: #e9ecef;
+  border-bottom: 1px solid #333333;
+}
+
+body.theme-dark .pos-table tr:hover {
+  background-color: #404040;
+}
+
+/* Dark Theme Buttons */
+body.theme-dark .pos-btn-primary {
+  background-color: #4dabf7;
+  border-color: #4dabf7;
+  color: #1a1a1a;
+}
+
+body.theme-dark .pos-btn-primary:hover {
+  background-color: #339af0;
+  border-color: #339af0;
+}
+
+body.theme-dark .pos-btn-secondary {
+  background-color: #868e96;
+  border-color: #868e96;
+  color: #ffffff;
+}
+
+body.theme-dark .pos-btn-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+/* Dark Theme Form Controls */
+body.theme-dark .pos-form-control {
+  background-color: #2d2d2d;
+  border: 1px solid #555555;
+  color: #ffffff;
+}
+
+body.theme-dark .pos-form-control:focus {
+  border-color: #4dabf7;
+  box-shadow: 0 0 0 0.2rem rgba(77, 171, 247, 0.25);
+}
+
+body.theme-dark .pos-form-control::placeholder {
+  color: #adb5bd;
+}
+
+/* Dark Theme Mode Selector */
+body.theme-dark .pos-mode-selector {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+}
+
+body.theme-dark .pos-mode-selector .pos-btn.active {
+  background-color: #4dabf7;
+  color: #1a1a1a;
+}
+
+/* Dark Theme Badges */
+body.theme-dark .pos-badge-success {
+  background-color: #51cf66;
+  color: #1a1a1a;
+}
+
+body.theme-dark .pos-badge-warning {
+  background-color: #ffd43b;
+  color: #1a1a1a;
+}
+
+body.theme-dark .pos-badge-danger {
+  background-color: #ff6b6b;
+  color: #ffffff;
+}
+
+body.theme-dark .pos-badge-info {
+  background-color: #22d3ee;
+  color: #1a1a1a;
+}
+
+/* Dark Theme Notifications */
+body.theme-dark .pos-notification {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+}
+
+body.theme-dark .pos-notification-success {
+  border-left: 4px solid #51cf66;
+}
+
+body.theme-dark .pos-notification-warning {
+  border-left: 4px solid #ffd43b;
+}
+
+body.theme-dark .pos-notification-danger {
+  border-left: 4px solid #ff6b6b;
+}
+
+body.theme-dark .pos-notification-info {
+  border-left: 4px solid #22d3ee;
+}
+
+/* Dark Theme Loading States */
+body.theme-dark .pos-loading::after {
+  border-color: #404040;
+  border-top-color: #4dabf7;
+}
+
+/* Dark Theme Bootstrap Overrides */
+body.theme-dark .navbar-brand {
+  color: #4dabf7 !important;
+}
+
+body.theme-dark .btn-outline-primary {
+  color: #4dabf7;
+  border-color: #4dabf7;
+}
+
+body.theme-dark .btn-outline-primary:hover {
+  background-color: #4dabf7;
+  border-color: #4dabf7;
+  color: #1a1a1a;
+}
+
+body.theme-dark .table-striped tbody tr:nth-of-type(odd) {
+  background-color: #2d2d2d;
+}
+
+body.theme-dark .table-hover tbody tr:hover {
+  background-color: #404040;
+}
+
+body.theme-dark .card {
+  background-color: #2d2d2d;
+  border-color: #404040;
+}
+
+body.theme-dark .card-header {
+  background-color: #404040;
+  border-bottom-color: #555555;
+}
+
+body.theme-dark .list-group-item {
+  background-color: #2d2d2d;
+  border-color: #404040;
+  color: #ffffff;
+}
+
+body.theme-dark .list-group-item:hover {
+  background-color: #404040;
+}
+
+/* Dark Theme Menu Categories */
+body.theme-dark .menu-category {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  color: #ffffff;
+}
+
+body.theme-dark .menu-category:hover {
+  background-color: #404040;
+}
+
+body.theme-dark .menu-item {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+  color: #ffffff;
+}
+
+body.theme-dark .menu-item:hover {
+  background-color: #404040;
+  border-color: #4dabf7;
+}
+
+/* Dark Theme Order States */
+body.theme-dark .order-pending {
+  background-color: #3d3000;
+  border: 1px solid #5a4500;
+}
+
+body.theme-dark .order-preparing {
+  background-color: #003d4a;
+  border: 1px solid #005a6e;
+}
+
+body.theme-dark .order-ready {
+  background-color: #1a4a1a;
+  border: 1px solid #2d6e2d;
+}
+
+body.theme-dark .order-served {
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
+}
+
+/* Dark Theme Kitchen Display */
+body.theme-dark .kitchen-ticket {
+  background-color: #2d2d2d;
+  border: 2px solid #404040;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+}
+
+body.theme-dark .kitchen-ticket.urgent {
+  border-color: #ff6b6b;
+  background-color: #4a1a1a;
+}
+
+body.theme-dark .kitchen-ticket.ready {
+  border-color: #51cf66;
+  background-color: #1a4a1a;
+}
+
+/* Dark Theme Focus Indicators */
+body.theme-dark *:focus {
+  outline: 2px solid #4dabf7;
+  outline-offset: 2px;
+}
+
+/* Dark Theme High Contrast Elements */
+body.theme-dark .text-muted {
+  color: #adb5bd !important;
+}
+
+body.theme-dark .text-primary {
+  color: #4dabf7 !important;
+}
+
+body.theme-dark .bg-primary {
+  background-color: #4dabf7 !important;
+}
+
+body.theme-dark .border-primary {
+  border-color: #4dabf7 !important;
+}
+
+/* Dark Theme Scrollbars */
+body.theme-dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.theme-dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+body.theme-dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 4px;
+}
+
+body.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}

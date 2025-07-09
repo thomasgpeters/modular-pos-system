@@ -1,0 +1,62 @@
+/* Responsive Utilities for POS System */
+
+/* Mobile First Approach */
+@media (min-width: 576px) {
+    .container-pos {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+    .container-pos {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+    .container-pos {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .container-pos {
+        max-width: 1140px;
+    }
+}
+
+/* Hide/Show utilities */
+.d-mobile-none {
+    display: none !important;
+}
+
+.d-desktop-none {
+    display: block !important;
+}
+
+@media (min-width: 768px) {
+    .d-mobile-none {
+        display: block !important;
+    }
+    
+    .d-desktop-none {
+        display: none !important;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 767px) {
+    .table-responsive-mobile {
+        font-size: 0.75rem;
+    }
+    
+    .table-responsive-mobile th,
+    .table-responsive-mobile td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .btn-group-mobile .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
