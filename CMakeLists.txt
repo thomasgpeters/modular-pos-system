@@ -211,14 +211,11 @@ add_custom_target(copy_css_assets
 
 # Process the wt_config template file
 configure_file(
-  ${CMAKE_SOURCE_DIR}/config/wt_config.xml.in  # Input template
-  ${CMAKE_BINARY_DIR}/config/wt_config.xml    # Output file
-  @ONLY                                # Replace only @VARIABLE@ placeholders
+  ${CMAKE_SOURCE_DIR}/config/wt_config.xml.in   # Input template
+  ${CMAKE_BINARY_DIR}/config/wt_config.xml      # Output file
+  @ONLY                                         # Replace only @VARIABLE@ placeholders
   COMMENT "Copying wt_config.xml from template."
 )
-
-
-
 
 # ============================================================================
 # SOURCE FILES
