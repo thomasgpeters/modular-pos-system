@@ -1,0 +1,216 @@
+/**
+ * Light Theme for Restaurant POS
+ * Bright, clean theme for day shifts and high-visibility environments
+ * 
+ * This theme overrides the CSS custom properties defined in theme-framework.css
+ */
+
+:root {
+  /* ========================================================================
+     LIGHT THEME COLOR PALETTE
+     ======================================================================== */
+  
+  /* Primary Brand Colors - Bright and Professional */
+  --pos-primary: #0d6efd;          /* Bright blue */
+  --pos-secondary: #6c757d;        /* Cool gray */
+  --pos-success: #198754;          /* Fresh green */
+  --pos-warning: #fd7e14;          /* Vibrant orange */
+  --pos-danger: #dc3545;           /* Clear red */
+  --pos-info: #0dcaf0;             /* Light cyan */
+  --pos-light: #f8f9fa;            /* Very light gray */
+  --pos-dark: #212529;             /* Dark gray */
+  
+  /* Background Colors - Clean and Bright */
+  --pos-bg-primary: #ffffff;       /* Pure white */
+  --pos-bg-secondary: #f8f9fa;     /* Light gray */
+  --pos-bg-tertiary: #e9ecef;      /* Medium light gray */
+  --pos-bg-accent: #f0f8ff;        /* Alice blue tint */
+  
+  /* Text Colors - High Contrast for Readability */
+  --pos-text-primary: #212529;     /* Dark gray-black */
+  --pos-text-secondary: #495057;   /* Medium gray */
+  --pos-text-muted: #6c757d;       /* Light gray */
+  --pos-text-inverse: #ffffff;     /* White for dark backgrounds */
+  
+  /* Border Colors - Subtle but Defined */
+  --pos-border-color: #dee2e6;     /* Light border */
+  --pos-border-light: #e9ecef;     /* Very light border */
+  --pos-border-dark: #adb5bd;      /* Medium border */
+  
+  /* ========================================================================
+     COMPONENT SPECIFIC OVERRIDES
+     ======================================================================== */
+  
+  /* Header - Professional Blue */
+  --pos-header-bg: #0d6efd;
+  --pos-header-text: #ffffff;
+  
+  /* Footer - Subtle Gray */
+  --pos-footer-bg: #f8f9fa;
+  --pos-footer-text: #6c757d;
+  
+  /* ========================================================================
+     ORDER STATUS COLORS - Light Theme Optimized
+     ======================================================================== */
+  
+  --pos-order-pending: #6c757d;     /* Neutral gray */
+  --pos-order-preparing: #fd7e14;   /* Active orange */
+  --pos-order-ready: #20c997;       /* Ready teal */
+  --pos-order-completed: #198754;   /* Success green */
+  --pos-order-cancelled: #dc3545;   /* Clear red */
+  
+  /* ========================================================================
+     KITCHEN STATUS COLORS - Light Theme
+     ======================================================================== */
+  
+  --pos-kitchen-idle: #198754;      /* Green for good */
+  --pos-kitchen-busy: #fd7e14;      /* Orange for caution */
+  --pos-kitchen-overloaded: #dc3545; /* Red for urgent */
+  
+  /* ========================================================================
+     ENHANCED LIGHT THEME PROPERTIES
+     ======================================================================== */
+  
+  /* Enhanced Shadows for Depth */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.2);
+  
+  /* Light Theme Specific Gradients */
+  --pos-gradient-primary: linear-gradient(135deg, #0d6efd 0%, #0056d3 100%);
+  --pos-gradient-success: linear-gradient(135deg, #198754 0%, #146c43 100%);
+  --pos-gradient-warning: linear-gradient(135deg, #fd7e14 0%, #e8690b 100%);
+  
+  /* Table Enhancements */
+  --pos-table-stripe: #f8f9fa;      /* Very subtle stripe */
+  --pos-table-hover: #e9ecef;       /* Light hover effect */
+  --pos-table-active: #dee2e6;      /* Selected row */
+}
+
+/* ============================================================================
+   LIGHT THEME SPECIFIC STYLES
+   ============================================================================ */
+
+/* Enhanced Button Styles */
+.light-theme .pos-button {
+  box-shadow: var(--pos-shadow-sm);
+}
+
+.light-theme .pos-button:hover {
+  box-shadow: var(--pos-shadow);
+}
+
+/* Clean Card Styling */
+.light-theme .pos-container,
+.light-theme .panel-container {
+  background: var(--pos-bg-primary);
+  border: 1px solid var(--pos-border-light);
+  box-shadow: var(--pos-shadow-sm);
+}
+
+/* Table Enhancements */
+.light-theme .pos-table tbody tr:nth-child(even) {
+  background-color: var(--pos-table-stripe);
+}
+
+.light-theme .pos-table tbody tr:hover {
+  background-color: var(--pos-table-hover);
+}
+
+/* Form Control Polish */
+.light-theme .pos-form-control {
+  border: 1px solid var(--pos-border-color);
+  background-color: var(--pos-bg-primary);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.light-theme .pos-form-control:focus {
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* ============================================================================
+   LIGHT THEME MODE INDICATORS
+   ============================================================================ */
+
+/* POS Mode in Light Theme */
+.light-theme.pos-mode {
+  --mode-accent: var(--pos-primary);
+}
+
+.light-theme.pos-mode .mode-container {
+  border-left: 4px solid var(--mode-accent);
+}
+
+/* Kitchen Mode in Light Theme */
+.light-theme.kitchen-mode {
+  --mode-accent: var(--pos-warning);
+}
+
+.light-theme.kitchen-mode .mode-container {
+  border-left: 4px solid var(--mode-accent);
+}
+
+/* ============================================================================
+   LIGHT THEME ACCESSIBILITY ENHANCEMENTS
+   ============================================================================ */
+
+/* High Contrast Focus Indicators */
+.light-theme *:focus {
+  outline: 2px solid var(--pos-primary);
+  outline-offset: 2px;
+}
+
+.light-theme .pos-button:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.5);
+}
+
+/* Enhanced Text Contrast */
+.light-theme .pos-text-primary {
+  color: #212529;  /* Ensures WCAG AA compliance */
+}
+
+.light-theme .pos-text-secondary {
+  color: #495057;  /* Maintains readability */
+}
+
+/* ============================================================================
+   RESPONSIVE LIGHT THEME ADJUSTMENTS
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .light-theme .pos-container {
+    box-shadow: var(--pos-shadow-sm);  /* Reduced shadow on mobile */
+  }
+  
+  .light-theme .pos-button {
+    min-height: 44px;  /* Touch-friendly button size */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .light-theme * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES FOR LIGHT THEME
+   ============================================================================ */
+
+@media print {
+  .light-theme {
+    --pos-bg-primary: white;
+    --pos-bg-secondary: white;
+    --pos-text-primary: black;
+    --pos-shadow: none;
+    --pos-shadow-sm: none;
+    --pos-shadow-lg: none;
+  }
+  
+  .light-theme .pos-container {
+    border: 1px solid black;
+    box-shadow: none;
+  }
+}

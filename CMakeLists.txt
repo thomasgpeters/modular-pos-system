@@ -1,340 +1,289 @@
 # ============================================================================
-# Fixed CMakeLists.txt for Restaurant POS with Theme System
+# Restaurant POS CMakeLists.txt - Enhanced CSS Asset Management
 # ============================================================================
 
 cmake_minimum_required(VERSION 3.16)
+project(restaurant_pos)
 
-# Set policy for FindBoost (fixes the warning)
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 NEW)
-endif()
-
-# Project definition
-project(RestaurantPOS 
-    VERSION 1.0.0
-    DESCRIPTION "Restaurant Point of Sale System"
-    LANGUAGES CXX
-)
-
-# Or for all targets:
-add_compile_options(-Wno-deprecated-declarations)
-
-# C++ Standard
+# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
-endif()
-
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+# Find required packages
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(WT REQUIRED wt wthttp)
 
 # ============================================================================
-# Find Dependencies
+# ASSET MANAGEMENT CONFIGURATION
 # ============================================================================
 
-# Find Wt
-find_package(Wt REQUIRED)
-if(Wt_FOUND)
-    message(STATUS "Found Wt: ${Wt_VERSION}")
-else()
-    message(FATAL_ERROR "Wt not found! Please install Wt framework.")
-endif()
+# Set up asset directories
+set(ASSETS_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets")
+set(ASSETS_BUILD_DIR "${CMAKE_BINARY_DIR}/assets")
 
-# Find Boost (required by Wt)
-find_package(Boost REQUIRED COMPONENTS system filesystem thread)
-
-# Find Threads
-find_package(Threads REQUIRED)
+# CSS specific directories
+set(CSS_SOURCE_DIR "${ASSETS_SOURCE_DIR}/css")
+set(CSS_BUILD_DIR "${ASSETS_BUILD_DIR}/css")
 
 # ============================================================================
-# Source Files Discovery
+# CSS FILE COPYING FUNCTION
 # ============================================================================
 
-# Automatically find all source files
-file(GLOB_RECURSE HEADER_FILES 
-    "include/*.hpp"
-    "include/*.h"
+# Function to copy CSS files preserving directory structure
+function(copy_css_files source_dir dest_dir)
+    # Create destination directory
+    file(MAKE_DIRECTORY ${dest_dir})
+    
+    # Get all CSS files recursively
+    file(GLOB_RECURSE CSS_FILES 
+        "${source_dir}/*.css"
+        "${source_dir}/*.scss"  # In case you add SCSS later
+    )
+    
+    foreach(css_file ${CSS_FILES})
+        # Get relative path from source directory
+        file(RELATIVE_PATH rel_path ${source_dir} ${css_file})
+        
+        # Set destination path
+        set(dest_file "${dest_dir}/${rel_path}")
+        
+        # Get directory of destination file
+        get_filename_component(dest_file_dir ${dest_file} DIRECTORY)
+        
+        # Create destination directory if it doesn't exist
+        file(MAKE_DIRECTORY ${dest_file_dir})
+        
+        # Copy file
+        configure_file(${css_file} ${dest_file} COPYONLY)
+        
+        message(STATUS "Copying CSS: ${rel_path}")
+    endforeach()
+endfunction()
+
+# ============================================================================
+# COPY CSS ASSETS TO BUILD DIRECTORY
+# ============================================================================
+
+# Copy all CSS files to build directory
+copy_css_files(${CSS_SOURCE_DIR} ${CSS_BUILD_DIR})
+
+# ============================================================================
+# CREATE CSS FILE LISTS FOR TRACKING
+# ============================================================================
+
+# Create lists of CSS files for dependency tracking
+file(GLOB_RECURSE THEME_CSS_FILES "${CSS_SOURCE_DIR}/themes/*.css")
+file(GLOB_RECURSE COMPONENT_CSS_FILES "${CSS_SOURCE_DIR}/components/*.css")
+file(GLOB FRAMEWORK_CSS_FILES "${CSS_SOURCE_DIR}/*.css")
+
+# Print CSS file summary
+list(LENGTH THEME_CSS_FILES theme_count)
+list(LENGTH COMPONENT_CSS_FILES component_count)
+list(LENGTH FRAMEWORK_CSS_FILES framework_count)
+
+message(STATUS "CSS Asset Summary:")
+message(STATUS "  Framework CSS files: ${framework_count}")
+message(STATUS "  Theme CSS files: ${theme_count}")
+message(STATUS "  Component CSS files: ${component_count}")
+
+# ============================================================================
+# CUSTOM TARGET FOR CSS UPDATES
+# ============================================================================
+
+# Create a custom target to update CSS files during development
+add_custom_target(copy_css_assets
+    COMMAND ${CMAKE_COMMAND} -E echo "Updating CSS assets..."
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CSS_BUILD_DIR}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CSS_BUILD_DIR}/themes
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CSS_BUILD_DIR}/components
+    
+    # Copy framework CSS files
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CSS_SOURCE_DIR}/themes ${CSS_BUILD_DIR}/themes
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CSS_SOURCE_DIR}/components ${CSS_BUILD_DIR}/components
+    
+    # Copy individual framework files
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CSS_SOURCE_DIR}/*.css ${CSS_BUILD_DIR}/
+    
+    COMMENT "Copying CSS assets to build directory"
+    VERBATIM
 )
 
-file(GLOB_RECURSE SOURCE_FILES 
-    "src/*.cpp"
-    "src/*.cc"
-    "src/*.cxx"
+# ============================================================================
+# SOURCE FILES
+# ============================================================================
+
+# Define source files
+set(SOURCES
+    src/main.cpp
+    src/core/RestaurantPOSApp.cpp
+    src/events/POSEvents.cpp
+    
+    # UI Components
+    src/ui/components/ActiveOrdersDisplay.cpp
+    src/ui/components/CurrentOrderDisplay.cpp
+    src/ui/components/MenuDisplay.cpp
+    src/ui/components/OrderEntryPanel.cpp
+    
+    # UI Containers
+    src/ui/containers/POSModeContainer.cpp
+    src/ui/containers/KitchenModeContainer.cpp
+    
+    # Add other source files as needed...
 )
 
-# Get list lengths correctly
-list(LENGTH HEADER_FILES HEADER_COUNT)
-list(LENGTH SOURCE_FILES SOURCE_COUNT)
-
-# Print discovered files
-message(STATUS "Found ${HEADER_COUNT} header files")
-message(STATUS "Found ${SOURCE_COUNT} source files")
-
-# Show some example files if found
-if(SOURCE_COUNT GREATER 0)
-    list(GET SOURCE_FILES 0 FIRST_SOURCE)
-    message(STATUS "Example source file: ${FIRST_SOURCE}")
-endif()
+# Define header files for IDE integration
+set(HEADERS
+    include/core/RestaurantPOSApp.hpp
+    include/events/EventManager.hpp
+    include/events/POSEvents.hpp
+    include/services/POSService.hpp
+    include/services/ThemeService.hpp
+    
+    # UI Component headers
+    include/ui/components/ActiveOrdersDisplay.hpp
+    include/ui/components/CurrentOrderDisplay.hpp
+    include/ui/components/MenuDisplay.hpp
+    include/ui/components/OrderEntryPanel.hpp
+    
+    # UI Container headers
+    include/ui/containers/POSModeContainer.hpp
+    include/ui/containers/KitchenModeContainer.hpp
+    
+    # Add other headers as needed...
+)
 
 # ============================================================================
-# Executable Definition
+# EXECUTABLE CONFIGURATION
 # ============================================================================
-
-# Define the main executable
-set(EXECUTABLE_NAME "RestaurantPOS")
 
 # Create executable
-add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-# Set target properties
-set_target_properties(${EXECUTABLE_NAME} PROPERTIES
-    OUTPUT_NAME "restaurant_pos"
-    VERSION ${PROJECT_VERSION}
+# Add include directories
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${CMAKE_SOURCE_DIR}/include
+    ${WT_INCLUDE_DIRS}
 )
 
-message(STATUS "Creating executable: ${EXECUTABLE_NAME}")
+# Link libraries
+target_link_libraries(${PROJECT_NAME} 
+    ${WT_LIBRARIES}
+)
 
-# Configure the Wt config file
+# Set compiler flags
+target_compile_options(${PROJECT_NAME} PRIVATE 
+    ${WT_CFLAGS_OTHER}
+    -Wall 
+    -Wextra
+)
+
+# ============================================================================
+# MAKE CSS COPYING PART OF BUILD PROCESS
+# ============================================================================
+
+# Make CSS copying a dependency of the main executable
+add_dependencies(${PROJECT_NAME} copy_css_assets)
+
+# Ensure CSS files are copied before building
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Ensuring CSS assets are up to date..."
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target copy_css_assets
+)
+
+# ============================================================================
+# DEVELOPMENT CONVENIENCE TARGETS
+# ============================================================================
+
+# Create convenience target for quick CSS updates
+add_custom_target(update-css
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target copy_css_assets
+    COMMENT "Quick CSS update for development"
+)
+
+# Create target to clean CSS assets
+add_custom_target(clean-css
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CSS_BUILD_DIR}
+    COMMENT "Cleaning CSS assets from build directory"
+)
+
+# ============================================================================
+# DOCROOT CONFIGURATION FOR WT APPLICATION
+# ============================================================================
+
+# Set docroot to build directory for development
+set(WT_DOCROOT "${CMAKE_BINARY_DIR}")
+
+# Create a configuration header for docroot path
 configure_file(
-    ${CMAKE_SOURCE_DIR}/config/wt_config.xml.in
-    ${CMAKE_BINARY_DIR}/config/wt_config.xml
-    COPYONLY
+    "${CMAKE_SOURCE_DIR}/include/config/DocRootConfig.hpp.in"
+    "${CMAKE_BINARY_DIR}/include/config/DocRootConfig.hpp"
+    @ONLY
+)
+
+# Add the build include directory for generated headers
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${CMAKE_BINARY_DIR}/include
 )
 
 # ============================================================================
-# Include Directories
+# INSTALL CONFIGURATION (for production deployment)
 # ============================================================================
 
-target_include_directories(${EXECUTABLE_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/services
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/components
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/containers
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/dialogs
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/ui/factories
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/events
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/utils
-)
-
-# ============================================================================
-# Link Libraries
-# ============================================================================
-
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE
-    Wt::Wt
-    Wt::HTTP
-    Boost::system
-    Boost::filesystem
-    Boost::thread
-    Threads::Threads
-)
-
-# ============================================================================
-# Compiler Flags
-# ============================================================================
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(${EXECUTABLE_NAME} PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        $<$<CONFIG:Debug>:-g -O0>
-        $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    )
-endif()
-
-if(MSVC)
-    target_compile_options(${EXECUTABLE_NAME} PRIVATE
-        /W4
-        $<$<CONFIG:Debug>:/Od /Zi>
-        $<$<CONFIG:Release>:/O2>
-    )
-endif()
-
-# ============================================================================
-# Theme System Configuration
-# ============================================================================
-
-# Set the correct target name for theme system
-set(POS_TARGET_NAME ${EXECUTABLE_NAME})
-
-# Check if target exists
-if(TARGET ${POS_TARGET_NAME})
-    message(STATUS "Configuring theme system for target: ${POS_TARGET_NAME}")
-    
-    # Theme CSS files
-    set(THEME_CSS_FILES
-        theme-framework.css
-        pos-dialogs.css
-        pos-system.css
-        pos-enhanced.css
-        responsive.css
-        theme-light.css
-        theme-dark.css
-        theme-warm.css
-        theme-cool.css
-    )
-    
-    # Get theme file count
-    list(LENGTH THEME_CSS_FILES THEME_COUNT)
-    
-    # Create necessary directories
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docroot/css)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build/resources/css)
-    
-    # Copy CSS files to build locations
-    set(CSS_FILES_FOUND 0)
-    foreach(CSS_FILE ${THEME_CSS_FILES})
-        set(SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources/css/${CSS_FILE}")
-        set(DOCROOT_FILE "${CMAKE_CURRENT_BINARY_DIR}/docroot/css/${CSS_FILE}")
-        set(RESOURCES_FILE "${CMAKE_CURRENT_BINARY_DIR}/build/resources/css/${CSS_FILE}")
-        
-        if(EXISTS ${SOURCE_FILE})
-            configure_file(${SOURCE_FILE} ${DOCROOT_FILE} COPYONLY)
-            configure_file(${SOURCE_FILE} ${RESOURCES_FILE} COPYONLY)
-            math(EXPR CSS_FILES_FOUND "${CSS_FILES_FOUND} + 1")
-            message(STATUS "  ✓ ${CSS_FILE}")
-        else()
-            message(WARNING "  ✗ ${CSS_FILE} not found at ${SOURCE_FILE}")
-        endif()
-    endforeach()
-    
-    message(STATUS "Theme CSS files found: ${CSS_FILES_FOUND}/${THEME_COUNT}")
-    
-    # Add compile definitions for theme paths
-    target_compile_definitions(${POS_TARGET_NAME} PRIVATE
-        THEME_CSS_PATH="${CMAKE_CURRENT_BINARY_DIR}/docroot/css/"
-        THEME_RESOURCES_PATH="${CMAKE_CURRENT_BINARY_DIR}/build/resources/css/"
-        THEME_INTERNAL_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/css/"
-    )
-    
-    # Custom target for updating CSS files
-    add_custom_target(update_theme_css
-        COMMAND ${CMAKE_COMMAND} -E echo "Updating theme CSS files..."
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/docroot/css
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/build/resources/css
-        COMMENT "Updating theme CSS files"
-    )
-    
-    # Copy CSS files as part of build
-    foreach(CSS_FILE ${THEME_CSS_FILES})
-        set(SOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources/css/${CSS_FILE}")
-        if(EXISTS ${SOURCE_FILE})
-            add_custom_command(
-                TARGET update_theme_css POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SOURCE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/docroot/css/${CSS_FILE}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SOURCE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/build/resources/css/${CSS_FILE}
-                COMMENT "Copying ${CSS_FILE}"
-            )
-        endif()
-    endforeach()
-    
-    # Make executable depend on CSS updates
-    add_dependencies(${POS_TARGET_NAME} update_theme_css)
-    
-    message(STATUS "Theme system configured successfully")
-else()
-    message(WARNING "Target '${POS_TARGET_NAME}' not found - theme system disabled")
-endif()
-
-# ============================================================================
-# Installation
-# ============================================================================
-
-install(TARGETS ${EXECUTABLE_NAME}
+# Install executable
+install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION bin
-    COMPONENT runtime
 )
 
-# Install CSS files
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources/css")
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources/css/
-        DESTINATION share/${PROJECT_NAME}/css
-        COMPONENT themes
-        FILES_MATCHING PATTERN "*.css"
-    )
-endif()
-
-# Install docroot
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docroot/
-    DESTINATION share/${PROJECT_NAME}/docroot
-    COMPONENT themes
-    FILES_MATCHING PATTERN "*.css" PATTERN "*.html"
+# Install CSS assets
+install(DIRECTORY ${CSS_BUILD_DIR}/
+    DESTINATION share/${PROJECT_NAME}/assets/css
+    FILES_MATCHING PATTERN "*.css"
 )
 
 # ============================================================================
-# Development Helpers
+# DEVELOPMENT HELPER MESSAGES
 # ============================================================================
 
-# Add helpful targets
-add_custom_target(pos_help
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "Restaurant POS Build Targets:"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ${EXECUTABLE_NAME}       - Build main executable"
-    COMMAND ${CMAKE_COMMAND} -E echo "  update_theme_css  - Update theme CSS files"
-    COMMAND ${CMAKE_COMMAND} -E echo "  pos_help          - Show this help"
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "Usage:"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make ${EXECUTABLE_NAME}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  make update_theme_css"
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "Run executable:"
-    COMMAND ${CMAKE_COMMAND} -E echo "  ./${EXECUTABLE_NAME} --docroot=../docroot --http-port=8080"
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-)
-
-# ============================================================================
-# Status Summary
-# ============================================================================
-
+message(STATUS "=== Restaurant POS Build Configuration ===")
+message(STATUS "Source directory: ${CMAKE_SOURCE_DIR}")
+message(STATUS "Build directory: ${CMAKE_BINARY_DIR}")
+message(STATUS "CSS source: ${CSS_SOURCE_DIR}")
+message(STATUS "CSS build: ${CSS_BUILD_DIR}")
+message(STATUS "Wt docroot: ${WT_DOCROOT}")
 message(STATUS "")
-message(STATUS "=============== Configuration Summary ===============")
-message(STATUS "Project: ${PROJECT_NAME} v${PROJECT_VERSION}")
-message(STATUS "Executable: ${EXECUTABLE_NAME}")
-message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Source Files: ${SOURCE_COUNT}")
-message(STATUS "Header Files: ${HEADER_COUNT}")
+message(STATUS "Development commands:")
+message(STATUS "  make update-css    # Update CSS files only")
+message(STATUS "  make clean-css     # Clean CSS build files")
+message(STATUS "  make copy_css_assets # Full CSS asset copy")
+message(STATUS "===============================================")
 
-if(DEFINED CSS_FILES_FOUND)
-    message(STATUS "Theme CSS Files: ${CSS_FILES_FOUND}/${THEME_COUNT}")
+# ============================================================================
+# VERIFICATION
+# ============================================================================
+
+# Verify that CSS source directory exists
+if(NOT EXISTS ${CSS_SOURCE_DIR})
+    message(WARNING "CSS source directory does not exist: ${CSS_SOURCE_DIR}")
+    message(WARNING "Please create the CSS directory structure")
 endif()
 
-message(STATUS "")
-message(STATUS "Build commands:")
-message(STATUS "  cd build && cmake .. && make")
-message(STATUS "  ./${EXECUTABLE_NAME} --docroot=../docroot --http-port=8080")
-message(STATUS "==================================================")
-message(STATUS "")
-
-# ============================================================================
-# Validation
-# ============================================================================
-
-# Check if we have any source files
-if(NOT SOURCE_FILES)
-    message(WARNING "No source files found! Please check your src/ directory.")
-    message(STATUS "Looking for files in: ${CMAKE_CURRENT_SOURCE_DIR}/src/")
-endif()
-
-# Check if main function exists (basic check)
-if(SOURCE_FILES)
-    set(MAIN_FOUND FALSE)
-    foreach(SOURCE_FILE ${SOURCE_FILES})
-        file(READ ${SOURCE_FILE} SOURCE_CONTENT)
-        if(SOURCE_CONTENT MATCHES "int main\\(")
-            set(MAIN_FOUND TRUE)
-            message(STATUS "Found main() function in: ${SOURCE_FILE}")
-            break()
-        endif()
-    endforeach()
+# Create docroot config verification
+if(EXISTS ${CSS_SOURCE_DIR})
+    message(STATUS "✓ CSS source directory found")
     
-    if(NOT MAIN_FOUND)
-        message(WARNING "No main() function found in source files!")
-        message(STATUS "You may need to create src/main.cpp")
+    # Check for theme files
+    file(GLOB theme_check "${CSS_SOURCE_DIR}/themes/*.css")
+    if(theme_check)
+        message(STATUS "✓ Theme CSS files found")
+    else()
+        message(STATUS "! No theme CSS files found in themes/ directory")
+    endif()
+    
+    # Check for component files  
+    file(GLOB component_check "${CSS_SOURCE_DIR}/components/*.css")
+    if(component_check)
+        message(STATUS "✓ Component CSS files found")
+    else()
+        message(STATUS "! No component CSS files found in components/ directory")
     endif()
 endif()

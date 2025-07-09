@@ -1,0 +1,375 @@
+/**
+ * Restaurant POS Theme Framework
+ * Core theme system with CSS custom properties
+ * 
+ * This file defines the foundation for all themes.
+ * Individual theme files override these variables.
+ */
+
+/* ============================================================================
+   CSS CUSTOM PROPERTIES (Variables)
+   ============================================================================ */
+
+:root {
+  /* Base Theme Colors - Default (will be overridden by theme files) */
+  --pos-primary: #0d6efd;
+  --pos-secondary: #6c757d;
+  --pos-success: #198754;
+  --pos-warning: #ffc107;
+  --pos-danger: #dc3545;
+  --pos-info: #0dcaf0;
+  --pos-light: #f8f9fa;
+  --pos-dark: #212529;
+  
+  /* Background Colors */
+  --pos-bg-primary: #ffffff;
+  --pos-bg-secondary: #f8f9fa;
+  --pos-bg-tertiary: #e9ecef;
+  --pos-bg-accent: #f0f0f0;
+  
+  /* Text Colors */
+  --pos-text-primary: #212529;
+  --pos-text-secondary: #6c757d;
+  --pos-text-muted: #adb5bd;
+  --pos-text-inverse: #ffffff;
+  
+  /* Border Colors */
+  --pos-border-color: #dee2e6;
+  --pos-border-light: #e9ecef;
+  --pos-border-dark: #adb5bd;
+  
+  /* Component Specific Colors */
+  --pos-header-bg: var(--pos-primary);
+  --pos-header-text: var(--pos-text-inverse);
+  --pos-footer-bg: var(--pos-bg-tertiary);
+  --pos-footer-text: var(--pos-text-secondary);
+  
+  /* Order Status Colors */
+  --pos-order-pending: var(--pos-secondary);
+  --pos-order-preparing: var(--pos-warning);
+  --pos-order-ready: var(--pos-info);
+  --pos-order-completed: var(--pos-success);
+  --pos-order-cancelled: var(--pos-danger);
+  
+  /* Kitchen Status Colors */
+  --pos-kitchen-idle: var(--pos-success);
+  --pos-kitchen-busy: var(--pos-warning);
+  --pos-kitchen-overloaded: var(--pos-danger);
+  
+  /* Spacing and Layout */
+  --pos-spacing-xs: 0.25rem;
+  --pos-spacing-sm: 0.5rem;
+  --pos-spacing-md: 1rem;
+  --pos-spacing-lg: 1.5rem;
+  --pos-spacing-xl: 3rem;
+  
+  /* Border Radius */
+  --pos-border-radius: 0.375rem;
+  --pos-border-radius-sm: 0.25rem;
+  --pos-border-radius-lg: 0.5rem;
+  
+  /* Shadows */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  
+  /* Font Sizes */
+  --pos-font-size-sm: 0.875rem;
+  --pos-font-size-base: 1rem;
+  --pos-font-size-lg: 1.125rem;
+  --pos-font-size-xl: 1.25rem;
+  
+  /* Transitions */
+  --pos-transition: all 0.2s ease-in-out;
+  --pos-transition-fast: all 0.1s ease-in-out;
+}
+
+/* ============================================================================
+   GLOBAL RESET AND BASE STYLES
+   ============================================================================ */
+
+.pos-app-container {
+  background-color: var(--pos-bg-secondary);
+  color: var(--pos-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  transition: var(--pos-transition);
+}
+
+/* ============================================================================
+   THEME-AWARE COMPONENT STYLES
+   ============================================================================ */
+
+/* Header Components */
+.pos-header {
+  background-color: var(--pos-header-bg);
+  color: var(--pos-header-text);
+  border-bottom: 1px solid var(--pos-border-color);
+  box-shadow: var(--pos-shadow-sm);
+}
+
+/* Footer Components */
+.pos-footer {
+  background-color: var(--pos-footer-bg);
+  color: var(--pos-footer-text);
+  border-top: 1px solid var(--pos-border-color);
+}
+
+/* Container Components */
+.pos-container,
+.panel-container {
+  background-color: var(--pos-bg-primary);
+  border: 1px solid var(--pos-border-color);
+  border-radius: var(--pos-border-radius);
+  box-shadow: var(--pos-shadow-sm);
+  transition: var(--pos-transition);
+}
+
+.pos-container:hover,
+.panel-container:hover {
+  box-shadow: var(--pos-shadow);
+}
+
+/* Content Areas */
+.content-container {
+  background-color: var(--pos-bg-primary);
+  color: var(--pos-text-primary);
+}
+
+.sidebar-container {
+  background-color: var(--pos-bg-secondary);
+  border-color: var(--pos-border-light);
+}
+
+/* ============================================================================
+   BUTTON THEMING
+   ============================================================================ */
+
+.pos-button {
+  transition: var(--pos-transition);
+  border-radius: var(--pos-border-radius);
+  border-width: 1px;
+  border-style: solid;
+}
+
+.pos-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--pos-shadow);
+}
+
+.pos-button:active {
+  transform: translateY(0);
+}
+
+/* ============================================================================
+   TABLE THEMING
+   ============================================================================ */
+
+.pos-table {
+  background-color: var(--pos-bg-primary);
+  color: var(--pos-text-primary);
+  border-color: var(--pos-border-color);
+}
+
+.pos-table thead th {
+  background-color: var(--pos-primary);
+  color: var(--pos-text-inverse);
+  border-color: var(--pos-border-color);
+}
+
+.pos-table tbody tr:nth-child(even) {
+  background-color: var(--pos-bg-secondary);
+}
+
+.pos-table tbody tr:hover {
+  background-color: var(--pos-bg-tertiary);
+}
+
+/* ============================================================================
+   FORM CONTROLS
+   ============================================================================ */
+
+.pos-form-control {
+  background-color: var(--pos-bg-primary);
+  color: var(--pos-text-primary);
+  border-color: var(--pos-border-color);
+  border-radius: var(--pos-border-radius);
+  transition: var(--pos-transition);
+}
+
+.pos-form-control:focus {
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 0.2rem rgba(var(--pos-primary), 0.25);
+}
+
+.pos-select {
+  background-color: var(--pos-bg-primary);
+  color: var(--pos-text-primary);
+  border-color: var(--pos-border-color);
+}
+
+/* ============================================================================
+   ORDER STATUS INDICATORS
+   ============================================================================ */
+
+.pos-status-badge {
+  border-radius: var(--pos-border-radius-sm);
+  font-size: var(--pos-font-size-sm);
+  font-weight: 600;
+  transition: var(--pos-transition);
+}
+
+.order-status-pending {
+  background-color: var(--pos-order-pending);
+  color: var(--pos-text-inverse);
+}
+
+.order-status-preparing {
+  background-color: var(--pos-order-preparing);
+  color: var(--pos-text-primary);
+}
+
+.order-status-ready {
+  background-color: var(--pos-order-ready);
+  color: var(--pos-text-primary);
+}
+
+.order-status-completed {
+  background-color: var(--pos-order-completed);
+  color: var(--pos-text-inverse);
+}
+
+.order-status-cancelled {
+  background-color: var(--pos-order-cancelled);
+  color: var(--pos-text-inverse);
+}
+
+/* ============================================================================
+   KITCHEN STATUS INDICATORS
+   ============================================================================ */
+
+.kitchen-status-idle {
+  background-color: var(--pos-kitchen-idle);
+  color: var(--pos-text-inverse);
+}
+
+.kitchen-status-busy {
+  background-color: var(--pos-kitchen-busy);
+  color: var(--pos-text-primary);
+}
+
+.kitchen-status-overloaded {
+  background-color: var(--pos-kitchen-overloaded);
+  color: var(--pos-text-inverse);
+}
+
+/* ============================================================================
+   MODE-SPECIFIC STYLING
+   ============================================================================ */
+
+/* POS Mode */
+.pos-mode {
+  --mode-accent: var(--pos-primary);
+}
+
+.pos-mode .mode-container {
+  border-left: 4px solid var(--mode-accent);
+}
+
+/* Kitchen Mode */
+.kitchen-mode {
+  --mode-accent: var(--pos-warning);
+}
+
+.kitchen-mode .mode-container {
+  border-left: 4px solid var(--mode-accent);
+}
+
+/* ============================================================================
+   RESPONSIVE UTILITIES
+   ============================================================================ */
+
+/* Mobile-first responsive design */
+@media (max-width: 576px) {
+  :root {
+    --pos-font-size-base: 0.9rem;
+    --pos-spacing-md: 0.75rem;
+  }
+  
+  .pos-container {
+    margin: var(--pos-spacing-sm);
+    padding: var(--pos-spacing-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .pos-container {
+    margin: var(--pos-spacing-md);
+    padding: var(--pos-spacing-md);
+  }
+}
+
+/* ============================================================================
+   ANIMATION CLASSES
+   ============================================================================ */
+
+.pos-fade-in {
+  animation: possFadeIn 0.3s ease-in-out;
+}
+
+@keyframes possFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pos-hover-shadow {
+  transition: var(--pos-transition);
+}
+
+.pos-hover-shadow:hover {
+  box-shadow: var(--pos-shadow);
+  transform: translateY(-2px);
+}
+
+.pos-hover-lift {
+  transition: var(--pos-transition);
+}
+
+.pos-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--pos-shadow-lg);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.pos-theme-aware {
+  transition: var(--pos-transition);
+}
+
+.pos-border {
+  border-color: var(--pos-border-color) !important;
+}
+
+.pos-bg-primary {
+  background-color: var(--pos-bg-primary) !important;
+}
+
+.pos-bg-secondary {
+  background-color: var(--pos-bg-secondary) !important;
+}
+
+.pos-text-primary {
+  color: var(--pos-text-primary) !important;
+}
+
+.pos-text-secondary {
+  color: var(--pos-text-secondary) !important;
+}
