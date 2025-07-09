@@ -10,8 +10,8 @@
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     : Wt::WApplication(env)
-    , currentMode_(POS_MODE)  // Start with POS mode as default
-    , isDestroying_(false)
+    , isDestroying_(false)      // Initialize in declaration order
+    , currentMode_(POS_MODE)    // Start with POS mode as default
     , mainContainer_(nullptr)
     , mainLayout_(nullptr)
     , commonHeader_(nullptr)

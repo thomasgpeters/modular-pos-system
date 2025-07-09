@@ -72,7 +72,7 @@ std::vector<PaymentProcessor::PaymentResult> PaymentProcessor::processSplitPayme
     results.reserve(payments.size());
     
     [[maybe_unused]] double totalProcessed = 0.0;
-    double orderTotal = order->getTotal();
+    // double orderTotal = order->getTotal();
     
     for (const auto& [method, amount] : payments) {
         auto result = processPayment(order, method, amount, 0.0);
