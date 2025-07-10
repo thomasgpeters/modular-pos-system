@@ -128,6 +128,23 @@ protected:
      */
     void addOrderItemRow(const OrderItem& item, size_t index);
 
+    /**
+     * @brief Initializes table headers
+     */
+    void initializeTableHeaders();
+    
+    /**
+     * @brief Applies consistent styling to a table row
+     * @param row Row number to style
+     * @param isEven True if this is an even-numbered row
+     */
+    void applyRowStyling(int row, bool isEven);
+
+    /**
+     * @brief Creates the order summary content in the summary container
+     */
+    void createOrderSummaryContent();
+
 private:
     // Services and dependencies
     std::shared_ptr<POSService> posService_;

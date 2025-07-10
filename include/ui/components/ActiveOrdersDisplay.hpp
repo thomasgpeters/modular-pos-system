@@ -26,7 +26,7 @@
  * This component displays and manages active orders in the system.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0 - Enhanced with theme reactivity
  */
 
 /**
@@ -35,6 +35,7 @@
  * 
  * The ActiveOrdersDisplay shows all currently active orders with
  * functionality to view details, complete orders, and cancel orders.
+ * Enhanced with theme reactivity for consistent appearance.
  */
 class ActiveOrdersDisplay : public Wt::WContainerWidget {
 public:
@@ -44,7 +45,8 @@ public:
      * @param eventManager Shared event manager for component communication
      */
     ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
-                       std::shared_ptr<EventManager> eventManager);
+                       std::shared_ptr<EventManager> eventManager,
+                       bool showHeader = true);
     
     /**
      * @brief Virtual destructor
@@ -79,6 +81,11 @@ public:
      * @return True if completed orders are shown
      */
     bool getShowCompletedOrders() const;
+    
+    /**
+     * @brief Applies current theme to all components (ADDED)
+     */
+    void applyCurrentTheme();
 
 protected:
     /**
@@ -122,6 +129,7 @@ protected:
     void applyRowStyling(int row, bool isEven);
 
 private:
+
     // Services and dependencies
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
@@ -134,7 +142,10 @@ private:
     Wt::WText* headerText_;
     Wt::WText* orderCountText_;
     Wt::WTable* ordersTable_;
-    
+ 
+    // Show or hide the Header for this component
+    bool showHeader_;
+
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
     
@@ -164,6 +175,7 @@ private:
      */
     std::string getStatusBadgeVariant(Order::Status status) const;
     
+    void createHeader();
     void showEmptyOrdersMessage();
     void hideEmptyOrdersMessage();
     void applyTableStyling();

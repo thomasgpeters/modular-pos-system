@@ -15,7 +15,7 @@ OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
     : Wt::WContainerWidget()
     , posService_(posService)
     , eventManager_(eventManager)
-    , isDestroying_(false)  // Add destruction flag
+    , isDestroying_(false)
     , tableSelectionGroup_(nullptr)
     , tableIdentifierLabel_(nullptr)
     , tableIdentifierCombo_(nullptr)
@@ -24,6 +24,8 @@ OrderEntryPanel::OrderEntryPanel(std::shared_ptr<POSService> posService,
     , newOrderButton_(nullptr)
     , sendToKitchenButton_(nullptr)
     , processPaymentButton_(nullptr)
+    , availableTableIdentifiers_()
+    , eventSubscriptions_()
 {
     if (!posService_ || !eventManager_) {
         throw std::invalid_argument("OrderEntryPanel requires valid POSService and EventManager");
@@ -153,6 +155,7 @@ void OrderEntryPanel::setupEventListeners() {
     eventSubscriptions_.push_back(
         eventManager_->subscribe(POSEvents::ORDER_CREATED, 
             [this](const std::any& data) { 
+                if (isDestroying_) return;
                 std::cout << "[OrderEntryPanel] Order created event received" << std::endl;
                 handleOrderCreated(data); 
             })
@@ -161,6 +164,7 @@ void OrderEntryPanel::setupEventListeners() {
     eventSubscriptions_.push_back(
         eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED,
             [this](const std::any& data) { 
+                if (isDestroying_) return;
                 std::cout << "[OrderEntryPanel] Current order changed event received" << std::endl;
                 handleCurrentOrderChanged(data); 
             })
@@ -169,6 +173,8 @@ void OrderEntryPanel::setupEventListeners() {
 
 // ACTUAL WORKING BUTTON HANDLERS
 void OrderEntryPanel::onNewOrderClicked() {
+    if (isDestroying_) return;
+    
     std::string identifier = getSelectedTableIdentifier();
     
     if (identifier.empty()) {
@@ -198,6 +204,8 @@ void OrderEntryPanel::onNewOrderClicked() {
 }
 
 void OrderEntryPanel::onSendToKitchenClicked() {
+    if (isDestroying_) return;
+    
     if (!hasCurrentOrder()) {
         showOrderValidationMessage("No current order to send", "error");
         return;
@@ -225,11 +233,15 @@ void OrderEntryPanel::onSendToKitchenClicked() {
 }
 
 void OrderEntryPanel::onProcessPaymentClicked() {
+    if (isDestroying_) return;
+    
     showOrderValidationMessage("Payment processing not yet implemented", "warning");
     std::cout << "[OrderEntryPanel] Payment processing clicked (placeholder)" << std::endl;
 }
 
 void OrderEntryPanel::onTableIdentifierChanged() {
+    if (isDestroying_) return;
+    
     std::cout << "[OrderEntryPanel] Table identifier changed" << std::endl;
     updateTableStatus();
     updateOrderActionButtons();
@@ -237,24 +249,32 @@ void OrderEntryPanel::onTableIdentifierChanged() {
 
 // EVENT HANDLERS THAT ACTUALLY UPDATE THE UI
 void OrderEntryPanel::handleOrderCreated(const std::any& eventData) {
+    if (isDestroying_) return;
+    
     std::cout << "[OrderEntryPanel] Handling order created event" << std::endl;
     updateOrderActionButtons();
     updateTableStatus();
 }
 
 void OrderEntryPanel::handleCurrentOrderChanged(const std::any& eventData) {
+    if (isDestroying_) return;
+    
     std::cout << "[OrderEntryPanel] Handling current order changed event" << std::endl;
     updateOrderActionButtons();
     updateTableStatus();
 }
 
 void OrderEntryPanel::handleOrderModified(const std::any& eventData) {
+    if (isDestroying_) return;
+    
     std::cout << "[OrderEntryPanel] Handling order modified event" << std::endl;
     updateOrderActionButtons();
 }
 
 // ACTUAL WORKING HELPER METHODS
 void OrderEntryPanel::updateOrderActionButtons() {
+    if (isDestroying_) return;
+    
     std::cout << "[OrderEntryPanel] Updating button states..." << std::endl;
     
     bool hasCurrentOrder = this->hasCurrentOrder();
@@ -307,27 +327,27 @@ void OrderEntryPanel::updateOrderActionButtons() {
 }
 
 void OrderEntryPanel::showOrderValidationMessage(const std::string& message, const std::string& type) {
-    if (tableStatusText_) {
-        std::string icon;
-        std::string cssClass;
-        
-        if (type == "success") {
-            icon = "✅";
-            cssClass = "text-success fw-bold";
-        } else if (type == "warning") {
-            icon = "⚠️";
-            cssClass = "text-warning fw-bold";
-        } else if (type == "error") {
-            icon = "❌";
-            cssClass = "text-danger fw-bold";
-        } else {
-            icon = "ℹ️";
-            cssClass = "text-info";
-        }
-        
-        tableStatusText_->setText(icon + " " + message);
-        tableStatusText_->setStyleClass(cssClass + " small mt-2");
+    if (isDestroying_ || !tableStatusText_) return;
+    
+    std::string icon;
+    std::string cssClass;
+    
+    if (type == "success") {
+        icon = "✅";
+        cssClass = "text-success fw-bold";
+    } else if (type == "warning") {
+        icon = "⚠️";
+        cssClass = "text-warning fw-bold";
+    } else if (type == "error") {
+        icon = "❌";
+        cssClass = "text-danger fw-bold";
+    } else {
+        icon = "ℹ️";
+        cssClass = "text-info";
     }
+    
+    tableStatusText_->setText(icon + " " + message);
+    tableStatusText_->setStyleClass(cssClass + " small mt-2");
     
     std::cout << "[OrderEntryPanel] " << type << ": " << message << std::endl;
 }
@@ -376,6 +396,8 @@ void OrderEntryPanel::populateTableIdentifierCombo() {
 }
 
 void OrderEntryPanel::updateTableStatus() {
+    if (isDestroying_) return;
+    
     std::string identifier = getSelectedTableIdentifier();
     if (identifier.empty()) {
         showOrderValidationMessage("Select a table/location to start ordering", "info");
@@ -399,6 +421,8 @@ void OrderEntryPanel::updateTableStatus() {
 }
 
 void OrderEntryPanel::refresh() {
+    if (isDestroying_) return;
+    
     updateOrderActionButtons();
     updateTableStatus();
 }
@@ -547,9 +571,24 @@ void OrderEntryPanel::sendCurrentOrderToKitchen() {
 }
 
 void OrderEntryPanel::applyTableSelectionStyling() {
-    // Placeholder for styling
+    // Placeholder for styling - applying Bootstrap theme styles
+    if (tableSelectionGroup_) {
+        UIStyleHelper::applyGroupBoxStyle(tableSelectionGroup_, "table-selection");
+    }
+    
+    if (tableIdentifierCombo_) {
+        UIStyleHelper::applyComboBoxStyle(tableIdentifierCombo_, "table-selector");
+    }
 }
 
 void OrderEntryPanel::updateTableIdentifierStyling() {
-    // Placeholder for styling
+    // Dynamic styling based on selection state
+    if (tableIdentifierCombo_) {
+        std::string selectedId = getSelectedTableIdentifier();
+        if (selectedId.empty()) {
+            tableIdentifierCombo_->setStyleClass("form-select mb-2");
+        } else {
+            tableIdentifierCombo_->setStyleClass("form-select mb-2 border-success");
+        }
+    }
 }

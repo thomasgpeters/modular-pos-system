@@ -1,21 +1,27 @@
-//============================================================================
-// Fixed CommonHeader.cpp - Corrected Signal Connections
-//============================================================================
+// ============================================================================
+// Fixed CommonHeader Implementation - Enhanced Theme Integration
+// File: src/ui/components/CommonHeader.cpp
+// ============================================================================
 
 #include "../../../include/ui/components/CommonHeader.hpp"
+#include "../../../include/utils/UIStyleHelper.hpp"
 
+#include <Wt/WApplication.h>
 #include <Wt/WTimer.h>
+#include <iostream>
+#include <chrono>
 #include <iomanip>
 #include <sstream>
-#include <ctime>
 
 CommonHeader::CommonHeader(std::shared_ptr<ThemeService> themeService,
                           std::shared_ptr<EventManager> eventManager,
                           ModeChangeCallback modeChangeCallback)
-    : themeService_(themeService)
+    : Wt::WContainerWidget()
+    , themeService_(themeService)
     , eventManager_(eventManager)
     , modeChangeCallback_(modeChangeCallback)
     , brandingContainer_(nullptr)
+    , brandingText_(nullptr)
     , modeSelector_(nullptr)
     , themeContainer_(nullptr)
     , themeComboBox_(nullptr)
@@ -24,145 +30,174 @@ CommonHeader::CommonHeader(std::shared_ptr<ThemeService> themeService,
     , userInfo_(nullptr)
     , timeDisplay_(nullptr)
 {
+    std::cout << "[CommonHeader] Initializing..." << std::endl;
+    
+    // Apply header styling
+    UIStyleHelper::styleHeaderComponent(this);
+    
+    // Initialize the UI
     initializeUI();
+    
+    // Set up event handlers
     setupEventHandlers();
+    
+    // Start time updates
+    updateTimeDisplay();
+    
+    std::cout << "[CommonHeader] Initialization complete" << std::endl;
 }
 
 void CommonHeader::initializeUI() {
-    addStyleClass("common-header p-3");
+    std::cout << "[CommonHeader] Setting up UI layout..." << std::endl;
     
-    auto layout = setLayout(std::make_unique<Wt::WHBoxLayout>());
-    layout->setContentsMargins(0, 0, 0, 0);
+    // Use horizontal flex layout
+    UIStyleHelper::styleFlexRow(this, "between", "center");
+    addStyleClass("pos-header p-3");
     
+    // Create sections
     createBrandingSection();
     createModeSection();
     createThemeSection();
     createUserSection();
+    
+    std::cout << "[CommonHeader] UI layout complete" << std::endl;
 }
 
 void CommonHeader::createBrandingSection() {
-    // Create branding container and add to layout
-    auto brandingWidget = std::make_unique<Wt::WContainerWidget>();
-    brandingContainer_ = brandingWidget.get();
-    layout()->addWidget(std::move(brandingWidget));
+    brandingContainer_ = addNew<Wt::WContainerWidget>();
+    UIStyleHelper::styleFlexRow(brandingContainer_, "start", "center");
+    brandingContainer_->addStyleClass("branding-section");
     
-    brandingContainer_->addStyleClass("d-flex align-items-center");
+    brandingText_ = brandingContainer_->addNew<Wt::WText>("🍽️ Restaurant POS System");
+    UIStyleHelper::styleHeading(brandingText_, 4, "white");
+    brandingText_->addStyleClass("mb-0 fw-bold");
     
-    brandingText_ = brandingContainer_->addWidget(
-        std::make_unique<Wt::WText>("🍴 Restaurant POS")
-    );
-    brandingText_->addStyleClass("h4 mb-0 text-white fw-bold");
+    std::cout << "[CommonHeader] Branding section created" << std::endl;
 }
 
 void CommonHeader::createModeSection() {
-    auto modeWidget = std::make_unique<Wt::WContainerWidget>();
-    auto modeContainer = modeWidget.get();
-    layout()->addWidget(std::move(modeWidget));
+    auto modeContainer = addNew<Wt::WContainerWidget>();
+    modeContainer->addStyleClass("mode-section mx-3");
     
-    modeContainer->addStyleClass("mx-4");
-    
-    modeSelector_ = modeContainer->addWidget(
-        std::make_unique<ModeSelector>(eventManager_, modeChangeCallback_)
+    // Create mode selector with callback
+    modeSelector_ = modeContainer->addNew<ModeSelector>(
+        eventManager_, 
+        [this](ModeSelector::Mode mode) {
+            std::cout << "[CommonHeader] Mode changed via selector: " 
+                      << (mode == ModeSelector::POS_MODE ? "POS" : "Kitchen") << std::endl;
+            
+            if (modeChangeCallback_) {
+                modeChangeCallback_(mode);
+            }
+        }
     );
+    
+    std::cout << "[CommonHeader] Mode section created" << std::endl;
 }
 
 void CommonHeader::createThemeSection() {
-    // Create theme container and add to layout
-    auto themeWidget = std::make_unique<Wt::WContainerWidget>();
-    themeContainer_ = themeWidget.get();
-    layout()->addWidget(std::move(themeWidget));
+    std::cout << "[CommonHeader] Creating theme section..." << std::endl;
     
-    themeContainer_->addStyleClass("d-flex align-items-center gap-2");
+    themeContainer_ = addNew<Wt::WContainerWidget>();
+    UIStyleHelper::styleFlexRow(themeContainer_, "center", "center");
+    themeContainer_->addStyleClass("theme-section mx-3");
     
-    // Theme selector dropdown
-    themeComboBox_ = themeContainer_->addWidget(std::make_unique<Wt::WComboBox>());
-    themeComboBox_->addStyleClass("form-select form-select-sm");
-    themeComboBox_->addItem("Base Theme");
-    themeComboBox_->addItem("Light Theme");
-    themeComboBox_->addItem("Dark Theme");
-    themeComboBox_->addItem("Warm Theme");
-    themeComboBox_->addItem("Cool Theme");
+    if (themeService_) {
+        // FIXED: Create theme combo box with proper event handling
+        themeComboBox_ = themeContainer_->addNew<Wt::WComboBox>();
+        themeComboBox_->addStyleClass("form-select form-select-sm theme-selector");
+        themeComboBox_->setWidth(Wt::WLength(150));
+        
+        // Populate theme options
+        auto themes = themeService_->getAvailableThemes();
+        for (const auto& theme : themes) {
+            std::string displayText = themeService_->getThemeIcon(theme) + " " + themeService_->getThemeName(theme);
+            themeComboBox_->addItem(displayText);
+        }
+        
+        // Set current selection
+        auto currentTheme = themeService_->getCurrentTheme();
+        for (size_t i = 0; i < themes.size(); ++i) {
+            if (themes[i] == currentTheme) {
+                themeComboBox_->setCurrentIndex(static_cast<int>(i));
+                break;
+            }
+        }
+        
+        // FIXED: Enhanced event connections for reliable theme changing
+        themeComboBox_->changed().connect([this, themes]() {
+            std::cout << "[CommonHeader] Theme combo box changed!" << std::endl;
+            onThemeSelectionChanged(themeComboBox_->currentIndex());
+        });
+        
+        themeComboBox_->sactivated().connect([this](const Wt::WString& text) {
+            std::cout << "[CommonHeader] Theme combo box activated: " << text.toUTF8() << std::endl;
+            onThemeSelectionChangedByText(text);
+        });
+        
+        // FIXED: Add toggle button as backup
+        themeToggleButton_ = themeContainer_->addNew<Wt::WPushButton>("🔄");
+        UIStyleHelper::styleButton(themeToggleButton_, "outline-light", "sm");
+        themeToggleButton_->setToolTip("Toggle Theme");
+        
+        themeToggleButton_->clicked().connect([this]() {
+            std::cout << "[CommonHeader] Theme toggle button clicked!" << std::endl;
+            onThemeToggleClicked();
+        });
+        
+        // Listen for theme changes from the service
+        themeService_->onThemeChanged([this](ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
+            std::cout << "[CommonHeader] Theme service changed, updating controls..." << std::endl;
+            updateThemeControls();
+        });
+        
+        std::cout << "[CommonHeader] Theme controls created with " << themes.size() << " options" << std::endl;
+        
+    } else {
+        std::cerr << "[CommonHeader] Warning: ThemeService not available" << std::endl;
+        
+        // Create placeholder
+        auto placeholderText = themeContainer_->addNew<Wt::WText>("Theme: Default");
+        placeholderText->addStyleClass("text-light small");
+    }
     
-    // Theme toggle button
-    themeToggleButton_ = themeContainer_->addWidget(
-        std::make_unique<Wt::WPushButton>("🌙")
-    );
-    themeToggleButton_->addStyleClass("btn btn-outline-light btn-sm");
-    themeToggleButton_->setToolTip("Toggle Dark/Light Theme");
+    std::cout << "[CommonHeader] Theme section complete" << std::endl;
 }
 
 void CommonHeader::createUserSection() {
-    // Create user container and add to layout
-    auto userWidget = std::make_unique<Wt::WContainerWidget>();
-    userContainer_ = userWidget.get();
-    layout()->addWidget(std::move(userWidget));
+    userContainer_ = addNew<Wt::WContainerWidget>();
+    UIStyleHelper::styleFlexRow(userContainer_, "end", "center");
+    userContainer_->addStyleClass("user-section");
     
-    userContainer_->addStyleClass("d-flex align-items-center gap-3 ms-auto");
+    // User info
+    userInfo_ = userContainer_->addNew<Wt::WText>("👤 Operator");
+    userInfo_->addStyleClass("text-light me-3 small");
     
-    timeDisplay_ = userContainer_->addWidget(std::make_unique<Wt::WText>());
-    timeDisplay_->addStyleClass("text-light");
-    updateTimeDisplay();
+    // Time display
+    timeDisplay_ = userContainer_->addNew<Wt::WText>();
+    timeDisplay_->addStyleClass("text-light small font-monospace");
     
-    userInfo_ = userContainer_->addWidget(
-        std::make_unique<Wt::WText>("👤 POS User")
-    );
-    userInfo_->addStyleClass("text-light");
+    // Set up timer for time updates
+    auto timer = addChild(std::make_unique<Wt::WTimer>());
+    timer->setInterval(std::chrono::seconds(1));
+    timer->timeout().connect(this, &CommonHeader::updateTimeDisplay);
+    timer->start();
+    
+    std::cout << "[CommonHeader] User section created" << std::endl;
 }
 
 void CommonHeader::setupEventHandlers() {
-    // Fixed signal connections for different Wt versions
-    if (themeComboBox_) {
-        // Try multiple signal connection approaches
-        try {
-            // Method 1: Use activated() signal (takes int index)
-            themeComboBox_->activated().connect([this](int index) {
-                onThemeSelectionChanged(index);
-            });
-        } catch (...) {
-            try {
-                // Method 2: Use sactivated() signal (takes WString)
-                themeComboBox_->sactivated().connect([this](const Wt::WString& text) {
-                    onThemeSelectionChangedByText(text);
-                });
-            } catch (...) {
-                // Method 3: Use changed() signal as fallback
-                themeComboBox_->changed().connect([this]() {
-                    onThemeSelectionChanged(themeComboBox_->currentIndex());
-                });
-            }
-        }
-    }
+    std::cout << "[CommonHeader] Setting up event handlers..." << std::endl;
     
-    if (themeToggleButton_) {
-        themeToggleButton_->clicked().connect([this]() {
-            onThemeToggleClicked();
-        });
-    }
+    // Any additional event setup can go here
     
-    // Create and configure timer for time updates
-    auto timerWidget = std::make_unique<Wt::WTimer>();
-    auto timer = timerWidget.get();
-    addChild(std::move(timerWidget));
-    
-    timer->timeout().connect([this]() { updateTimeDisplay(); });
-    timer->setInterval(std::chrono::minutes(1));
-    timer->start();
-}
-
-void CommonHeader::updateTimeDisplay() {
-    if (!timeDisplay_) return;
-    
-    auto now = std::time(nullptr);
-    auto localTime = *std::localtime(&now);
-    
-    std::ostringstream oss;
-    oss << std::put_time(&localTime, "%H:%M");
-    timeDisplay_->setText(oss.str());
+    std::cout << "[CommonHeader] Event handlers setup complete" << std::endl;
 }
 
 void CommonHeader::setCurrentMode(ModeSelector::Mode mode) {
     if (modeSelector_) {
         modeSelector_->setCurrentMode(mode);
+        std::cout << "[CommonHeader] Mode set to: " << (mode == ModeSelector::POS_MODE ? "POS" : "Kitchen") << std::endl;
     }
 }
 
@@ -170,82 +205,129 @@ ModeSelector::Mode CommonHeader::getCurrentMode() const {
     if (modeSelector_) {
         return modeSelector_->getCurrentMode();
     }
-    return ModeSelector::POS_MODE;
+    return ModeSelector::POS_MODE; // Default
 }
 
-// Handle theme selection by index (for activated() signal)
+void CommonHeader::updateTimeDisplay() {
+    if (timeDisplay_) {
+        auto now = std::chrono::system_clock::now();
+        auto time_t = std::chrono::system_clock::to_time_t(now);
+        auto localtime = *std::localtime(&time_t);
+        
+        std::stringstream ss;
+        ss << std::put_time(&localtime, "%H:%M:%S");
+        
+        timeDisplay_->setText(ss.str());
+    }
+}
+
+// FIXED: Enhanced theme selection handling
 void CommonHeader::onThemeSelectionChanged(int index) {
-    if (!themeService_) return;
+    std::cout << "[CommonHeader] Theme selection changed to index: " << index << std::endl;
     
-    ThemeService::Theme theme;
-    
-    switch (index) {
-        case 0: theme = ThemeService::Theme::BASE; break;
-        case 1: theme = ThemeService::Theme::LIGHT; break;
-        case 2: theme = ThemeService::Theme::DARK; break;
-        case 3: theme = ThemeService::Theme::WARM; break;
-        case 4: theme = ThemeService::Theme::COOL; break;
-        default: theme = ThemeService::Theme::BASE; break;
+    if (!themeService_) {
+        std::cerr << "[CommonHeader] ThemeService not available!" << std::endl;
+        return;
     }
     
-    themeService_->setTheme(theme);
+    try {
+        auto themes = themeService_->getAvailableThemes();
+        
+        if (index >= 0 && index < static_cast<int>(themes.size())) {
+            ThemeService::Theme selectedTheme = themes[index];
+            std::cout << "[CommonHeader] Applying theme: " << themeService_->getThemeName(selectedTheme) << std::endl;
+            
+            // FIXED: Apply theme with immediate effect
+            themeService_->setTheme(selectedTheme, true);
+            
+            std::cout << "[CommonHeader] Theme applied successfully" << std::endl;
+        } else {
+            std::cerr << "[CommonHeader] Invalid theme index: " << index << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CommonHeader] Error changing theme: " << e.what() << std::endl;
+    }
 }
 
-// Handle theme selection by text (for sactivated() signal)
 void CommonHeader::onThemeSelectionChangedByText(const Wt::WString& text) {
-    if (!themeService_) return;
+    std::cout << "[CommonHeader] Theme selected by text: " << text.toUTF8() << std::endl;
     
-    std::string themeText = text.toUTF8();
-    ThemeService::Theme theme = ThemeService::Theme::BASE;
-    
-    if (themeText == "Base Theme") theme = ThemeService::Theme::BASE;
-    else if (themeText == "Light Theme") theme = ThemeService::Theme::LIGHT;
-    else if (themeText == "Dark Theme") theme = ThemeService::Theme::DARK;
-    else if (themeText == "Warm Theme") theme = ThemeService::Theme::WARM;
-    else if (themeText == "Cool Theme") theme = ThemeService::Theme::COOL;
-    
-    themeService_->setTheme(theme);
+    // This will trigger the index-based handler, so we just need to ensure 
+    // the index is properly set
+    if (themeComboBox_) {
+        int currentIndex = themeComboBox_->currentIndex();
+        onThemeSelectionChanged(currentIndex);
+    }
 }
 
 void CommonHeader::onThemeToggleClicked() {
-    if (!themeService_) return;
+    std::cout << "[CommonHeader] Theme toggle clicked!" << std::endl;
     
-    themeService_->toggleTheme();
+    if (!themeService_) {
+        std::cerr << "[CommonHeader] ThemeService not available for toggle!" << std::endl;
+        return;
+    }
+    
+    try {
+        // FIXED: Simple toggle between light and dark themes
+        auto currentTheme = themeService_->getCurrentTheme();
+        ThemeService::Theme newTheme;
+        
+        switch (currentTheme) {
+            case ThemeService::Theme::LIGHT:
+                newTheme = ThemeService::Theme::DARK;
+                break;
+            case ThemeService::Theme::DARK:
+                newTheme = ThemeService::Theme::WARM;
+                break;
+            case ThemeService::Theme::WARM:
+                newTheme = ThemeService::Theme::COOL;
+                break;
+            case ThemeService::Theme::COOL:
+            case ThemeService::Theme::BASE:
+            case ThemeService::Theme::AUTO:
+            default:
+                newTheme = ThemeService::Theme::LIGHT;
+                break;
+        }
+        
+        std::cout << "[CommonHeader] Toggling from " << themeService_->getThemeName(currentTheme) 
+                  << " to " << themeService_->getThemeName(newTheme) << std::endl;
+        
+        themeService_->setTheme(newTheme, true);
+        
+        std::cout << "[CommonHeader] Theme toggle completed" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[CommonHeader] Error toggling theme: " << e.what() << std::endl;
+    }
 }
 
 void CommonHeader::updateThemeControls() {
-    // Update theme controls based on current theme
-    // This would be called when theme changes externally
-}
-
-//============================================================================
-// Alternative Simplified Version without ThemeService
-//============================================================================
-
-/*
-// Use this if you don't have ThemeService yet:
-
-void CommonHeader::setupEventHandlers() {
-    if (themeComboBox_) {
-        // Simple version without actual theme switching
-        themeComboBox_->activated().connect([this](int index) {
-            std::cout << "Theme selected: " << index << std::endl;
-        });
+    std::cout << "[CommonHeader] Updating theme controls..." << std::endl;
+    
+    if (!themeService_ || !themeComboBox_) {
+        return;
     }
     
-    if (themeToggleButton_) {
-        themeToggleButton_->clicked().connect([this]() {
-            std::cout << "Theme toggle clicked" << std::endl;
-        });
+    try {
+        // Update combo box selection to match current theme
+        auto currentTheme = themeService_->getCurrentTheme();
+        auto themes = themeService_->getAvailableThemes();
+        
+        for (size_t i = 0; i < themes.size(); ++i) {
+            if (themes[i] == currentTheme) {
+                // Temporarily disconnect to avoid triggering events
+                themeComboBox_->setCurrentIndex(static_cast<int>(i));
+                std::cout << "[CommonHeader] Updated combo box to index " << i 
+                          << " (" << themeService_->getThemeName(currentTheme) << ")" << std::endl;
+                break;
+            }
+        }
+        
+        std::cout << "[CommonHeader] Theme controls updated" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[CommonHeader] Error updating theme controls: " << e.what() << std::endl;
     }
-    
-    // Timer setup (same as above)
-    auto timerWidget = std::make_unique<Wt::WTimer>();
-    auto timer = timerWidget.get();
-    addChild(std::move(timerWidget));
-    
-    timer->timeout().connect([this]() { updateTimeDisplay(); });
-    timer->setInterval(std::chrono::minutes(1));
-    timer->start();
 }
-*/

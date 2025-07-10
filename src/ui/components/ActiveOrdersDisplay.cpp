@@ -12,53 +12,59 @@
 #include <chrono>
 
 ActiveOrdersDisplay::ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
-                                        std::shared_ptr<EventManager> eventManager)
+                                        std::shared_ptr<EventManager> eventManager,
+                                         bool showHeader)
     : posService_(posService)
     , eventManager_(eventManager)
     , maxOrdersToDisplay_(DEFAULT_MAX_ORDERS)
     , showCompletedOrders_(false)
     , headerText_(nullptr)
     , orderCountText_(nullptr)
-    , ordersTable_(nullptr) {
+    , ordersTable_(nullptr) 
+    , showHeader_(showHeader)
+{
     
     if (!posService_) {
         throw std::invalid_argument("ActiveOrdersDisplay requires valid POSService");
     }
     
-    // Apply consistent container styling
-    UIStyleHelper::styleOrderDisplay(this);
+    // FIXED: Remove extra padding/margins and borders
+    addStyleClass("pos-active-orders-container h-100");
+    setStyleClass("pos-active-orders-container h-100"); // Remove default container styling
     
     initializeUI();
     setupEventListeners();
     refresh();
     
-    std::cout << "✓ ActiveOrdersDisplay initialized with consistent styling" << std::endl;
+    std::cout << "✓ ActiveOrdersDisplay initialized with clean styling" << std::endl;
 }
 
+// Replace the initializeUI() method with this corrected version:
+
 void ActiveOrdersDisplay::initializeUI() {
-    // Create main group container with consistent styling
-    auto ordersGroup = addNew<Wt::WGroupBox>("📋 Active Orders");
-    UIStyleHelper::styleGroupBox(ordersGroup, "primary");
+    // Create main container without excessive padding/borders
+    auto mainContainer = addNew<Wt::WContainerWidget>();
+    mainContainer->addStyleClass("pos-orders-main h-100 bg-light");
     
-    // Create header with consistent styling
-    auto header = createDisplayHeader();
-    ordersGroup->addWidget(std::move(header));
+    // Only create header if showHeader_ is true
+    if (showHeader_) {
+        auto header = createDisplayHeader();
+        mainContainer->addWidget(std::move(header));
+    }
     
-    // Create table container with consistent layout
-    auto tableContainer = ordersGroup->addNew<Wt::WContainerWidget>();
-    UIStyleHelper::styleContainer(tableContainer, "content");
+    // Create table container with minimal spacing
+    auto tableContainer = mainContainer->addNew<Wt::WContainerWidget>();
+    tableContainer->addStyleClass("pos-table-wrapper px-3 pb-3");
     
-    // Create table with consistent styling
+    // Create table without borders and excessive spacing
     ordersTable_ = tableContainer->addNew<Wt::WTable>();
-    UIStyleHelper::styleTable(ordersTable_, "orders");
-    
+    ordersTable_->addStyleClass("table pos-orders-table w-100 mb-0");
+    ordersTable_->setWidth(Wt::WLength("100%"));
+
     // Initialize table headers
     initializeTableHeaders();
     
-    // Add fade-in animation
-    UIStyleHelper::addFadeIn(this);
-    
-    std::cout << "✓ ActiveOrdersDisplay UI initialized with consistent styling" << std::endl;
+    std::cout << "✓ ActiveOrdersDisplay UI initialized with clean layout" << std::endl;
 }
 
 void ActiveOrdersDisplay::initializeTableHeaders() {
@@ -66,7 +72,7 @@ void ActiveOrdersDisplay::initializeTableHeaders() {
         return;
     }
     
-    // Create styled table headers
+    // Create table headers
     ordersTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
     ordersTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table/Location"));
     ordersTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
@@ -75,34 +81,47 @@ void ActiveOrdersDisplay::initializeTableHeaders() {
     ordersTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Time"));
     ordersTable_->elementAt(0, 6)->addWidget(std::make_unique<Wt::WText>("Actions"));
     
-    // Apply consistent header styling
+    // FIXED: Apply proper header styling with white text on blue background
     for (int col = 0; col < ordersTable_->columnCount(); ++col) {
         auto headerCell = ordersTable_->elementAt(0, col);
-        headerCell->addStyleClass("table-header bg-primary text-white fw-bold text-center p-2");
+        // FIXED: Use white text on blue background, remove borders
+        headerCell->addStyleClass("pos-table-header bg-primary text-white text-center p-2 fw-bold border-0");
+        
         auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
         if (headerText) {
-            UIStyleHelper::styleHeading(headerText, 6, "white");
-            headerText->removeStyleClass("mb-3"); // Remove default margin for table headers
+            headerText->addStyleClass("text-white fw-bold"); // Ensure white text
         }
     }
     
-    std::cout << "✓ Active orders table headers styled consistently" << std::endl;
+    std::cout << "✓ Table headers styled with white text on blue background" << std::endl;
+}
+
+void ActiveOrdersDisplay::createHeader() {
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->setStyleClass("active-orders-header mb-3");
+    
+    headerText_ = header->addNew<Wt::WText>("📋 Active Orders");
+    headerText_->setStyleClass("h4 text-primary mb-2");
+    
+    // Add order count badge
+    // Count badge with better styling
+    orderCountText_ = header->addNew<Wt::WText>("0 orders");
+    orderCountText_->addStyleClass("badge bg-info text-dark px-3 py-2 rounded-pill");
 }
 
 std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
     auto header = std::make_unique<Wt::WContainerWidget>();
-    UIStyleHelper::styleContainer(header.get(), "header");
-    UIStyleHelper::styleFlexRow(header.get(), "between", "center");
     
-    // Title with consistent styling
+    // FIXED: Header with proper spacing and no bottom border
+    header->addStyleClass("pos-section-header bg-primary text-white p-3 mx-3 mt-3 mb-0 rounded-top d-flex justify-content-between align-items-center");
+    
+    // Title with white text
     headerText_ = header->addNew<Wt::WText>("📋 Active Orders");
-    UIStyleHelper::styleHeading(headerText_, 4, "white");
-    headerText_->removeStyleClass("mb-3"); // Remove margin in header
+    headerText_->addStyleClass("h4 mb-0 fw-bold text-white");
     
-    // Count badge with consistent styling
+    // Count badge with better styling
     orderCountText_ = header->addNew<Wt::WText>("0 orders");
-    UIStyleHelper::styleBadge(orderCountText_, "secondary");
-    orderCountText_->addStyleClass("badge-pill fs-6");
+    orderCountText_->addStyleClass("badge bg-info text-dark px-3 py-2 rounded-pill");
     
     return std::move(header);
 }
@@ -113,43 +132,41 @@ void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
     }
     
     try {
-        // Order ID with consistent styling
+        // Order ID
         auto orderIdText = std::make_unique<Wt::WText>(formatOrderId(order->getOrderId()));
-        orderIdText->addStyleClass("fw-bold text-primary pos-order-id");
+        orderIdText->addStyleClass("fw-bold text-primary");
         ordersTable_->elementAt(row, 0)->addWidget(std::move(orderIdText));
         
-        // Table/Location with consistent styling
+        // Table/Location
         auto tableText = std::make_unique<Wt::WText>(order->getTableIdentifier());
-        tableText->addStyleClass("text-dark fw-medium pos-table-id");
+        tableText->addStyleClass("fw-medium");
         ordersTable_->elementAt(row, 1)->addWidget(std::move(tableText));
         
-        // Status badge with consistent styling
+        // Status badge
         auto statusText = std::make_unique<Wt::WText>(formatOrderStatus(order->getStatus()));
         UIStyleHelper::styleBadge(statusText.get(), getStatusBadgeVariant(order->getStatus()));
-        statusText->addStyleClass("pos-status-badge");
         ordersTable_->elementAt(row, 2)->addWidget(std::move(statusText));
         
-        // Items count with consistent styling
+        // Items count
         auto itemsText = std::make_unique<Wt::WText>(std::to_string(order->getItems().size()) + " items");
-        itemsText->addStyleClass("text-muted small pos-item-count");
+        itemsText->addStyleClass("text-muted small");
         ordersTable_->elementAt(row, 3)->addWidget(std::move(itemsText));
         
-        // Total with consistent styling
+        // Total
         auto totalText = std::make_unique<Wt::WText>(formatCurrency(order->getTotal()));
-        totalText->addStyleClass("fw-bold text-success pos-order-total");
+        totalText->addStyleClass("fw-bold text-success");
         ordersTable_->elementAt(row, 4)->addWidget(std::move(totalText));
         
-        // Time with consistent styling
+        // Time
         auto timeText = std::make_unique<Wt::WText>(formatOrderTime(order));
-        timeText->addStyleClass("text-muted small pos-order-time");
+        timeText->addStyleClass("text-muted small");
         ordersTable_->elementAt(row, 5)->addWidget(std::move(timeText));
         
-        // Actions with consistent styling
+        // Actions
         auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
-        UIStyleHelper::styleFlexRow(actionsContainer.get(), "start", "center");
-        actionsContainer->addStyleClass("pos-action-buttons");
+        actionsContainer->addStyleClass("d-flex gap-1");
         
-        // View button with consistent styling
+        // View button
         auto viewButton = actionsContainer->addNew<Wt::WPushButton>("👁️ View");
         UIStyleHelper::styleButton(viewButton, "outline-primary", "sm");
         viewButton->clicked().connect([this, order]() {
@@ -176,7 +193,7 @@ void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
         
         ordersTable_->elementAt(row, 6)->addWidget(std::move(actionsContainer));
         
-        // Apply consistent row styling
+        // FIXED: Apply clean row styling without borders
         applyRowStyling(row, (row % 2) == 0);
         
     } catch (const std::exception& e) {
@@ -192,25 +209,22 @@ void ActiveOrdersDisplay::applyRowStyling(int row, bool isEven) {
     for (int col = 0; col < ordersTable_->columnCount(); ++col) {
         auto cell = ordersTable_->elementAt(row, col);
         
-        // Base cell styling
-        cell->addStyleClass("pos-table-cell p-2 align-middle");
+        // FIXED: Clean cell styling without borders
+        cell->addStyleClass("pos-table-cell p-2 align-middle border-0");
         
-        // Alternating row colors
+        // FIXED: Subtle alternating row colors
         if (isEven) {
-            cell->addStyleClass("table-row-even");
+            cell->addStyleClass("bg-white");
         } else {
-            cell->addStyleClass("table-row-odd");
+            cell->addStyleClass("bg-light");
         }
         
         // Column-specific alignment
-        if (col == 0 || col == 2 || col == 3 || col == 4 || col == 5) { // Order#, Status, Items, Total, Time
+        if (col == 0 || col == 2 || col == 3 || col == 4 || col == 5) {
             cell->addStyleClass("text-center");
-        } else if (col == 6) { // Actions
+        } else if (col == 6) {
             cell->addStyleClass("text-start");
         }
-        
-        // Add hover effect
-        UIStyleHelper::addHoverEffect(cell, "shadow");
     }
 }
 
@@ -222,41 +236,65 @@ void ActiveOrdersDisplay::showEmptyOrdersMessage() {
     int row = ordersTable_->rowCount();
     auto messageContainer = std::make_unique<Wt::WContainerWidget>();
     
-    // Style the empty message container
-    UIStyleHelper::styleContainer(messageContainer.get(), "content");
-    messageContainer->addStyleClass("text-center py-5");
+    // FIXED: Clean empty state styling
+    messageContainer->addStyleClass("text-center py-5 bg-white");
     
     auto messageText = messageContainer->addNew<Wt::WText>("📝 No active orders");
-    UIStyleHelper::styleHeading(messageText, 5, "muted");
+    messageText->addStyleClass("h5 mb-2 text-muted");
     
     auto subText = messageContainer->addNew<Wt::WText>("Orders will appear here when created");
     subText->addStyleClass("text-muted small");
     
     auto cell = ordersTable_->elementAt(row, 0);
-    cell->setColumnSpan(7); // Span all columns
+    cell->setColumnSpan(7);
     cell->addWidget(std::move(messageContainer));
-    cell->addStyleClass("pos-empty-state");
+    cell->addStyleClass("border-0");
 }
 
+// Fix for ActiveOrdersDisplay.cpp - updateOrderCount() method
+// Replace the problematic updateOrderCount() method with this corrected version:
+
+// Replace the updateOrderCount() method in ActiveOrdersDisplay.cpp with this:
+
+// Also add safety checks to updateOrderCount():
 void ActiveOrdersDisplay::updateOrderCount() {
-    if (!orderCountText_) {
+    // Add safety check - only update if we have a valid orderCountText widget
+    if (!orderCountText_ || !orderCountText_->parent()) {
+        std::cout << "[ActiveOrdersDisplay] orderCountText_ is null or orphaned - skipping update" << std::endl;
         return;
     }
     
-    auto orders = getDisplayOrders();
-    std::string countText = std::to_string(orders.size()) + " orders";
-    orderCountText_->setText(countText);
-    
-    // Update badge color based on count
-    orderCountText_->removeStyleClass("bg-secondary bg-warning bg-danger");
-    if (orders.size() == 0) {
-        UIStyleHelper::styleBadge(orderCountText_, "secondary");
-    } else if (orders.size() > 10) {
-        UIStyleHelper::styleBadge(orderCountText_, "danger");
-    } else if (orders.size() > 5) {
-        UIStyleHelper::styleBadge(orderCountText_, "warning");
-    } else {
-        UIStyleHelper::styleBadge(orderCountText_, "info");
+    try {
+        auto orders = getDisplayOrders();
+        std::string countText = std::to_string(orders.size()) + " orders";
+        orderCountText_->setText(countText);
+        
+        // Remove CSS classes individually with safety checks
+        std::cout << "[ActiveOrdersDisplay] updateOrderCount() removing bg-secondary." << std::endl;
+        orderCountText_->removeStyleClass("bg-secondary");
+
+        std::cout << "[ActiveOrdersDisplay] updateOrderCount() removing bg-warning." << std::endl;
+        orderCountText_->removeStyleClass("bg-warning");
+
+        std::cout << "[ActiveOrdersDisplay] updateOrderCount() removing bg-danger." << std::endl;
+        orderCountText_->removeStyleClass("bg-danger");
+        
+        std::cout << "[ActiveOrdersDisplay] updateOrderCount() removing bg-info." << std::endl;
+        orderCountText_->removeStyleClass("bg-info");
+        
+        // Apply new badge styling based on count
+        if (orders.size() == 0) {
+            UIStyleHelper::styleBadge(orderCountText_, "secondary");
+        } else if (orders.size() > 10) {
+            UIStyleHelper::styleBadge(orderCountText_, "danger");
+        } else if (orders.size() > 5) {
+            UIStyleHelper::styleBadge(orderCountText_, "warning");
+        } else {
+            UIStyleHelper::styleBadge(orderCountText_, "info");
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[ActiveOrdersDisplay] Error in updateOrderCount: " << e.what() << std::endl;
     }
 }
 
@@ -273,7 +311,7 @@ std::string ActiveOrdersDisplay::getStatusBadgeVariant(Order::Status status) con
 }
 
 // =================================================================
-// MISSING METHOD IMPLEMENTATIONS
+// EXISTING METHOD IMPLEMENTATIONS (unchanged)
 // =================================================================
 
 void ActiveOrdersDisplay::refresh() {
@@ -379,7 +417,7 @@ std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::getDisplayOrders() cons
     return orders;
 }
 
-// Event handlers (placeholder implementations)
+// Event handlers
 void ActiveOrdersDisplay::handleOrderCreated(const std::any& eventData) {
     refresh();
 }
@@ -400,14 +438,13 @@ void ActiveOrdersDisplay::handleKitchenStatusChanged(const std::any& eventData) 
     refresh();
 }
 
-// UI action handlers (placeholder implementations)
+// UI action handlers
 void ActiveOrdersDisplay::onViewOrderClicked(int orderId) {
     std::cout << "[ActiveOrdersDisplay] View order #" << orderId << " (not implemented)" << std::endl;
 }
 
 void ActiveOrdersDisplay::onCompleteOrderClicked(int orderId) {
     std::cout << "[ActiveOrdersDisplay] Complete order #" << orderId << " (not implemented)" << std::endl;
-    // TODO: Implement order completion logic
 }
 
 void ActiveOrdersDisplay::onCancelOrderClicked(int orderId) {
@@ -456,12 +493,16 @@ std::string ActiveOrdersDisplay::formatCurrency(double amount) const {
 }
 
 void ActiveOrdersDisplay::hideEmptyOrdersMessage() {
-    // This method can be used to explicitly hide empty state
-    // Currently handled by refresh() and updateOrdersTable()
+    // Handled by refresh() and updateOrdersTable()
 }
 
 void ActiveOrdersDisplay::applyTableStyling() {
     if (ordersTable_) {
-        UIStyleHelper::styleTable(ordersTable_, "orders");
+        ordersTable_->addStyleClass("table w-100 mb-0");
     }
+}
+
+void ActiveOrdersDisplay::applyCurrentTheme() {
+    // For now, the base theme fixes are applied directly in the styling
+    refresh();
 }

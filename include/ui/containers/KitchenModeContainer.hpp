@@ -10,6 +10,8 @@
 #include "../../events/EventManager.hpp"
 #include "../components/ActiveOrdersDisplay.hpp"
 #include "../components/KitchenStatusDisplay.hpp"
+#include "../../utils/UIStyleHelper.hpp"
+
 
 #include <Wt/WContainerWidget.h>
 #include <Wt/WHBoxLayout.h>

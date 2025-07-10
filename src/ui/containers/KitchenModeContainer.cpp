@@ -61,13 +61,13 @@ void KitchenModeContainer::createLeftPanel() {
     auto layout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     layout->setContentsMargins(15, 15, 15, 15);
     
-    // Add title for active orders
-    auto title = layout->addWidget(std::make_unique<Wt::WText>("📋 Active Orders"));
-    title->setStyleClass("h4 mb-3");
+    // Add title for active orders (in KitchenNodeContainer)
+    // auto title = layout->addWidget(std::make_unique<Wt::WText>("📋 Active Orders"));
+    // title->setStyleClass("h4 mb-3");
     
     // Create active orders display for kitchen view
     activeOrdersDisplay_ = layout->addWidget(
-        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_));
+        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_, true));
     
     // Configure for kitchen mode
     activeOrdersDisplay_->setMaxOrdersToDisplay(0); // Show all orders

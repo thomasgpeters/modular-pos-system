@@ -3,6 +3,7 @@
 
 #include "../../services/POSService.hpp"
 #include "../../events/EventManager.hpp"
+#include "../../utils/UIStyleHelper.hpp"
 
 #include "../components/ActiveOrdersDisplay.hpp"
 #include "../components/OrderEntryPanel.hpp"

@@ -1,4 +1,5 @@
 #include "../../../include/ui/components/CurrentOrderDisplay.hpp"
+#include "../../../include/utils/UIStyleHelper.hpp" // ADDED: Include styling helper
 
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
@@ -17,7 +18,7 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
     : Wt::WContainerWidget()
     , posService_(posService)
     , eventManager_(eventManager)
-    , isDestroying_(false)  // Add destruction flag
+    , isDestroying_(false)
     , editable_(true)
     , headerContainer_(nullptr)
     , tableNumberText_(nullptr)
@@ -33,23 +34,23 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
         throw std::invalid_argument("CurrentOrderDisplay requires valid POSService and EventManager");
     }
     
-    setStyleClass("current-order-display p-3 bg-white border rounded shadow-sm");
+    // FIXED: Apply consistent container styling matching ActiveOrdersDisplay
+    addStyleClass("pos-current-order-container h-100");
+    setStyleClass("pos-current-order-container h-100");
     
     initializeUI();
     setupEventListeners();
     refresh();
     
-    std::cout << "[CurrentOrderDisplay] Initialized" << std::endl;
+    std::cout << "✓ CurrentOrderDisplay initialized with consistent styling" << std::endl;
 }
 
 CurrentOrderDisplay::~CurrentOrderDisplay() {
     std::cout << "[CurrentOrderDisplay] Destructor called - setting destruction flag" << std::endl;
     
-    // Set destruction flag to prevent further widget access
     isDestroying_ = true;
     
     try {
-        // Unsubscribe from all events
         if (eventManager_) {
             for (auto handle : eventSubscriptions_) {
                 eventManager_->unsubscribe(handle);
@@ -65,107 +66,141 @@ CurrentOrderDisplay::~CurrentOrderDisplay() {
 }
 
 void CurrentOrderDisplay::initializeUI() {
-    // Use simple layout instead of complex initialization
     initializeUI_Simple();
 }
 
 void CurrentOrderDisplay::initializeUI_Simple() {
-    // Main container with vertical layout
-    auto layout = setLayout(std::make_unique<Wt::WVBoxLayout>());
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(15);
+    // Create main container with consistent styling
+    auto mainContainer = addNew<Wt::WContainerWidget>();
+    mainContainer->addStyleClass("pos-current-order-main h-100 bg-light");
     
-    // Header section
-    auto headerWidget = createOrderHeader();
-    headerContainer_ = static_cast<Wt::WContainerWidget*>(layout->addWidget(std::move(headerWidget)));
+    // Create header
+    auto header = createOrderHeader();
+    mainContainer->addWidget(std::move(header));
     
-    // Items table
-    itemsTable_ = layout->addWidget(std::make_unique<Wt::WTable>());
-    itemsTable_->setStyleClass("table table-striped table-hover w-100");
+    // Create table container
+    auto tableContainer = mainContainer->addNew<Wt::WContainerWidget>();
+    tableContainer->addStyleClass("pos-table-wrapper px-3 pb-3");
+    
+    // Create table
+    itemsTable_ = tableContainer->addNew<Wt::WTable>();
+    itemsTable_->addStyleClass("table pos-current-order-table w-100 mb-0");
+    itemsTable_->setWidth(Wt::WLength("100%"));
     
     // Initialize table headers
+    initializeTableHeaders(); 
+    
+    // FIXED: Create summary container directly (avoids widget ownership transfer issues)
+    summaryContainer_ = mainContainer->addNew<Wt::WContainerWidget>();
+    summaryContainer_->addStyleClass("pos-order-summary p-3 mx-3 mb-3 bg-white border-start border-end border-bottom rounded-bottom shadow-sm");
+    
+    // Create summary content directly in the container
+    createOrderSummaryContent();
+    
+    applyTableStyling();
+    
+    std::cout << "✓ CurrentOrderDisplay UI initialized with consistent layout" << std::endl;
+}
+
+void CurrentOrderDisplay::initializeTableHeaders() {
+    if (!itemsTable_) {
+        return;
+    }
+    
+    // Create table headers
     itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
     itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Price"));
     itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Qty"));
     itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
     itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
     
-    // Style headers
-    for (int col = 0; col < 5; ++col) {
+    // FIXED: Apply consistent header styling with white text on blue background
+    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
         auto headerCell = itemsTable_->elementAt(0, col);
-        headerCell->setStyleClass("bg-success text-white fw-bold text-center p-2");
+        // FIXED: Use white text on blue background, remove borders (matching ActiveOrdersDisplay)
+        headerCell->addStyleClass("pos-table-header bg-primary text-white text-center p-2 fw-bold border-0");
+        
+        auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
+        if (headerText) {
+            headerText->addStyleClass("text-white fw-bold");
+        }
     }
     
-    // Summary section
-    auto summaryWidget = createOrderSummary();
-    summaryContainer_ = static_cast<Wt::WContainerWidget*>(layout->addWidget(std::move(summaryWidget)));
-    
-    applyTableStyling();
+    std::cout << "✓ Table headers styled with white text on blue background" << std::endl;
 }
 
 std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderHeader() {
     auto header = std::make_unique<Wt::WContainerWidget>();
-    header->setStyleClass("d-flex justify-content-between align-items-center p-3 bg-light border rounded");
     
-    // Left side: Order info
-    auto leftSide = header->addNew<Wt::WContainerWidget>();
-    leftSide->setStyleClass("d-flex flex-column");
+    // FIXED: Header with consistent styling matching ActiveOrdersDisplay
+    header->addStyleClass("pos-section-header bg-primary text-white p-3 mx-3 mt-3 mb-0 rounded-top d-flex justify-content-between align-items-center");
     
-    auto titleText = leftSide->addNew<Wt::WText>("📋 Current Order");
-    titleText->setStyleClass("h5 text-primary mb-1");
+    // Title with white text
+    auto titleText = header->addNew<Wt::WText>("📋 Current Order");
+    titleText->addStyleClass("h4 mb-0 fw-bold text-white");
     
-    orderIdText_ = leftSide->addNew<Wt::WText>("No active order");
-    orderIdText_->setStyleClass("text-muted small");
+    // Order info container
+    auto orderInfoContainer = header->addNew<Wt::WContainerWidget>();
+    orderInfoContainer->addStyleClass("d-flex flex-column align-items-end");
     
-    // Right side: Table info
-    auto rightSide = header->addNew<Wt::WContainerWidget>();
-    rightSide->setStyleClass("text-end");
+    // Table identifier badge
+    tableNumberText_ = orderInfoContainer->addNew<Wt::WText>("No table selected");
+    tableNumberText_->addStyleClass("badge bg-info text-dark px-3 py-1 rounded-pill mb-1");
     
-    tableNumberText_ = rightSide->addNew<Wt::WText>("No table selected");
-    tableNumberText_->setStyleClass("badge bg-secondary");
+    // Order ID text
+    orderIdText_ = orderInfoContainer->addNew<Wt::WText>("No active order");
+    orderIdText_->addStyleClass("text-white-50 small");
     
     return std::move(header);
 }
 
 std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderSummary() {
     auto summary = std::make_unique<Wt::WContainerWidget>();
-    summary->setStyleClass("p-3 bg-light border rounded");
-    
-    auto layout = summary->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(5);
+    summary->addStyleClass("pos-order-summary p-3 mx-3 mb-3 bg-white border-start border-end border-bottom rounded-bottom shadow-sm");
     
     // Title
-    auto titleText = layout->addWidget(std::make_unique<Wt::WText>("💰 Order Summary"));
-    titleText->setStyleClass("h6 text-success mb-2");
+    auto titleText = summary->addNew<Wt::WText>("💰 Order Summary");
+    titleText->addStyleClass("h5 text-success mb-3 fw-bold");
     
-    // Summary lines
-    auto summaryGrid = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    // Summary grid with consistent styling
+    auto summaryGrid = summary->addNew<Wt::WContainerWidget>();
+    summaryGrid->addStyleClass("d-flex flex-column gap-2");
     
-    // Item count
+    // Item count row
     auto itemCountRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    itemCountRow->setStyleClass("d-flex justify-content-between");
-    itemCountRow->addNew<Wt::WText>("Items:")->setStyleClass("fw-bold");
+    itemCountRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto itemLabel = itemCountRow->addNew<Wt::WText>("Items:");
+    itemLabel->addStyleClass("fw-medium text-muted");
     itemCountText_ = itemCountRow->addNew<Wt::WText>("0");
+    itemCountText_->addStyleClass("fw-bold");
     
-    // Subtotal
+    // Subtotal row
     auto subtotalRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    subtotalRow->setStyleClass("d-flex justify-content-between");
-    subtotalRow->addNew<Wt::WText>("Subtotal:")->setStyleClass("fw-bold");
+    subtotalRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto subtotalLabel = subtotalRow->addNew<Wt::WText>("Subtotal:");
+    subtotalLabel->addStyleClass("fw-medium text-muted");
     subtotalText_ = subtotalRow->addNew<Wt::WText>("$0.00");
+    subtotalText_->addStyleClass("fw-bold");
     
-    // Tax
+    // Tax row
     auto taxRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    taxRow->setStyleClass("d-flex justify-content-between");
-    taxRow->addNew<Wt::WText>("Tax:")->setStyleClass("fw-bold");
+    taxRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto taxLabel = taxRow->addNew<Wt::WText>("Tax:");
+    taxLabel->addStyleClass("fw-medium text-muted");
     taxText_ = taxRow->addNew<Wt::WText>("$0.00");
+    taxText_->addStyleClass("fw-bold");
     
-    // Total
+    // Separator
+    auto separator = summaryGrid->addNew<Wt::WContainerWidget>();
+    separator->addStyleClass("border-top my-2");
+    
+    // Total row with emphasis
     auto totalRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    totalRow->setStyleClass("d-flex justify-content-between border-top pt-2 mt-2");
-    totalRow->addNew<Wt::WText>("TOTAL:")->setStyleClass("h6 fw-bold text-success");
+    totalRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto totalLabel = totalRow->addNew<Wt::WText>("TOTAL:");
+    totalLabel->addStyleClass("h5 fw-bold text-success mb-0");
     totalText_ = totalRow->addNew<Wt::WText>("$0.00");
-    totalText_->setStyleClass("h6 fw-bold text-success");
+    totalText_->addStyleClass("h5 fw-bold text-success mb-0");
     
     return std::move(summary);
 }
@@ -208,20 +243,20 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
         // Item name with special instructions
         auto nameContainer = std::make_unique<Wt::WContainerWidget>();
         auto nameText = nameContainer->addNew<Wt::WText>(item.getMenuItem().getName());
-        nameText->setStyleClass("fw-bold text-dark");
+        nameText->addStyleClass("fw-bold text-primary");
         
         // Show special instructions if any
         if (!item.getSpecialInstructions().empty()) {
             nameContainer->addNew<Wt::WBreak>();
             auto instructionsText = nameContainer->addNew<Wt::WText>("📝 " + item.getSpecialInstructions());
-            instructionsText->setStyleClass("small text-muted fst-italic");
+            instructionsText->addStyleClass("small text-muted fst-italic");
         }
         
         itemsTable_->elementAt(row, 0)->addWidget(std::move(nameContainer));
         
         // Unit price
         auto priceText = std::make_unique<Wt::WText>(formatCurrency(item.getMenuItem().getPrice()));
-        priceText->setStyleClass("text-success");
+        priceText->addStyleClass("fw-medium text-success");
         itemsTable_->elementAt(row, 1)->addWidget(std::move(priceText));
         
         // Quantity controls (editable spinner + buttons)
@@ -229,9 +264,9 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
         qtyContainer->setStyleClass("d-flex align-items-center justify-content-center gap-1");
         
         if (editable_) {
-            // Decrease button
+            // Decrease button with consistent styling
             auto decreaseBtn = qtyContainer->addNew<Wt::WPushButton>("-");
-            decreaseBtn->setStyleClass("btn btn-outline-secondary btn-sm");
+            UIStyleHelper::styleButton(decreaseBtn, "outline-secondary", "sm");
             decreaseBtn->setWidth(30);
             
             // Quantity display/spinner
@@ -239,11 +274,12 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
             qtySpinner->setRange(1, 99);
             qtySpinner->setValue(item.getQuantity());
             qtySpinner->setWidth(60);
-            qtySpinner->setStyleClass("form-control form-control-sm text-center");
+            UIStyleHelper::styleFormControl(qtySpinner, "sm");
+            qtySpinner->addStyleClass("text-center");
             
-            // Increase button
+            // Increase button with consistent styling
             auto increaseBtn = qtyContainer->addNew<Wt::WPushButton>("+");
-            increaseBtn->setStyleClass("btn btn-outline-secondary btn-sm");
+            UIStyleHelper::styleButton(increaseBtn, "outline-secondary", "sm");
             increaseBtn->setWidth(30);
             
             // Connect quantity change handlers
@@ -285,22 +321,21 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
         actionsContainer->setStyleClass("d-flex justify-content-center gap-1");
         
         if (editable_) {
-            // Remove item button
+            // Remove item button with consistent styling
             auto removeBtn = actionsContainer->addNew<Wt::WPushButton>("🗑️ Remove");
-            removeBtn->setStyleClass("btn btn-outline-danger btn-sm");
+            UIStyleHelper::styleButton(removeBtn, "outline-danger", "sm");
             removeBtn->clicked().connect([this, index]() {
                 onRemoveItemClicked(index);
             });
             
-            // Quick duplicate button
+            // Quick duplicate button with consistent styling
             auto duplicateBtn = actionsContainer->addNew<Wt::WPushButton>("📋 +1");
-            duplicateBtn->setStyleClass("btn btn-outline-info btn-sm");
+            UIStyleHelper::styleButton(duplicateBtn, "outline-info", "sm");
             duplicateBtn->setToolTip("Add another of this item");
             duplicateBtn->clicked().connect([this, index]() {
                 auto currentOrder = getCurrentOrder();
                 if (currentOrder && index < currentOrder->getItems().size()) {
                     const auto& orderItem = currentOrder->getItems()[index];
-                    // Add the same item again
                     posService_->addItemToCurrentOrder(orderItem.getMenuItem(), 1, orderItem.getSpecialInstructions());
                 }
             });
@@ -308,23 +343,111 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
         
         itemsTable_->elementAt(row, 4)->addWidget(std::move(actionsContainer));
         
-        // Apply row styling
-        bool isEven = (row % 2 == 0);
-        for (int col = 0; col < 5; ++col) {
-            auto cell = itemsTable_->elementAt(row, col);
-            cell->setStyleClass("p-2 align-middle");
-            if (col >= 1) { // Price, Qty, Total, Actions - center aligned
-                cell->addStyleClass("text-center");
-            }
-            if (isEven) {
-                cell->addStyleClass("table-light");
-            }
-        }
+        // FIXED: Apply clean row styling without borders (matching ActiveOrdersDisplay)
+        applyRowStyling(row, (row % 2) == 0);
         
     } catch (const std::exception& e) {
         std::cerr << "[CurrentOrderDisplay] Error adding order item row: " << e.what() << std::endl;
     }
 }
+
+void CurrentOrderDisplay::applyRowStyling(int row, bool isEven) {
+    if (!itemsTable_ || row == 0) { // Don't style header row
+        return;
+    }
+    
+    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
+        auto cell = itemsTable_->elementAt(row, col);
+        
+        // FIXED: Clean cell styling without borders (matching ActiveOrdersDisplay)
+        cell->addStyleClass("pos-table-cell p-2 align-middle border-0");
+        
+        // FIXED: Subtle alternating row colors
+        if (isEven) {
+            cell->addStyleClass("bg-white");
+        } else {
+            cell->addStyleClass("bg-light");
+        }
+        
+        // Column-specific alignment
+        if (col >= 1) { // Price, Qty, Total, Actions - center aligned
+            cell->addStyleClass("text-center");
+        }
+    }
+}
+
+void CurrentOrderDisplay::updateOrderSummary() {
+    auto currentOrder = getCurrentOrder();
+    
+    if (!currentOrder) {
+        // Clear summary
+        if (itemCountText_) itemCountText_->setText("0");
+        if (subtotalText_) subtotalText_->setText("$0.00");
+        if (taxText_) taxText_->setText("$0.00");
+        if (totalText_) totalText_->setText("$0.00");
+        
+        // Update header to show no order
+        if (orderIdText_) {
+            orderIdText_->setText("No active order");
+            orderIdText_->setStyleClass("text-white-50 small");
+        }
+        
+        if (tableNumberText_) {
+            tableNumberText_->setText("No table selected");
+            tableNumberText_->setStyleClass("badge bg-secondary text-white px-3 py-1 rounded-pill");
+        }
+        return;
+    }
+    
+    // Update all summary fields
+    const auto& items = currentOrder->getItems();
+    if (itemCountText_) itemCountText_->setText(std::to_string(items.size()));
+    if (subtotalText_) subtotalText_->setText(formatCurrency(currentOrder->getSubtotal()));
+    if (taxText_) taxText_->setText(formatCurrency(currentOrder->getTax()));
+    if (totalText_) totalText_->setText(formatCurrency(currentOrder->getTotal()));
+    
+    // Update header with order info
+    if (orderIdText_) {
+        orderIdText_->setText("Order #" + std::to_string(currentOrder->getOrderId()));
+        orderIdText_->setStyleClass("text-white fw-bold small");
+    }
+    
+    if (tableNumberText_) {
+        std::string tableInfo = currentOrder->getTableIdentifier();
+        if (currentOrder->isDineIn()) {
+            tableInfo = "🪑 " + tableInfo;
+            tableNumberText_->setStyleClass("badge bg-info text-dark px-3 py-1 rounded-pill");
+        } else if (currentOrder->isDelivery()) {
+            tableInfo = "🚗 " + tableInfo;
+            tableNumberText_->setStyleClass("badge bg-warning text-dark px-3 py-1 rounded-pill");
+        } else if (currentOrder->isWalkIn()) {
+            tableInfo = "🚶 " + tableInfo;
+            tableNumberText_->setStyleClass("badge bg-success text-white px-3 py-1 rounded-pill");
+        }
+        tableNumberText_->setText(tableInfo);
+    }
+}
+
+void CurrentOrderDisplay::showEmptyOrderMessage() {
+    if (!itemsTable_) return;
+    
+    // Add empty message row
+    auto emptyRow = itemsTable_->elementAt(1, 0);
+    emptyRow->setColumnSpan(5);
+    
+    auto emptyContainer = emptyRow->addWidget(std::make_unique<Wt::WContainerWidget>());
+    emptyContainer->addStyleClass("text-center py-5 bg-white");
+    
+    auto emptyText = emptyContainer->addNew<Wt::WText>("🛒 No items in order yet");
+    emptyText->addStyleClass("h5 mb-2 text-muted");
+    
+    auto subText = emptyContainer->addNew<Wt::WText>("Add items from the menu to get started");
+    subText->addStyleClass("text-muted small");
+    
+    emptyRow->addStyleClass("border-0");
+}
+
+// Remaining methods remain the same but with consistent styling applied...
 
 void CurrentOrderDisplay::onQuantityChanged(size_t itemIndex, int newQuantity) {
     std::cout << "[CurrentOrderDisplay] Quantity changed for item " << itemIndex 
@@ -336,7 +459,6 @@ void CurrentOrderDisplay::onQuantityChanged(size_t itemIndex, int newQuantity) {
     }
     
     if (newQuantity <= 0) {
-        // Remove the item if quantity is 0 or less
         onRemoveItemClicked(itemIndex);
         return;
     }
@@ -345,14 +467,13 @@ void CurrentOrderDisplay::onQuantityChanged(size_t itemIndex, int newQuantity) {
         bool success = posService_->updateCurrentOrderItemQuantity(itemIndex, newQuantity);
         if (success) {
             std::cout << "[CurrentOrderDisplay] ✓ Quantity updated successfully" << std::endl;
-            // The order modification event will trigger a refresh
         } else {
             std::cerr << "[CurrentOrderDisplay] ✗ Failed to update quantity" << std::endl;
-            refresh(); // Refresh to revert changes
+            refresh();
         }
     } catch (const std::exception& e) {
         std::cerr << "[CurrentOrderDisplay] Exception updating quantity: " << e.what() << std::endl;
-        refresh(); // Refresh to revert changes
+        refresh();
     }
 }
 
@@ -368,65 +489,12 @@ void CurrentOrderDisplay::onRemoveItemClicked(size_t itemIndex) {
         bool success = posService_->removeItemFromCurrentOrder(itemIndex);
         if (success) {
             std::cout << "[CurrentOrderDisplay] ✓ Item removed successfully" << std::endl;
-            // The order modification event will trigger a refresh
         } else {
             std::cerr << "[CurrentOrderDisplay] ✗ Failed to remove item" << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "[CurrentOrderDisplay] Exception removing item: " << e.what() << std::endl;
     }
-}
-
-void CurrentOrderDisplay::updateOrderSummary() {
-    auto currentOrder = getCurrentOrder();
-    
-    if (!currentOrder) {
-        // Clear summary
-        if (itemCountText_) itemCountText_->setText("0");
-        if (subtotalText_) subtotalText_->setText("$0.00");
-        if (taxText_) taxText_->setText("$0.00");
-        if (totalText_) totalText_->setText("$0.00");
-        return;
-    }
-    
-    // Update all summary fields
-    const auto& items = currentOrder->getItems();
-    if (itemCountText_) itemCountText_->setText(std::to_string(items.size()));
-    if (subtotalText_) subtotalText_->setText(formatCurrency(currentOrder->getSubtotal()));
-    if (taxText_) taxText_->setText(formatCurrency(currentOrder->getTax()));
-    if (totalText_) totalText_->setText(formatCurrency(currentOrder->getTotal()));
-    
-    // Update header
-    if (orderIdText_) {
-        orderIdText_->setText("Order #" + std::to_string(currentOrder->getOrderId()));
-        orderIdText_->setStyleClass("text-success small fw-bold");
-    }
-    
-    if (tableNumberText_) {
-        std::string tableInfo = currentOrder->getTableIdentifier();
-        if (currentOrder->isDineIn()) {
-            tableInfo = "🪑 " + tableInfo;
-            tableNumberText_->setStyleClass("badge bg-primary");
-        } else if (currentOrder->isDelivery()) {
-            tableInfo = "🚗 " + tableInfo;
-            tableNumberText_->setStyleClass("badge bg-warning text-dark");
-        } else if (currentOrder->isWalkIn()) {
-            tableInfo = "🚶 " + tableInfo;
-            tableNumberText_->setStyleClass("badge bg-info");
-        }
-        tableNumberText_->setText(tableInfo);
-    }
-}
-
-void CurrentOrderDisplay::showEmptyOrderMessage() {
-    if (!itemsTable_) return;
-    
-    // Add empty message row
-    auto emptyRow = itemsTable_->elementAt(1, 0);
-    emptyRow->setColumnSpan(5);
-    auto emptyText = emptyRow->addWidget(std::make_unique<Wt::WText>("🛒 No items in order yet"));
-    emptyText->setStyleClass("text-center text-muted p-4 fst-italic");
-    emptyRow->setStyleClass("bg-light");
 }
 
 void CurrentOrderDisplay::hideEmptyOrderMessage() {
@@ -485,7 +553,7 @@ void CurrentOrderDisplay::handleCurrentOrderChanged(const std::any& eventData) {
 // PUBLIC INTERFACE
 void CurrentOrderDisplay::refresh() {
     updateOrderItemsTable();
-    std::cout << "[CurrentOrderDisplay] Refreshed" << std::endl;
+    std::cout << "[CurrentOrderDisplay] Refreshed with consistent styling" << std::endl;
 }
 
 void CurrentOrderDisplay::clearOrder() {
@@ -496,7 +564,7 @@ void CurrentOrderDisplay::clearOrder() {
 
 void CurrentOrderDisplay::setEditable(bool editable) {
     editable_ = editable;
-    updateOrderItemsTable(); // Refresh to show/hide edit controls
+    updateOrderItemsTable();
 }
 
 bool CurrentOrderDisplay::isEditable() const {
@@ -504,7 +572,6 @@ bool CurrentOrderDisplay::isEditable() const {
 }
 
 void CurrentOrderDisplay::validateOrderDisplay() {
-    // Ensure display is consistent with current order state
     auto currentOrder = getCurrentOrder();
     if (!currentOrder) {
         clearOrder();
@@ -539,7 +606,56 @@ std::string CurrentOrderDisplay::formatItemPrice(const OrderItem& item) const {
 }
 
 void CurrentOrderDisplay::onSpecialInstructionsChanged(size_t itemIndex, const std::string& instructions) {
-    // Special instructions editing could be added in future
     std::cout << "[CurrentOrderDisplay] Special instructions changed for item " << itemIndex 
               << ": " << instructions << std::endl;
 }
+
+// Add this new method to CurrentOrderDisplay.cpp (and declare it in the header):
+void CurrentOrderDisplay::createOrderSummaryContent() {
+    if (!summaryContainer_) return;
+    
+    // Title
+    auto titleText = summaryContainer_->addNew<Wt::WText>("💰 Order Summary");
+    titleText->addStyleClass("h5 text-success mb-3 fw-bold");
+    
+    // Summary grid
+    auto summaryGrid = summaryContainer_->addNew<Wt::WContainerWidget>();
+    summaryGrid->addStyleClass("d-flex flex-column gap-2");
+    
+    // Item count row
+    auto itemCountRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    itemCountRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto itemLabel = itemCountRow->addNew<Wt::WText>("Items:");
+    itemLabel->addStyleClass("fw-medium text-muted");
+    itemCountText_ = itemCountRow->addNew<Wt::WText>("0");
+    itemCountText_->addStyleClass("fw-bold");
+    
+    // Subtotal row
+    auto subtotalRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    subtotalRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto subtotalLabel = subtotalRow->addNew<Wt::WText>("Subtotal:");
+    subtotalLabel->addStyleClass("fw-medium text-muted");
+    subtotalText_ = subtotalRow->addNew<Wt::WText>("$0.00");
+    subtotalText_->addStyleClass("fw-bold");
+    
+    // Tax row
+    auto taxRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    taxRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto taxLabel = taxRow->addNew<Wt::WText>("Tax:");
+    taxLabel->addStyleClass("fw-medium text-muted");
+    taxText_ = taxRow->addNew<Wt::WText>("$0.00");
+    taxText_->addStyleClass("fw-bold");
+    
+    // Separator
+    auto separator = summaryGrid->addNew<Wt::WContainerWidget>();
+    separator->addStyleClass("border-top my-2");
+    
+    // Total row
+    auto totalRow = summaryGrid->addNew<Wt::WContainerWidget>();
+    totalRow->addStyleClass("d-flex justify-content-between align-items-center");
+    auto totalLabel = totalRow->addNew<Wt::WText>("TOTAL:");
+    totalLabel->addStyleClass("h5 fw-bold text-success mb-0");
+    totalText_ = totalRow->addNew<Wt::WText>("$0.00");
+    totalText_->addStyleClass("h5 fw-bold text-success mb-0");
+}
+

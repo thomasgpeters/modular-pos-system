@@ -1,1 +1,248 @@
-/* themes/light-theme.css - Add your theme styles here */
+/* ============================================================================
+   Light Theme - assets/css/themes/light-theme.css
+   ============================================================================ */
+
+.theme-light {
+  /* Enhanced Light Theme with High Contrast */
+  --pos-primary: #0056b3;
+  --pos-primary-hover: #004085;
+  --pos-primary-active: #003366;
+  --pos-secondary: #5a6268;
+  --pos-secondary-hover: #464c52;
+  
+  /* Bright, Clean Backgrounds */
+  --pos-bg-primary: #ffffff;
+  --pos-bg-secondary: #f8f9fa;
+  --pos-bg-tertiary: #e9ecef;
+  --pos-bg-accent: #f1f5f9;
+  
+  /* High Contrast Text */
+  --pos-text-primary: #212529;
+  --pos-text-secondary: #495057;
+  --pos-text-muted: #6c757d;
+  --pos-text-inverse: #ffffff;
+  
+  /* Enhanced Borders */
+  --pos-border-primary: #dee2e6;
+  --pos-border-secondary: #e9ecef;
+  --pos-border-accent: #cbd5e0;
+  
+  /* Crisp Shadows */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================================================
+   Dark Theme - docroot/assets/css/themes/dark-theme.css
+   ============================================================================ */
+
+.theme-dark {
+  /* Modern Dark Theme */
+  --pos-primary: #4dabf7;
+  --pos-primary-hover: #339af0;
+  --pos-primary-active: #228be6;
+  --pos-secondary: #868e96;
+  --pos-secondary-hover: #6c757d;
+  
+  /* Dark Backgrounds */
+  --pos-bg-primary: #212529;
+  --pos-bg-secondary: #343a40;
+  --pos-bg-tertiary: #495057;
+  --pos-bg-accent: #2d3339;
+  
+  /* Light Text on Dark */
+  --pos-text-primary: #f8f9fa;
+  --pos-text-secondary: #ced4da;
+  --pos-text-muted: #adb5bd;
+  --pos-text-inverse: #212529;
+  
+  /* Status Colors - Adjusted for Dark Theme */
+  --pos-success: #51cf66;
+  --pos-warning: #ffd43b;
+  --pos-danger: #ff6b6b;
+  --pos-info: #4dabf7;
+  
+  /* Dark Theme Borders */
+  --pos-border-primary: #495057;
+  --pos-border-secondary: #6c757d;
+  --pos-border-accent: #5a6269;
+  
+  /* Soft Shadows for Dark Theme */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+  
+  /* Dark Theme Specific */
+  --pos-header-bg: var(--pos-bg-tertiary);
+  --pos-footer-bg: var(--pos-bg-secondary);
+}
+
+/* ============================================================================
+   Warm Theme - docroot/assets/css/themes/warm-theme.css  
+   ============================================================================ */
+
+.theme-warm {
+  /* Restaurant-Friendly Warm Earth Tones */
+  --pos-primary: #8b4513;
+  --pos-primary-hover: #6d3410;
+  --pos-primary-active: #5c2c0e;
+  --pos-secondary: #a0522d;
+  --pos-secondary-hover: #8b4513;
+  
+  /* Warm, Inviting Backgrounds */
+  --pos-bg-primary: #fdf6e3;
+  --pos-bg-secondary: #f4f1e8;
+  --pos-bg-tertiary: #eee8d5;
+  --pos-bg-accent: #f7f2e9;
+  
+  /* Warm Text Colors */
+  --pos-text-primary: #5d4e37;
+  --pos-text-secondary: #8b7355;
+  --pos-text-muted: #a0956b;
+  --pos-text-inverse: #fdf6e3;
+  
+  /* Warm Status Colors */
+  --pos-success: #2d5016;
+  --pos-warning: #b8860b;
+  --pos-danger: #a0522d;
+  --pos-info: #8b4513;
+  
+  /* Warm Borders */
+  --pos-border-primary: #d6cc9a;
+  --pos-border-secondary: #e8ddb5;
+  --pos-border-accent: #ddd4aa;
+  
+  /* Warm Shadows */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(139, 69, 19, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(139, 69, 19, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(139, 69, 19, 0.2);
+  
+  /* Kitchen Mode - Enhanced for Restaurant Feel */
+  --pos-kitchen-bg: var(--pos-bg-primary);
+  --pos-kitchen-panel: var(--pos-bg-secondary);
+  --pos-kitchen-accent: var(--pos-primary);
+}
+
+/* ============================================================================
+   Cool Theme - docroot/assets/css/themes/cool-theme.css
+   ============================================================================ */
+
+.theme-cool {
+  /* Modern Tech-Focused Cool Blues */
+  --pos-primary: #1e40af;
+  --pos-primary-hover: #1d4ed8;
+  --pos-primary-active: #1e3a8a;
+  --pos-secondary: #64748b;
+  --pos-secondary-hover: #475569;
+  
+  /* Cool, Professional Backgrounds */
+  --pos-bg-primary: #f0f8ff;
+  --pos-bg-secondary: #e6f3ff;
+  --pos-bg-tertiary: #dbeafe;
+  --pos-bg-accent: #eff6ff;
+  
+  /* Cool Text Colors */
+  --pos-text-primary: #1e3a8a;
+  --pos-text-secondary: #3730a3;
+  --pos-text-muted: #6366f1;
+  --pos-text-inverse: #f0f8ff;
+  
+  /* Cool Status Colors */
+  --pos-success: #059669;
+  --pos-warning: #d97706;
+  --pos-danger: #dc2626;
+  --pos-info: #0284c7;
+  
+  /* Cool Borders */
+  --pos-border-primary: #bfdbfe;
+  --pos-border-secondary: #dbeafe;
+  --pos-border-accent: #93c5fd;
+  
+  /* Cool Shadows */
+  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(30, 64, 175, 0.1);
+  --pos-shadow: 0 0.5rem 1rem rgba(30, 64, 175, 0.15);
+  --pos-shadow-lg: 0 1rem 3rem rgba(30, 64, 175, 0.2);
+  
+  /* Kitchen Mode - Tech-Enhanced */
+  --pos-kitchen-bg: var(--pos-bg-primary);
+  --pos-kitchen-panel: var(--pos-bg-secondary);
+  --pos-kitchen-accent: var(--pos-info);
+}
+
+/* ============================================================================
+   Theme-Specific Component Overrides
+   ============================================================================ */
+
+/* Dark Theme Specific Adjustments */
+.theme-dark .pos-form-control {
+  background-color: var(--pos-bg-secondary);
+  border-color: var(--pos-border-primary);
+  color: var(--pos-text-primary);
+}
+
+.theme-dark .pos-form-control:focus {
+  background-color: var(--pos-bg-secondary);
+  border-color: var(--pos-primary);
+  box-shadow: 0 0 0 0.2rem rgba(77, 171, 247, 0.25);
+}
+
+.theme-dark .pos-table thead th {
+  background-color: var(--pos-bg-tertiary);
+  color: var(--pos-text-primary);
+}
+
+.theme-dark .pos-button.btn-primary {
+  background-color: var(--pos-primary);
+  border-color: var(--pos-primary);
+  color: var(--pos-bg-primary);
+}
+
+/* Warm Theme Specific Adjustments */
+.theme-warm .pos-button.btn-primary {
+  background-color: var(--pos-primary);
+  border-color: var(--pos-primary);
+  color: var(--pos-text-inverse);
+  box-shadow: 0 2px 4px rgba(139, 69, 19, 0.2);
+}
+
+.theme-warm .pos-header {
+  background: linear-gradient(135deg, var(--pos-primary) 0%, #a0522d 100%);
+}
+
+.theme-warm .panel-container {
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.1);
+  border: 1px solid var(--pos-border-primary);
+}
+
+/* Cool Theme Specific Adjustments */
+.theme-cool .pos-button.btn-primary {
+  background: linear-gradient(135deg, var(--pos-primary) 0%, #1d4ed8 100%);
+  border: none;
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+}
+
+.theme-cool .pos-header {
+  background: linear-gradient(135deg, var(--pos-primary) 0%, #0284c7 100%);
+}
+
+.theme-cool .panel-container {
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.1);
+  border: 1px solid var(--pos-border-primary);
+}
+
+/* ============================================================================
+   Animation Enhancements for Each Theme
+   ============================================================================ */
+
+.theme-dark .pos-button:hover {
+  box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+}
+
+.theme-warm .pos-button:hover {
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+}
+
+.theme-cool .pos-button:hover {
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+}

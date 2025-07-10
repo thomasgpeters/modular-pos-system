@@ -331,6 +331,34 @@ protected:
      * @param theme Theme to unload
      */
     void unloadThemeCSS(Theme theme);
+    
+    // =================================================================
+    // FIXED: Added Missing Method Declarations
+    // =================================================================
+    
+    /**
+     * @brief Applies inline CSS for immediate theme changes
+     * @param theme Theme to apply inline CSS for
+     */
+    void applyInlineThemeCSS(Theme theme);
+    
+    /**
+     * @brief Generates comprehensive CSS for a theme
+     * @param theme Theme to generate CSS for
+     * @return CSS string for the theme
+     */
+    std::string generateThemeCSS(Theme theme);
+    
+    /**
+     * @brief Loads theme CSS asynchronously (non-blocking)
+     * @param theme Theme to load CSS for
+     */
+    void loadThemeCSSAsync(Theme theme);
+    
+    /**
+     * @brief Applies base theme variables and framework CSS
+     */
+    void applyBaseThemeVariables();
 
 private:
     Wt::WApplication* app_;                                 ///< Application instance

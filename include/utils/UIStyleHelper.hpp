@@ -419,6 +419,91 @@ public:
             widget->addStyleClass("pos-hover-glow");
         }
     }
+
+    static void applyGroupBoxStyle(Wt::WGroupBox* groupBox, const std::string& themeClass) {
+        if (!groupBox) return;
+        
+        // Base Bootstrap styling for group boxes
+        std::string baseClass = "mb-3 border rounded";
+        
+        // Apply theme-specific styling
+        if (themeClass == "table-selection") {
+            baseClass += " border-success bg-light";
+        } else if (themeClass == "order-actions") {
+            baseClass += " border-primary bg-light";
+        } else if (themeClass == "menu-section") {
+            baseClass += " border-info bg-light";
+        } else {
+            // Default styling
+            baseClass += " border-secondary bg-light";
+        }
+        
+        // Apply current theme modifiers
+        // baseClass += getThemeModifierClass();
+        
+        groupBox->setStyleClass(baseClass);
+        
+        // Apply title styling if group box has a title
+        if (!groupBox->title().empty()) {
+            // Group box titles are automatically styled by Bootstrap
+            groupBox->addStyleClass("fw-bold text-dark");
+        }
+    }
+
+    static void applyComboBoxStyle(Wt::WComboBox* comboBox, const std::string& themeClass) {
+        if (!comboBox) return;
+        
+        // Base Bootstrap form control styling
+        std::string baseClass = "form-select";
+        
+        // Apply theme-specific styling
+        if (themeClass == "table-selector") {
+            baseClass += " form-select-lg mb-2";
+        } else if (themeClass == "menu-filter") {
+            baseClass += " form-select-sm";
+        } else if (themeClass == "order-modifier") {
+            baseClass += " form-select-sm";
+        } else {
+            // Default sizing
+            baseClass += " mb-2";
+        }
+        
+        // Apply current theme modifiers
+        // baseClass += getThemeModifierClass();
+        
+        comboBox->setStyleClass(baseClass);
+        
+        // Add focus and hover states
+        comboBox->addStyleClass("shadow-sm");
+    }
+
+/*  // Helper method to get theme-specific modifier classes
+    // Add this to UIStyleHelper as well if it doesn't exist:
+    std::string UIStyleHelper::getThemeModifierClass() {
+        std::string themeClass = "";
+        
+        // Get current theme from your theme manager
+        Theme currentTheme = getCurrentTheme(); // Assuming you have this method
+        
+        switch (currentTheme) {
+            case Theme::DARK:
+                themeClass = " dark-theme";
+                break;
+            case Theme::LIGHT:
+                themeClass = " light-theme";
+                break;
+            case Theme::COLORFUL:
+                themeClass = " colorful-theme";
+                break;
+            case Theme::BASE:
+            default:
+                themeClass = " base-theme";
+                break;
+        }
+        
+        return themeClass;
+    }
+ */
 };
 
 #endif // UISTYLEHELPER_H
