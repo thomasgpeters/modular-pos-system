@@ -23,38 +23,35 @@ KitchenStatusDisplay::KitchenStatusDisplay(std::shared_ptr<POSService> posServic
         throw std::invalid_argument("KitchenStatusDisplay requires valid POSService");
     }
     
-    addStyleClass("kitchen-status-display");
+    // FIXED: Apply consistent container styling matching OrderEntryPanel
+    setStyleClass("kitchen-status-display p-3 bg-white rounded shadow-sm");
     
     initializeUI();
     setupEventListeners();
     refresh();
     
-    std::cout << "[KitchenStatusDisplay] Initialized successfully" << std::endl;
+    std::cout << "[KitchenStatusDisplay] Initialized with consistent styling" << std::endl;
 }
 
 void KitchenStatusDisplay::initializeUI() {
-    // Create main kitchen status group
-    auto kitchenGroup = addNew<Wt::WGroupBox>("Kitchen Status");
-    kitchenGroup->addStyleClass("kitchen-status-group");
+    // FIXED: Add "Kitchen Status" heading outside sections (like "Order Management" heading)
+    auto headingText = addNew<Wt::WText>("👨‍🍳 Kitchen Status");
+    headingText->addStyleClass("h4 text-primary mb-0");
     
-    // Create status header
-    auto header = createStatusHeader();
-    kitchenGroup->addWidget(std::move(header));
-    
-    // Create kitchen metrics section
+    // Create kitchen metrics section (keep inner sections as requested)
     if (showDetailedMetrics_) {
         auto metrics = createKitchenMetrics();
-        kitchenGroup->addWidget(std::move(metrics));
+        addWidget(std::move(metrics));
     }
     
-    // Create queue status section
+    // Create queue status section (keep inner sections as requested)
     auto queue = createQueueStatus();
-    kitchenGroup->addWidget(std::move(queue));
+    addWidget(std::move(queue));
     
     // Apply initial styling
     updateStatusColors();
     
-    std::cout << "[KitchenStatusDisplay] UI initialized" << std::endl;
+    std::cout << "[KitchenStatusDisplay] UI initialized with clean layout" << std::endl;
 }
 
 void KitchenStatusDisplay::setupEventListeners() {
@@ -80,31 +77,40 @@ void KitchenStatusDisplay::setupEventListeners() {
 }
 
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createStatusHeader() {
-    auto header = std::make_unique<Wt::WContainerWidget>();
-    header->addStyleClass("kitchen-status-header mb-3");
-    
-    // Status header text
-    statusHeaderText_ = header->addNew<Wt::WText>("🍳 Kitchen Status: " + getKitchenStatusText());
-    statusHeaderText_->addStyleClass("h5 mb-1");
-    
-    // Kitchen load text
-    kitchenLoadText_ = header->addNew<Wt::WText>("Load: Calculating...");
-    kitchenLoadText_->addStyleClass("text-muted small");
-    
-    return std::move(header);
+    // REMOVED: No longer needed since header is handled by parent container
+    // This method is kept for interface compatibility but returns empty container
+    return std::make_unique<Wt::WContainerWidget>();
 }
 
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createKitchenMetrics() {
-    auto metrics = std::make_unique<Wt::WContainerWidget>();
-    metrics->addStyleClass("kitchen-metrics p-2 border rounded mb-3");
-    metricsContainer_ = metrics.get();
+    // FIXED: Create section with label and bordered container (like OrderEntryPanel structure)
+    auto section = std::make_unique<Wt::WContainerWidget>();
+    section->addStyleClass("mb-4");
+    
+    // FIXED: Add section label styled like "Select Table/Location:" 
+    auto sectionLabel = section->addNew<Wt::WLabel>("Kitchen Load:");
+    sectionLabel->addStyleClass("form-label fw-bold mb-2");
+    
+    // FIXED: Create bordered container for content (like table selection area)
+    auto metricsContainer = section->addNew<Wt::WContainerWidget>();
+    metricsContainer->addStyleClass("p-3 border rounded bg-white");
+    metricsContainer_ = metricsContainer;
+    
+    // FIXED: Move kitchen status and load info here instead of separate header
+    // Kitchen status text with icon
+    statusHeaderText_ = metricsContainer->addNew<Wt::WText>(getKitchenStatusIcon() + " " + getKitchenStatusText());
+    statusHeaderText_->addStyleClass("h6 mb-2 fw-bold");
+    
+    // FIXED: Kitchen load text with percentage (moved from header as requested)
+    kitchenLoadText_ = metricsContainer->addNew<Wt::WText>("Load: Calculating...");
+    kitchenLoadText_->addStyleClass("text-muted small mb-2");
     
     // Create kitchen load progress bar
-    auto loadContainer = metrics->addNew<Wt::WContainerWidget>();
+    auto loadContainer = metricsContainer->addNew<Wt::WContainerWidget>();
     loadContainer->addStyleClass("kitchen-load-container mb-2");
     
-    auto loadLabel = loadContainer->addNew<Wt::WLabel>("Kitchen Load:");
-    loadLabel->addStyleClass("form-label");
+    auto loadLabel = loadContainer->addNew<Wt::WLabel>("Progress:");
+    loadLabel->addStyleClass("form-label small mb-1");
     
     kitchenLoadBar_ = loadContainer->addNew<Wt::WProgressBar>();
     kitchenLoadBar_->addStyleClass("progress kitchen-load-bar");
@@ -112,26 +118,37 @@ std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createKitchenMetrics() {
     kitchenLoadBar_->setValue(0);
     
     // Metrics text (will be populated by updateKitchenMetrics)
-    auto metricsText = metrics->addNew<Wt::WText>("Loading metrics...");
-    metricsText->addStyleClass("kitchen-metrics-text small text-muted");
+    if (showDetailedMetrics_) {
+        auto metricsText = metricsContainer->addNew<Wt::WText>("Loading metrics...");
+        metricsText->addStyleClass("kitchen-metrics-text small text-muted");
+    }
     
-    return std::move(metrics);
+    return std::move(section);
 }
 
 std::unique_ptr<Wt::WWidget> KitchenStatusDisplay::createQueueStatus() {
-    auto queue = std::make_unique<Wt::WContainerWidget>();
-    queue->addStyleClass("kitchen-queue-status p-2 border rounded");
-    queueContainer_ = queue.get();
+    // FIXED: Create section with label and bordered container (like OrderEntryPanel structure)
+    auto section = std::make_unique<Wt::WContainerWidget>();
+    section->addStyleClass("mb-4");
+    
+    // FIXED: Add section label styled like "Select Table/Location:"
+    auto sectionLabel = section->addNew<Wt::WLabel>("Kitchen Queue:");
+    sectionLabel->addStyleClass("form-label fw-bold mb-2");
+    
+    // FIXED: Create bordered container for content (like table selection area)
+    auto queueContainer = section->addNew<Wt::WContainerWidget>();
+    queueContainer->addStyleClass("p-3 border rounded bg-white");
+    queueContainer_ = queueContainer;
     
     // Queue size
-    queueSizeText_ = queue->addNew<Wt::WText>("Queue: 0 orders");
-    queueSizeText_->addStyleClass("queue-size fw-bold d-block mb-1");
+    queueSizeText_ = queueContainer->addNew<Wt::WText>("Queue: 0 orders");
+    queueSizeText_->addStyleClass("queue-size fw-bold d-block mb-2");
     
     // Estimated wait time
-    estimatedWaitText_ = queue->addNew<Wt::WText>("Est. Wait: 0 min");
+    estimatedWaitText_ = queueContainer->addNew<Wt::WText>("Est. Wait: 0 min");
     estimatedWaitText_->addStyleClass("estimated-wait text-info d-block");
     
-    return std::move(queue);
+    return std::move(section);
 }
 
 void KitchenStatusDisplay::refresh() {
@@ -160,11 +177,11 @@ void KitchenStatusDisplay::updateKitchenMetrics() {
     }
     
     try {
-        // Update status header
-        std::string statusText = "🍳 Kitchen Status: " + getKitchenStatusText();
+        // FIXED: Update status with icon (no redundant "Kitchen Status:" prefix)
+        std::string statusText = getKitchenStatusIcon() + " " + getKitchenStatusText();
         statusHeaderText_->setText(statusText);
         
-        // Update load information
+        // FIXED: Update load information with percentage in the load area (as requested)
         int loadPercentage = calculateKitchenLoad();
         std::string loadText = "Load: " + std::to_string(loadPercentage) + "%";
         

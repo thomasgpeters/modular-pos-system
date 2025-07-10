@@ -22,7 +22,6 @@ MenuDisplay::MenuDisplay(std::shared_ptr<POSService> posService,
     , isDestroying_(false)  // Add destruction flag
     , currentCategory_("")
     , selectionEnabled_(true)
-    , menuGroup_(nullptr)
     , categoryCombo_(nullptr)
     , itemCountText_(nullptr)
     , itemsTable_(nullptr)
@@ -65,16 +64,17 @@ MenuDisplay::~MenuDisplay() {
 }
 
 void MenuDisplay::initializeUI() {
-    // Create main group container
-    menuGroup_ = addNew<Wt::WGroupBox>("🍽️ Restaurant Menu");
-    UIStyleHelper::styleGroupBox(menuGroup_, "primary");
+    // FIXED: Remove WGroupBox to eliminate inner border, use simple container structure
+    // Add heading without border (like OrderEntryPanel and KitchenStatusDisplay)
+    auto headingText = addNew<Wt::WText>("🍽️ Restaurant Menu");
+    headingText->addStyleClass("h4 text-primary mb-3");
     
-    // Create header with category filter
+    // Create header with category filter (no border)
     auto header = createMenuHeader();
-    menuGroup_->addWidget(std::move(header));
+    addWidget(std::move(header));
     
-    // Create table container
-    auto tableContainer = menuGroup_->addNew<Wt::WContainerWidget>();
+    // Create table container (no additional border)
+    auto tableContainer = addNew<Wt::WContainerWidget>();
     tableContainer->setStyleClass("mt-3");
     
     // Create menu items table
@@ -83,7 +83,7 @@ void MenuDisplay::initializeUI() {
     
     initializeTableHeaders();
     
-    std::cout << "[MenuDisplay] UI initialized" << std::endl;
+    std::cout << "[MenuDisplay] UI initialized without inner border" << std::endl;
 }
 
 void MenuDisplay::initializeTableHeaders() {
@@ -148,8 +148,6 @@ std::unique_ptr<Wt::WWidget> MenuDisplay::createMenuHeader() {
     
     return std::move(headerContainer);
 }
-
-
 
 void MenuDisplay::loadMenuItems() {
     if (!posService_) {
@@ -536,4 +534,25 @@ void MenuDisplay::onAddToOrderClicked(const std::shared_ptr<MenuItem>& item, int
 void MenuDisplay::onItemRowClicked(const std::shared_ptr<MenuItem>& item) {
     // Could be used for item details view in the future
     std::cout << "[MenuDisplay] Item clicked: " << item->getName() << std::endl;
+}
+
+// Placeholder methods for interface compatibility
+void MenuDisplay::applyTheme() {
+    // Theme application logic if needed
+}
+
+void MenuDisplay::applyTableStyling() {
+    // Table styling logic if needed
+}
+
+void MenuDisplay::applyHeaderStyling() {
+    // Header styling logic if needed
+}
+
+void MenuDisplay::updateRowStyling(int row, bool isEven) {
+    // Row styling logic if needed
+}
+
+void MenuDisplay::applyItemRowStyling(int row, const std::shared_ptr<MenuItem>& item) {
+    // Item row styling logic if needed
 }

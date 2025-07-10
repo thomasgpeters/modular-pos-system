@@ -146,7 +146,6 @@ private:
     bool selectionEnabled_;
     
     // UI components
-    Wt::WGroupBox* menuGroup_;
     Wt::WComboBox* categoryCombo_;
     Wt::WText* itemCountText_;
     Wt::WTable* itemsTable_;

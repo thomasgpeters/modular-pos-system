@@ -100,7 +100,7 @@ void KitchenModeContainer::createRightPanel() {
     }
     
     // Right panel contains Kitchen Status Display
-    rightPanel_->setStyleClass("bg-white p-3 border rounded");
+    rightPanel_->setStyleClass("bg-white p-3 rounded");
     
     auto rightLayout = rightPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     rightLayout->setContentsMargins(0, 0, 0, 0);

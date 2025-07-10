@@ -87,8 +87,8 @@ void POSModeContainer::setupLayout() {
     rightPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     
     // FIXED: Set stretch factors after widgets are added
-    layout->setStretchFactor(leftPanel_, 3);   // 30%
-    layout->setStretchFactor(rightPanel_, 7);  // 70%
+    layout->setStretchFactor(leftPanel_, 7);   // 30%
+    layout->setStretchFactor(rightPanel_, 3);  // 70%
     
     leftPanel_->setStyleClass("pos-left-panel");
     rightPanel_->setStyleClass("pos-right-panel");
@@ -126,7 +126,7 @@ void POSModeContainer::createRightPanel() {
     
     // Control buttons container
     auto controlsContainer = headerContainer->addNew<Wt::WContainerWidget>();
-    controlsContainer->setStyleClass("d-flex gap-2");
+    controlsContainer->setStyleClass("d-flex gap-0");
     
     // FIXED: Store reference to toggle button instead of using findWidget
     toggleOrdersButton_ = controlsContainer->addNew<Wt::WPushButton>("📋 Show Orders");
@@ -230,6 +230,7 @@ void POSModeContainer::updateWorkArea() {
                 }
             } else {
                 workAreaTitle_->setText("🍽️ Order Management");
+                workAreaTitle_->addStyleClass("h4 text-primary mb-4");
             }
         } catch (const std::exception& e) {
             std::cerr << "[POSModeContainer] Error updating title: " << e.what() << std::endl;
