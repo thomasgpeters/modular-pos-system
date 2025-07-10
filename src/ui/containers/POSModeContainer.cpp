@@ -328,9 +328,8 @@ void POSModeContainer::showOrderEntry() {
     layout->setSpacing(20);
     
     // Welcome message
-    auto welcomeText = layout->addWidget(std::make_unique<Wt::WText>(
-        "Welcome to the Restaurant POS System"));
-    welcomeText->setStyleClass("h5 text-center text-muted mb-4");
+    // auto welcomeText = layout->addWidget(std::make_unique<Wt::WText>("Welcome to the Restaurant POS System"));
+    // welcomeText->setStyleClass("h5 text-center text-muted mb-4");
     
     // Order entry panel - store the pointer for refresh calls
     std::cout << "[POSModeContainer] Creating new OrderEntryPanel" << std::endl;

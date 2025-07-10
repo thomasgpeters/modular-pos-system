@@ -64,48 +64,46 @@ OrderEntryPanel::~OrderEntryPanel() {
     }
 }
 
+// Complete simplified initializeUI() method:
 void OrderEntryPanel::initializeUI() {
     setupTableSelectionSection();
     setupOrderActionsSection();
+    
+    std::cout << "[OrderEntryPanel] UI initialized (simplified version)" << std::endl;
 }
 
+// Replace setupTableSelectionSection() method:
 void OrderEntryPanel::setupTableSelectionSection() {
-    tableSelectionGroup_ = addNew<Wt::WGroupBox>("Table/Location Selection");
-    tableSelectionGroup_->setStyleClass("mb-3 border border-success rounded");
+    // FIXED: Use regular container instead of WGroupBox to remove border and header
+    auto tableSelectionContainer = addNew<Wt::WContainerWidget>();
+    tableSelectionContainer->setStyleClass("mb-4"); // Just margin, no border
     
-    auto formContainer = tableSelectionGroup_->addNew<Wt::WContainerWidget>();
+    tableIdentifierLabel_ = tableSelectionContainer->addNew<Wt::WLabel>("Select Table/Location:");
+    tableIdentifierLabel_->setStyleClass("form-label fw-bold mb-2");
     
-    tableIdentifierLabel_ = formContainer->addNew<Wt::WLabel>("Select Table/Location:");
-    tableIdentifierLabel_->setStyleClass("form-label fw-bold");
+    createTableIdentifierCombo(tableSelectionContainer);
     
-    createTableIdentifierCombo(formContainer);
-    
-    tableStatusText_ = formContainer->addNew<Wt::WText>("Select a table to start");
+    tableStatusText_ = tableSelectionContainer->addNew<Wt::WText>("Select a table to start");
     tableStatusText_->setStyleClass("text-muted small mt-2");
+    
+    // Store reference for styling methods (since we no longer have tableSelectionGroup_)
+    tableSelectionGroup_ = nullptr; // Clear the pointer since we're not using a group box
 }
 
+// Replace setupOrderActionsSection() method:
 void OrderEntryPanel::setupOrderActionsSection() {
     actionsContainer_ = addNew<Wt::WContainerWidget>();
-    actionsContainer_->setStyleClass("mt-3");
+    actionsContainer_->setStyleClass("mt-4 d-flex justify-content-center");
     
-    auto header = actionsContainer_->addNew<Wt::WText>("Order Actions");
-    header->setStyleClass("h5 text-primary mb-3");
-    
-    auto buttonContainer = actionsContainer_->addNew<Wt::WContainerWidget>();
-    buttonContainer->setStyleClass("d-flex gap-2 flex-wrap");
-    
-    // Create buttons with ACTUAL click handlers
-    newOrderButton_ = buttonContainer->addNew<Wt::WPushButton>("🆕 Start New Order");
-    newOrderButton_->setStyleClass("btn btn-success");
+    // FIXED: Only create the "Start New Order" button
+    newOrderButton_ = actionsContainer_->addNew<Wt::WPushButton>("🆕 Start New Order");
+    newOrderButton_->setStyleClass("btn btn-success btn-lg px-4 py-2");
     newOrderButton_->setEnabled(false);
     
-    sendToKitchenButton_ = buttonContainer->addNew<Wt::WPushButton>("🍳 Send to Kitchen");
-    sendToKitchenButton_->setStyleClass("btn btn-primary");
-    sendToKitchenButton_->setEnabled(false);
-    
-    processPaymentButton_ = buttonContainer->addNew<Wt::WPushButton>("💳 Process Payment");
-    processPaymentButton_->setStyleClass("btn btn-warning");
-    processPaymentButton_->setEnabled(false);
+    // REMOVED: sendToKitchenButton_ and processPaymentButton_
+    // These will be handled in the Order Details Display later
+    sendToKitchenButton_ = nullptr;
+    processPaymentButton_ = nullptr;
 }
 
 void OrderEntryPanel::createTableIdentifierCombo(Wt::WContainerWidget* parent) {
@@ -115,8 +113,9 @@ void OrderEntryPanel::createTableIdentifierCombo(Wt::WContainerWidget* parent) {
     populateTableIdentifierCombo();
 }
 
+// Update setupEventHandlers() method to remove handlers for deleted buttons:
 void OrderEntryPanel::setupEventHandlers() {
-    // CRITICAL: Actually connect button signals to slots
+    // Connect handler for the Start New Order button
     if (newOrderButton_) {
         newOrderButton_->clicked().connect([this]() {
             std::cout << "[OrderEntryPanel] New Order button clicked!" << std::endl;
@@ -124,20 +123,7 @@ void OrderEntryPanel::setupEventHandlers() {
         });
     }
     
-    if (sendToKitchenButton_) {
-        sendToKitchenButton_->clicked().connect([this]() {
-            std::cout << "[OrderEntryPanel] Send to Kitchen button clicked!" << std::endl;
-            onSendToKitchenClicked();
-        });
-    }
-    
-    if (processPaymentButton_) {
-        processPaymentButton_->clicked().connect([this]() {
-            std::cout << "[OrderEntryPanel] Process Payment button clicked!" << std::endl;
-            onProcessPaymentClicked();
-        });
-    }
-    
+    // Connect handler for table selection changes
     if (tableIdentifierCombo_) {
         tableIdentifierCombo_->changed().connect([this]() {
             std::cout << "[OrderEntryPanel] Table selection changed!" << std::endl;
@@ -145,7 +131,9 @@ void OrderEntryPanel::setupEventHandlers() {
         });
     }
     
-    std::cout << "[OrderEntryPanel] Event handlers connected" << std::endl;
+    // REMOVED: Event handlers for sendToKitchenButton_ and processPaymentButton_
+    
+    std::cout << "[OrderEntryPanel] Event handlers connected (simplified)" << std::endl;
 }
 
 void OrderEntryPanel::setupEventListeners() {
@@ -203,42 +191,6 @@ void OrderEntryPanel::onNewOrderClicked() {
     updateOrderActionButtons();
 }
 
-void OrderEntryPanel::onSendToKitchenClicked() {
-    if (isDestroying_) return;
-    
-    if (!hasCurrentOrder()) {
-        showOrderValidationMessage("No current order to send", "error");
-        return;
-    }
-    
-    auto currentOrder = posService_->getCurrentOrder();
-    if (!currentOrder || currentOrder->getItems().empty()) {
-        showOrderValidationMessage("Cannot send empty order to kitchen", "error");
-        return;
-    }
-    
-    std::cout << "[OrderEntryPanel] Sending order to kitchen..." << std::endl;
-    
-    // ACTUALLY SEND TO KITCHEN
-    bool success = posService_->sendCurrentOrderToKitchen();
-    if (success) {
-        showOrderValidationMessage("Order sent to kitchen successfully", "success");
-        std::cout << "[OrderEntryPanel] Order sent to kitchen" << std::endl;
-    } else {
-        showOrderValidationMessage("Failed to send order to kitchen", "error");
-        std::cout << "[OrderEntryPanel] Failed to send to kitchen" << std::endl;
-    }
-    
-    updateOrderActionButtons();
-}
-
-void OrderEntryPanel::onProcessPaymentClicked() {
-    if (isDestroying_) return;
-    
-    showOrderValidationMessage("Payment processing not yet implemented", "warning");
-    std::cout << "[OrderEntryPanel] Payment processing clicked (placeholder)" << std::endl;
-}
-
 void OrderEntryPanel::onTableIdentifierChanged() {
     if (isDestroying_) return;
     
@@ -271,59 +223,31 @@ void OrderEntryPanel::handleOrderModified(const std::any& eventData) {
     updateOrderActionButtons();
 }
 
-// ACTUAL WORKING HELPER METHODS
+/// Update updateOrderActionButtons() method to only handle the new order button:
 void OrderEntryPanel::updateOrderActionButtons() {
     if (isDestroying_) return;
     
-    std::cout << "[OrderEntryPanel] Updating button states..." << std::endl;
+    std::cout << "[OrderEntryPanel] Updating button state..." << std::endl;
     
     bool hasCurrentOrder = this->hasCurrentOrder();
     bool validTableSelection = validateTableIdentifierSelection();
-    bool hasOrderItems = hasCurrentOrder && hasOrderWithItems();
     
     std::cout << "[OrderEntryPanel] State: hasCurrentOrder=" << hasCurrentOrder 
-              << ", validTableSelection=" << validTableSelection 
-              << ", hasOrderItems=" << hasOrderItems << std::endl;
+              << ", validTableSelection=" << validTableSelection << std::endl;
     
-    // New order button
+    // FIXED: Only update the new order button
     if (newOrderButton_) {
         newOrderButton_->setEnabled(validTableSelection && !hasCurrentOrder);
         if (hasCurrentOrder) {
             newOrderButton_->setText("🆕 Order In Progress");
-            newOrderButton_->setStyleClass("btn btn-outline-success");
+            newOrderButton_->setStyleClass("btn btn-outline-success btn-lg px-4 py-2");
         } else {
             newOrderButton_->setText("🆕 Start New Order");
-            newOrderButton_->setStyleClass("btn btn-success");
+            newOrderButton_->setStyleClass("btn btn-success btn-lg px-4 py-2");
         }
     }
     
-    // Send to kitchen button
-    if (sendToKitchenButton_) {
-        sendToKitchenButton_->setEnabled(hasOrderItems);
-        if (hasOrderItems) {
-            auto currentOrder = posService_->getCurrentOrder();
-            int itemCount = currentOrder->getItems().size();
-            sendToKitchenButton_->setText("🍳 Send to Kitchen (" + std::to_string(itemCount) + " items)");
-            sendToKitchenButton_->setStyleClass("btn btn-primary");
-        } else {
-            sendToKitchenButton_->setText("🍳 Send to Kitchen");
-            sendToKitchenButton_->setStyleClass("btn btn-outline-primary");
-        }
-    }
-    
-    // Process payment button
-    if (processPaymentButton_) {
-        processPaymentButton_->setEnabled(hasOrderItems);
-        if (hasOrderItems) {
-            auto currentOrder = posService_->getCurrentOrder();
-            double total = currentOrder->getTotal();
-            processPaymentButton_->setText("💳 Payment ($" + std::to_string((int)total) + ")");
-            processPaymentButton_->setStyleClass("btn btn-warning");
-        } else {
-            processPaymentButton_->setText("💳 Process Payment");
-            processPaymentButton_->setStyleClass("btn btn-outline-warning");
-        }
-    }
+    // REMOVED: Logic for sendToKitchenButton_ and processPaymentButton_
 }
 
 void OrderEntryPanel::showOrderValidationMessage(const std::string& message, const std::string& type) {
@@ -570,15 +494,14 @@ void OrderEntryPanel::sendCurrentOrderToKitchen() {
     }
 }
 
+// Update applyTableSelectionStyling() method since we no longer have a group box:
 void OrderEntryPanel::applyTableSelectionStyling() {
-    // Placeholder for styling - applying Bootstrap theme styles
-    if (tableSelectionGroup_) {
-        UIStyleHelper::applyGroupBoxStyle(tableSelectionGroup_, "table-selection");
-    }
-    
+    // FIXED: No longer using a group box, so apply styling to the combo box directly
     if (tableIdentifierCombo_) {
         UIStyleHelper::applyComboBoxStyle(tableIdentifierCombo_, "table-selector");
     }
+    
+    // No group box styling needed anymore
 }
 
 void OrderEntryPanel::updateTableIdentifierStyling() {

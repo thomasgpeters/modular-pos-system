@@ -178,8 +178,6 @@ private:
     
     // UI action handlers
     void onNewOrderClicked();
-    void onSendToKitchenClicked();
-    void onProcessPaymentClicked();
     void onTableIdentifierChanged();
     
     // Business logic methods

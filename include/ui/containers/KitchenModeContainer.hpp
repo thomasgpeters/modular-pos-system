@@ -65,7 +65,7 @@ private:
     KitchenStatusDisplay* kitchenStatusDisplay_;
     
     // UI elements
-    Wt::WText* modeTitle_;
+    // Wt::WText* modeTitle_;
     
     // Event handlers
     void handleKitchenStatusChanged(const std::any& eventData);
