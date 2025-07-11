@@ -72,9 +72,9 @@ public:
     void openOrderForEditing(std::shared_ptr<Order> order);
     
     /**
-     * @brief Closes the current order being edited
+     * @brief Sends the current order to kitchen and prepares for new order
      */
-    void closeCurrentOrder();
+    void sendCurrentOrderToKitchen();
     
     /**
      * @brief Checks if an order is currently being edited
@@ -161,7 +161,7 @@ private:
     // UI state management
     Wt::WText* workAreaTitle_;
     Wt::WPushButton* newOrderButton_;
-    Wt::WPushButton* closeOrderButton_;
+    Wt::WPushButton* sendToKitchenButton_;  // CHANGED: From closeOrderButton_
     
     // FIXED: Added missing member variable for toggle button
     Wt::WPushButton* toggleOrdersButton_;
@@ -176,6 +176,11 @@ private:
     void handleOrderCreated(const std::any& eventData);
     void handleCurrentOrderChanged(const std::any& eventData);
     void handleOrderSelected(int orderId);
+    
+    // Helper methods
+    bool hasOrderWithItems() const;
+    void updateSendToKitchenButton();
+    void showOrderSentFeedback(int orderId);
     
     // Event subscriptions
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;

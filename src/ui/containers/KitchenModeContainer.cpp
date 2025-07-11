@@ -1,7 +1,3 @@
-// Fix for KitchenModeContainer.cpp - Resolve layout crash and duplicate headers
-
-// Here's what the KitchenModeContainer.cpp implementation should look like:
-
 #include "../../../include/ui/containers/KitchenModeContainer.hpp"
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
@@ -48,9 +44,10 @@ void KitchenModeContainer::setupLayout() {
     leftPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     rightPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     
-    // Set layout proportions: Left panel gets more space for orders (70%), Right panel for status (30%)
-    layout->setStretchFactor(leftPanel_, 7);
-    layout->setStretchFactor(rightPanel_, 3);
+    // FIXED: Set layout proportions to match POSModeContainer: 
+    // Left panel (ActiveOrdersDisplay) 30%, Right panel (Kitchen Status) 70%
+    layout->setStretchFactor(leftPanel_, 3);  // 30% - same as POS mode
+    layout->setStretchFactor(rightPanel_, 7); // 70% - gives more space to kitchen status
     
     leftPanel_->setStyleClass("kitchen-left-panel");
     rightPanel_->setStyleClass("kitchen-right-panel");
@@ -64,28 +61,25 @@ void KitchenModeContainer::createLeftPanel() {
         return;
     }
     
-    // Left panel contains Active Orders Display for kitchen view
-    leftPanel_->setStyleClass("bg-light p-3 rounded");
+    // FIXED: Use identical styling to POSModeContainer - square corners with right border
+    leftPanel_->setStyleClass("border-end bg-light p-3");
     
     auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(0);
     
-    // FIXED: Create section header for Active Orders (eliminating duplicate header issue)
-    auto sectionHeader = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    sectionHeader->setStyleClass("d-flex justify-content-between align-items-center mb-3 p-3 bg-primary text-white rounded");
+    // FIXED: Remove custom header - let ActiveOrdersDisplay create its own header
+    // This ensures identical styling between POSModeContainer and KitchenModeContainer
     
-    auto titleText = sectionHeader->addNew<Wt::WText>("📋 Active Orders");
-    titleText->setStyleClass("h4 mb-0 fw-bold text-white");
-    
-    // CRITICAL FIX: Create ActiveOrdersDisplay with showHeader=false to prevent duplicate headers
+    // CRITICAL FIX: Create ActiveOrdersDisplay with showHeader=true (default) 
+    // to match POSModeContainer behavior and ensure consistent styling
     try {
         activeOrdersDisplay_ = leftLayout->addWidget(
-            std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_, false) // showHeader=false
+            std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_, true) // showHeader=true for consistency
         );
         activeOrdersDisplay_->setStyleClass("kitchen-active-orders flex-fill");
         
-        std::cout << "[KitchenModeContainer] ✓ ActiveOrdersDisplay created successfully (no header)" << std::endl;
+        std::cout << "[KitchenModeContainer] ✓ ActiveOrdersDisplay created with native header (consistent styling)" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "[KitchenModeContainer] ✗ Error creating ActiveOrdersDisplay: " << e.what() << std::endl;
@@ -198,4 +192,3 @@ void KitchenModeContainer::handleOrderStatusChanged(const std::any& eventData) {
         kitchenStatusDisplay_->refresh();
     }
 }
-

@@ -23,7 +23,7 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     , currentOrderDisplay_(nullptr)
     , workAreaTitle_(nullptr)
     , newOrderButton_(nullptr)
-    , closeOrderButton_(nullptr)
+    , sendToKitchenButton_(nullptr)  // CHANGED: From closeOrderButton_
     , toggleOrdersButton_(nullptr)
     , currentUIMode_(UI_MODE_NONE)  // Track current UI state
     , isDestroying_(false)  // Track destruction state
@@ -38,7 +38,7 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     setupEventListeners();
     updateWorkArea();
     
-    std::cout << "[POSModeContainer] Initialized with smart Active Orders toggle" << std::endl;
+    std::cout << "[POSModeContainer] Initialized with Send to Kitchen functionality" << std::endl;
 }
 
 POSModeContainer::~POSModeContainer() {
@@ -126,7 +126,7 @@ void POSModeContainer::createRightPanel() {
     
     // Control buttons container
     auto controlsContainer = headerContainer->addNew<Wt::WContainerWidget>();
-    controlsContainer->setStyleClass("d-flex gap-0");
+    controlsContainer->setStyleClass("d-flex gap-2");
     
     // FIXED: Store reference to toggle button instead of using findWidget
     toggleOrdersButton_ = controlsContainer->addNew<Wt::WPushButton>("📋 Show Orders");
@@ -137,19 +137,19 @@ void POSModeContainer::createRightPanel() {
     toggleOrdersButton_->setId("toggle-orders-button");
     toggleOrdersButton_->hide(); // Hidden initially when orders display is visible
     
-    // Close current order button (shows when editing an order)
-    closeOrderButton_ = controlsContainer->addNew<Wt::WPushButton>("❌ Close Order");
-    closeOrderButton_->setStyleClass("btn btn-outline-secondary btn-sm");
-    closeOrderButton_->clicked().connect([this]() {
-        closeCurrentOrder();
+    // CHANGED: Send to Kitchen button (replaces Close Order button)
+    sendToKitchenButton_ = controlsContainer->addNew<Wt::WPushButton>("🚀 Send to Kitchen");
+    sendToKitchenButton_->setStyleClass("btn btn-success btn-sm");
+    sendToKitchenButton_->clicked().connect([this]() {
+        sendCurrentOrderToKitchen();
     });
-    closeOrderButton_->hide(); // Hidden initially
+    sendToKitchenButton_->hide(); // Hidden initially
     
     // Work area (changes based on state)
     workArea_ = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     workArea_->setStyleClass("pos-dynamic-work-area");
     
-    std::cout << "[POSModeContainer] Right panel (Work Area) created" << std::endl;
+    std::cout << "[POSModeContainer] Right panel (Work Area) created with Send to Kitchen button" << std::endl;
 }
 
 void POSModeContainer::createOrderEntryArea() {
@@ -203,6 +203,20 @@ void POSModeContainer::setupEventListeners() {
             })
     );
     
+    // ADDED: Listen for order modifications to update Send to Kitchen button
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
+            [this](const std::any& data) { 
+                if (isDestroying_) return;
+                
+                try {
+                    updateSendToKitchenButton();
+                } catch (const std::exception& e) {
+                    std::cerr << "[POSModeContainer] Error updating Send to Kitchen button: " << e.what() << std::endl;
+                }
+            })
+    );
+    
     std::cout << "[POSModeContainer] Event listeners set up with safety checks" << std::endl;
 }
 
@@ -237,18 +251,8 @@ void POSModeContainer::updateWorkArea() {
         }
     }
     
-    // Update close button visibility
-    if (closeOrderButton_) {
-        try {
-            if (hasCurrentOrder) {
-                closeOrderButton_->show();
-            } else {
-                closeOrderButton_->hide();
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "[POSModeContainer] Error updating close button: " << e.what() << std::endl;
-        }
-    }
+    // CHANGED: Update Send to Kitchen button instead of close button
+    updateSendToKitchenButton();
     
     // Only recreate UI if the mode has actually changed
     if (currentUIMode_ != targetMode) {
@@ -327,10 +331,6 @@ void POSModeContainer::showOrderEntry() {
     auto layout = orderEntryArea->setLayout(std::make_unique<Wt::WVBoxLayout>());
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(20);
-    
-    // Welcome message
-    // auto welcomeText = layout->addWidget(std::make_unique<Wt::WText>("Welcome to the Restaurant POS System"));
-    // welcomeText->setStyleClass("h5 text-center text-muted mb-4");
     
     // Order entry panel - store the pointer for refresh calls
     std::cout << "[POSModeContainer] Creating new OrderEntryPanel" << std::endl;
@@ -463,6 +463,113 @@ void POSModeContainer::showActiveOrdersDisplay() {
     }
 }
 
+// CHANGED: New method to send order to kitchen
+void POSModeContainer::sendCurrentOrderToKitchen() {
+    // Check if we're being destroyed
+    if (isDestroying_) {
+        std::cout << "[POSModeContainer] Skipping sendCurrentOrderToKitchen - container is being destroyed" << std::endl;
+        return;
+    }
+    
+    std::cout << "[POSModeContainer] Sending current order to kitchen - safe process" << std::endl;
+    
+    // Validate that we have an order with items
+    if (!hasCurrentOrder()) {
+        std::cout << "[POSModeContainer] No current order to send to kitchen" << std::endl;
+        return;
+    }
+    
+    if (!hasOrderWithItems()) {
+        std::cout << "[POSModeContainer] Current order has no items - cannot send to kitchen" << std::endl;
+        return;
+    }
+    
+    auto currentOrder = posService_->getCurrentOrder();
+    int orderId = currentOrder ? currentOrder->getOrderId() : -1;
+    
+    try {
+        // Step 1: Process any pending events to clear the queue
+        std::cout << "[POSModeContainer] Processing pending events before sending to kitchen" << std::endl;
+        for (int i = 0; i < 3; ++i) {
+            Wt::WApplication::instance()->processEvents();
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        
+        // Step 2: Clear component pointers immediately to prevent any refresh calls
+        std::cout << "[POSModeContainer] Clearing component pointers" << std::endl;
+        orderEntryPanel_ = nullptr;
+        menuDisplay_ = nullptr;
+        currentOrderDisplay_ = nullptr;
+        
+        // Step 3: CLEAR THE WIDGETS FIRST to destroy them and unsubscribe from events
+        std::cout << "[POSModeContainer] Clearing work area widgets to stop event subscriptions" << std::endl;
+        if (workArea_ && workArea_->children().size() > 0) {
+            // Process events one more time before clearing
+            Wt::WApplication::instance()->processEvents();
+            workArea_->clear();  // This destroys widgets and their event subscriptions
+        }
+        
+        // Step 4: Process events again to ensure widget destruction is complete
+        std::cout << "[POSModeContainer] Processing events after widget destruction" << std::endl;
+        for (int i = 0; i < 3; ++i) {
+            Wt::WApplication::instance()->processEvents();
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        
+        // Step 5: NOW safely send the order to kitchen
+        std::cout << "[POSModeContainer] Sending order #" << orderId << " to kitchen (widgets destroyed)" << std::endl;
+        if (posService_) {
+            bool success = posService_->sendCurrentOrderToKitchen();
+            
+            if (success) {
+                std::cout << "[POSModeContainer] ✅ Order #" << orderId << " sent to kitchen successfully" << std::endl;
+                
+                // Clear the current order after successful kitchen submission
+                posService_->setCurrentOrder(nullptr);
+                
+                // Show success feedback
+                showOrderSentFeedback(orderId);
+                
+            } else {
+                std::cout << "[POSModeContainer] ❌ Failed to send order #" << orderId << " to kitchen" << std::endl;
+                
+                // TODO: Show error message to user
+                // For now, still clear the current order
+                posService_->setCurrentOrder(nullptr);
+            }
+        }
+        
+        // Step 6: Force UI mode change
+        std::cout << "[POSModeContainer] Forcing UI mode change after kitchen submission" << std::endl;
+        currentUIMode_ = UI_MODE_NONE;
+        
+        // Step 7: Show order entry immediately (synchronous)
+        showOrderEntry();
+        
+        // Step 8: Show active orders display
+        showActiveOrdersDisplay();
+        
+        // Step 9: Update UI mode
+        currentUIMode_ = UI_MODE_ORDER_ENTRY;
+        
+        std::cout << "[POSModeContainer] Order sent to kitchen and UI updated successfully" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[POSModeContainer] Error during send to kitchen: " << e.what() << std::endl;
+        
+        // Emergency fallback - just clear everything
+        if (workArea_) {
+            workArea_->clear();
+        }
+        currentUIMode_ = UI_MODE_NONE;
+        
+        // Still try to clear the current order
+        if (posService_) {
+            posService_->setCurrentOrder(nullptr);
+        }
+    }
+}
+
 // Event handlers
 void POSModeContainer::handleCurrentOrderChanged(const std::any& eventData) {
     // Check if we're being destroyed
@@ -590,17 +697,8 @@ void POSModeContainer::refreshDataOnly() {
         }
     }
     
-    if (closeOrderButton_) {
-        try {
-            if (hasCurrentOrder) {
-                closeOrderButton_->show();
-            } else {
-                closeOrderButton_->hide();
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "[POSModeContainer] Error updating close button: " << e.what() << std::endl;
-        }
-    }
+    // CHANGED: Update Send to Kitchen button instead of close button
+    updateSendToKitchenButton();
     
     // CRITICAL: Only refresh components if they exist AND are valid
     // Check both pointer existence and that the widget hasn't been destroyed
@@ -656,76 +754,63 @@ void POSModeContainer::openOrderForEditing(std::shared_ptr<Order> order) {
     }
 }
 
-void POSModeContainer::closeCurrentOrder() {
-    // Check if we're being destroyed
-    if (isDestroying_) {
-        std::cout << "[POSModeContainer] Skipping closeCurrentOrder - container is being destroyed" << std::endl;
-        return;
-    }
-    
-    std::cout << "[POSModeContainer] Closing current order - safe UI cleanup" << std::endl;
-    
-    try {
-        // Step 1: Process any pending events to clear the queue
-        std::cout << "[POSModeContainer] Processing pending events before close" << std::endl;
-        for (int i = 0; i < 3; ++i) {
-            Wt::WApplication::instance()->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-        
-        // Step 2: Clear component pointers immediately to prevent any refresh calls
-        std::cout << "[POSModeContainer] Clearing component pointers" << std::endl;
-        orderEntryPanel_ = nullptr;
-        menuDisplay_ = nullptr;
-        currentOrderDisplay_ = nullptr;
-        
-        // Step 3: CLEAR THE WIDGETS FIRST to destroy them and unsubscribe from events
-        std::cout << "[POSModeContainer] Clearing work area widgets to stop event subscriptions" << std::endl;
-        if (workArea_ && workArea_->children().size() > 0) {
-            // Process events one more time before clearing
-            Wt::WApplication::instance()->processEvents();
-            workArea_->clear();  // This destroys widgets and their event subscriptions
-        }
-        
-        // Step 4: Process events again to ensure widget destruction is complete
-        std::cout << "[POSModeContainer] Processing events after widget destruction" << std::endl;
-        for (int i = 0; i < 3; ++i) {
-            Wt::WApplication::instance()->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-        
-        // Step 5: NOW safely clear the current order from the service
-        std::cout << "[POSModeContainer] Clearing current order from service (widgets destroyed)" << std::endl;
-        if (posService_) {
-            posService_->setCurrentOrder(nullptr);
-        }
-        
-        // Step 6: Force UI mode change
-        std::cout << "[POSModeContainer] Forcing UI mode change" << std::endl;
-        currentUIMode_ = UI_MODE_NONE;
-        
-        // Step 7: Show order entry immediately (synchronous)
-        showOrderEntry();
-        
-        // Step 8: Show active orders display
-        showActiveOrdersDisplay();
-        
-        // Step 9: Update UI mode
-        currentUIMode_ = UI_MODE_ORDER_ENTRY;
-        
-        std::cout << "[POSModeContainer] Order closed and UI updated successfully (safe sequence)" << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "[POSModeContainer] Error during safe close order: " << e.what() << std::endl;
-        
-        // Emergency fallback - just clear everything
-        if (workArea_) {
-            workArea_->clear();
-        }
-        currentUIMode_ = UI_MODE_NONE;
-    }
+// ADDED: Helper methods for Send to Kitchen functionality
+bool POSModeContainer::hasOrderWithItems() const {
+    auto order = posService_ ? posService_->getCurrentOrder() : nullptr;
+    return order && !order->getItems().empty();
 }
 
 bool POSModeContainer::hasCurrentOrder() const {
     return posService_ && posService_->getCurrentOrder() != nullptr;
+}
+
+void POSModeContainer::updateSendToKitchenButton() {
+    if (isDestroying_ || !sendToKitchenButton_) return;
+    
+    bool hasCurrentOrder = this->hasCurrentOrder();
+    bool hasItems = hasOrderWithItems();
+    
+    std::cout << "[POSModeContainer] Updating Send to Kitchen button - hasOrder: " << hasCurrentOrder 
+              << ", hasItems: " << hasItems << std::endl;
+    
+    try {
+        if (hasCurrentOrder && hasItems) {
+            sendToKitchenButton_->show();
+            sendToKitchenButton_->setEnabled(true);
+            sendToKitchenButton_->setText("🚀 Send to Kitchen");
+            sendToKitchenButton_->setStyleClass("btn btn-success btn-sm");
+        } else if (hasCurrentOrder && !hasItems) {
+            sendToKitchenButton_->show();
+            sendToKitchenButton_->setEnabled(false);
+            sendToKitchenButton_->setText("🚀 Add Items First");
+            sendToKitchenButton_->setStyleClass("btn btn-outline-secondary btn-sm");
+        } else {
+            sendToKitchenButton_->hide();
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[POSModeContainer] Error updating Send to Kitchen button: " << e.what() << std::endl;
+    }
+}
+
+void POSModeContainer::showOrderSentFeedback(int orderId) {
+    // Update the work area title temporarily to show success
+    if (workAreaTitle_) {
+        try {
+            workAreaTitle_->setText("✅ Order #" + std::to_string(orderId) + " sent to kitchen!");
+            workAreaTitle_->setStyleClass("h4 text-success mb-4");
+            
+            // Reset the title after 3 seconds
+            Wt::WTimer::singleShot(std::chrono::milliseconds(3000), [this]() {
+                if (!isDestroying_ && workAreaTitle_) {
+                    workAreaTitle_->setText("🍽️ Order Management");
+                    workAreaTitle_->setStyleClass("h4 text-primary mb-4");
+                }
+            });
+            
+        } catch (const std::exception& e) {
+            std::cerr << "[POSModeContainer] Error showing order sent feedback: " << e.what() << std::endl;
+        }
+    }
+    
+    std::cout << "[POSModeContainer] Showing success feedback for order #" << orderId << std::endl;
 }
