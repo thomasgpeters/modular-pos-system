@@ -259,6 +259,16 @@ public:
      */
     void onOrderModified(std::function<void(std::shared_ptr<Order>)> callback);
 
+// Add this to the protected: section of POSService.hpp
+// (Look for "private:" and add this section right before it)
+
+protected:
+    /**
+     * @brief Gets the event manager (for derived classes)
+     * @return Shared pointer to event manager
+     */
+    std::shared_ptr<EventManager> getEventManager() const { return eventManager_; }
+
 private:
     // Core subsystem components
     std::shared_ptr<EventManager> eventManager_;

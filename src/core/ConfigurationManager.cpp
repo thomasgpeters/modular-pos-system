@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <algorithm>
 
 ConfigurationManager::ConfigurationManager()
     : lastLoadedFile_("") {
@@ -192,11 +193,11 @@ T ConfigurationManager::convertValue(const ConfigValue& value, const T& defaultV
 
 // Explicit template instantiations for common types
 template int ConfigurationManager::convertValue<int>(const ConfigValue& value, const int& defaultValue) const;
-template double ConfigurationManager::convertValue<double>(const ConfigValue& value, const double& defaultValue) const;
-template bool ConfigurationManager::convertValue<bool>(const ConfigValue& value, const bool& defaultValue) const;
-template std::string ConfigurationManager::convertValue<std::string>(const ConfigValue& value, const std::string& defaultValue) const;
-template std::vector<std::string> ConfigurationManager::convertValue<std::vector<std::string>>(const ConfigValue& value, const std::vector<std::string>& defaultValue) const;
-template std::vector<double> ConfigurationManager::convertValue<std::vector<double>>(const ConfigValue& value, const std::vector<double>& defaultValue) const;
+// template double ConfigurationManager::convertValue<double>(const ConfigValue& value, const double& defaultValue) const;
+// template bool ConfigurationManager::convertValue<bool>(const ConfigValue& value, const bool& defaultValue) const;
+// template std::string ConfigurationManager::convertValue<std::string>(const ConfigValue& value, const std::string& defaultValue) const;
+// template std::vector<std::string> ConfigurationManager::convertValue<std::vector<std::string>>(const ConfigValue& value, const std::vector<std::string>& defaultValue) const;
+// template std::vector<double> ConfigurationManager::convertValue<std::vector<double>>(const ConfigValue& value, const std::vector<double>& defaultValue) const;
 
 
 // Restaurant configuration getters

@@ -227,11 +227,16 @@ set(SOURCES
     src/main.cpp
 
     # Data Model
+    src/Employee.cpp
     src/KitchenInterface.cpp
     src/MenuItem.cpp
     src/Order.cpp
     src/OrderManager.cpp
     src/PaymentProcessor.cpp
+
+    # API
+    src/api/APIClient.cpp
+    src/api/APIConfiguration.cpp
 
     # Core
     src/core/RestaurantPOSApp.cpp
@@ -242,6 +247,7 @@ set(SOURCES
     src/events/POSEvents.cpp
     
     # Services
+    src/services/EnhancedPOSService.cpp
     src/services/NotificationService.cpp
     src/services/POSService.cpp
     src/services/ThemeService.cpp
@@ -279,11 +285,23 @@ set(SOURCES
 set(HEADERS
 
     # Data Model
+    include/Employee.hpp
     include/KitchenInterface.hpp
     include/MenuItem.hpp
     include/Order.hpp
     include/OrderManager.hpp
     include/PaymentProcessor.hpp
+
+    # API
+    include/api/APIClient.hpp
+    include/api/APIConfiguration.hpp
+    include/api/APIRepository.hpp
+    include/api/APIServiceFactory.hpp
+
+    # API Repositories
+    include/api/repositories/EmployeeRepository.hpp
+    include/api/repositories/MenuItemRepository.hpp
+    include/api/repositories/OrderRepository.hpp
 
     # Core
     include/core/RestaurantPOSApp.hpp
@@ -294,6 +312,7 @@ set(HEADERS
     include/events/POSEvents.hpp
     
     # Services
+    include/services/EnhancedPOSService.hpp
     include/services/NotificationService.hpp
     include/services/POSService.hpp
     include/services/ThemeService.hpp
