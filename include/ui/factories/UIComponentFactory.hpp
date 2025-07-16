@@ -1,5 +1,5 @@
 //============================================================================
-// include/ui/factories/UIComponentFactory.hpp - CORRECTED Header
+// include/ui/factories/UIComponentFactory.hpp - FIXED Header
 //============================================================================
 
 #ifndef UICOMPONENTFACTORY_H
@@ -13,24 +13,17 @@
 #include "../../Order.hpp"
 #include "../../PaymentProcessor.hpp"
 
-// Include only the components you actually have implemented
+// Include all the components we need - FIXED: Added missing includes
 #include "../components/OrderEntryPanel.hpp"
 #include "../components/MenuDisplay.hpp"
 #include "../components/CurrentOrderDisplay.hpp"
 #include "../components/ActiveOrdersDisplay.hpp"
 #include "../components/KitchenStatusDisplay.hpp"
-
-// Forward declarations for components
-class OrderEntryPanel;
-class OrderStatusPanel;
-class ThemeSelector;
-class MenuDisplay;
-class CurrentOrderDisplay;
-class ActiveOrdersDisplay;
-class KitchenStatusDisplay;
-class PaymentDialog;
-class CategoryPopover;
-class ThemeSelectionDialog;
+#include "../components/OrderStatusPanel.hpp"
+#include "../components/ThemeSelector.hpp"
+#include "../dialogs/PaymentDialog.hpp"
+#include "../dialogs/CategoryPopover.hpp"
+#include "../dialogs/ThemeSelectionDialog.hpp"
 
 #include <memory>
 #include <map>
