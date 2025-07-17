@@ -214,7 +214,6 @@ configure_file(
   ${CMAKE_SOURCE_DIR}/config/wt_config.xml.in   # Input template
   ${CMAKE_BINARY_DIR}/config/wt_config.xml      # Output file
   @ONLY                                         # Replace only @VARIABLE@ placeholders
-  COMMENT "Copying wt_config.xml from template."
 )
 
 # ============================================================================
