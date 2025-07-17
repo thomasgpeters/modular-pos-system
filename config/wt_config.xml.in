@@ -178,7 +178,7 @@
     <http-server>
         <!-- Listen on all interfaces -->
         <bind>0.0.0.0</bind>
-        <port>8080</port>
+        <port>8081</port>
         
         <!-- Static file serving -->
         <docroot>@CMAKE_CURRENT_BINARY_DIR@/docroot</docroot>
