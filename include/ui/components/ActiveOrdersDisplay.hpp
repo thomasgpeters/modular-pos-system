@@ -1,9 +1,12 @@
+//============================================================================
+// Enhanced ActiveOrdersDisplay.hpp - API Integration Header
+//============================================================================
+
 #ifndef ACTIVEORDERSDISPLAY_H
 #define ACTIVEORDERSDISPLAY_H
 
-#include "../../utils/UIStyleHelper.hpp" // Include our styling helper
-
-#include "../../services/POSService.hpp"
+#include "../../utils/UIStyleHelper.hpp"
+#include "../../services/EnhancedPOSService.hpp"
 #include "../../events/EventManager.hpp"
 #include "../../events/POSEvents.hpp"
 #include "../../Order.hpp"
@@ -21,21 +24,22 @@
 
 /**
  * @file ActiveOrdersDisplay.hpp
- * @brief Active orders display component for the Restaurant POS System
+ * @brief Enhanced active orders display with API integration
  * 
- * This component displays and manages active orders in the system.
+ * This component displays and manages active orders, supporting both
+ * local data (fallback) and API data fetching for real-time updates.
  * 
  * @author Restaurant POS Team
- * @version 2.1.0 - Enhanced with theme reactivity
+ * @version 3.0.0 - Enhanced with API integration
  */
 
 /**
  * @class ActiveOrdersDisplay
- * @brief UI component for displaying and managing active orders
+ * @brief UI component for displaying and managing active orders with API support
  * 
  * The ActiveOrdersDisplay shows all currently active orders with
  * functionality to view details, complete orders, and cancel orders.
- * Enhanced with theme reactivity for consistent appearance.
+ * Enhanced with API integration for real-time data from the middleware.
  */
 class ActiveOrdersDisplay : public Wt::WContainerWidget {
 public:
@@ -43,6 +47,7 @@ public:
      * @brief Constructs the active orders display
      * @param posService Shared POS service for business operations
      * @param eventManager Shared event manager for component communication
+     * @param showHeader Whether to show the component header (default: true)
      */
     ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
                        std::shared_ptr<EventManager> eventManager,
@@ -54,7 +59,7 @@ public:
     virtual ~ActiveOrdersDisplay() = default;
     
     /**
-     * @brief Refreshes the orders display from the service
+     * @brief Refreshes the orders display from API or local service
      */
     void refresh();
     
@@ -83,7 +88,7 @@ public:
     bool getShowCompletedOrders() const;
     
     /**
-     * @brief Applies current theme to all components (ADDED)
+     * @brief Applies current theme to all components
      */
     void applyCurrentTheme();
 
@@ -110,9 +115,48 @@ protected:
     std::unique_ptr<Wt::WWidget> createDisplayHeader();
     
     /**
-     * @brief Updates the orders table with current data
+     * @brief Loads orders from API (async)
      */
-    void updateOrdersTable();
+    void loadOrdersFromAPI();
+    
+    /**
+     * @brief Displays orders received from API
+     * @param orders Vector of orders from API
+     */
+    void displayAPIOrders(const std::vector<std::shared_ptr<Order>>& orders);
+    
+    /**
+     * @brief Displays orders from local service (fallback)
+     */
+    void displayLocalOrders();
+    
+    /**
+     * @brief Filters orders based on display settings
+     * @param orders Input orders to filter
+     * @return Filtered orders
+     */
+    std::vector<std::shared_ptr<Order>> filterOrders(const std::vector<std::shared_ptr<Order>>& orders) const;
+    
+    /**
+     * @brief Shows loading state while fetching from API
+     */
+    void showLoadingState();
+    
+    /**
+     * @brief Clears loading state
+     */
+    void clearLoadingState();
+    
+    /**
+     * @brief Updates order count directly with specified value
+     * @param count Number of orders to display in badge
+     */
+    void updateOrderCountDirect(int count);
+    
+    /**
+     * @brief Updates the orders table with current data (legacy method)
+     */
+    void updateOrdersTable() { refresh(); }
     
     /**
      * @brief Adds a row for an order to the table
@@ -129,7 +173,6 @@ protected:
     void applyRowStyling(int row, bool isEven);
 
 private:
-
     // Services and dependencies
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
@@ -149,14 +192,14 @@ private:
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
     
-    // Event handlers
+    // Event handlers (enhanced for API integration)
     void handleOrderCreated(const std::any& eventData);
     void handleOrderModified(const std::any& eventData);
     void handleOrderCompleted(const std::any& eventData);
     void handleOrderCancelled(const std::any& eventData);
     void handleKitchenStatusChanged(const std::any& eventData);
     
-    // UI action handlers
+    // UI action handlers (enhanced for API integration)
     void onViewOrderClicked(int orderId);
     void onCompleteOrderClicked(int orderId);
     void onCancelOrderClicked(int orderId);
@@ -179,6 +222,10 @@ private:
     void showEmptyOrdersMessage();
     void hideEmptyOrdersMessage();
     void applyTableStyling();
+    
+    /**
+     * @brief Updates order count (legacy compatibility method)
+     */
     void updateOrderCount();
     
     // Constants

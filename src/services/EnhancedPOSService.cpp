@@ -458,3 +458,458 @@ void EnhancedPOSService::updateMenuCache(const std::vector<std::shared_ptr<MenuI
     
     std::cout << "[EnhancedPOSService] Menu cache updated with " << items.size() << " items" << std::endl;
 }
+
+//============================================================================
+// Additional methods for EnhancedPOSService.cpp - Missing API methods
+//============================================================================
+
+// Add these methods to the existing EnhancedPOSService.cpp file
+
+void EnhancedPOSService::getOrderByIdAsync(int orderId,
+                                          std::function<void(std::shared_ptr<Order>, bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback(nullptr, false);
+        return;
+    }
+    
+    orderRepository_->findById(orderId, [callback](std::unique_ptr<Order> order, bool success) {
+        std::shared_ptr<Order> sharedOrder = nullptr;
+        
+        if (success && order) {
+            sharedOrder = std::make_shared<Order>(*order);
+        }
+        
+        if (callback) callback(sharedOrder, success);
+    });
+}
+
+void EnhancedPOSService::getOrdersByTableIdentifierAsync(const std::string& tableIdentifier,
+                                                        std::function<void(std::vector<std::shared_ptr<Order>>, bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback({}, false);
+        return;
+    }
+    
+    // Use repository to find orders by table identifier
+    std::map<std::string, std::string> params;
+    params["filter[table_identifier]"] = tableIdentifier;
+    
+    orderRepository_->findAll(params, [callback](std::vector<Order> orders, bool success) {
+        std::vector<std::shared_ptr<Order>> sharedOrders;
+        
+        if (success) {
+            sharedOrders.reserve(orders.size());
+            for (const auto& order : orders) {
+                sharedOrders.push_back(std::make_shared<Order>(order));
+            }
+        }
+        
+        if (callback) callback(sharedOrders, success);
+    });
+}
+
+void EnhancedPOSService::updateOrderStatusAsync(int orderId, Order::Status status,
+                                               std::function<void(bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback(false);
+        return;
+    }
+    
+    // First, get the current order
+    getOrderByIdAsync(orderId, [this, orderId, status, callback](std::shared_ptr<Order> order, bool success) {
+        if (!success || !order) {
+            std::cerr << "[EnhancedPOSService] Could not retrieve order " << orderId << " for status update" << std::endl;
+            if (callback) callback(false);
+            return;
+        }
+        
+        // Update the status locally
+        order->setStatus(status);
+        
+        // Save the updated order to API
+        orderRepository_->update(orderId, *order, [this, orderId, status, callback](std::unique_ptr<Order> updatedOrder, bool updateSuccess) {
+            if (updateSuccess) {
+                std::cout << "[EnhancedPOSService] Order " << orderId << " status updated to " << Order::statusToString(status) << std::endl;
+                
+                // Publish event
+                auto eventManager = getEventManager();
+                if (eventManager) {
+                    auto eventData = POSEvents::createOrderModifiedEvent(std::make_shared<Order>(*updatedOrder));
+                    publishEvent(POSEvents::ORDER_STATUS_CHANGED, eventData);
+                }
+            } else {
+                std::cerr << "[EnhancedPOSService] Failed to update order " << orderId << " status" << std::endl;
+            }
+            
+            if (callback) callback(updateSuccess);
+        });
+    });
+}
+
+void EnhancedPOSService::cancelOrderAsync(int orderId,
+                                         std::function<void(bool)> callback) {
+    std::cout << "[EnhancedPOSService] Cancelling order " << orderId << " via API..." << std::endl;
+    
+    updateOrderStatusAsync(orderId, Order::CANCELLED, [this, orderId, callback](bool success) {
+        if (success) {
+            std::cout << "[EnhancedPOSService] Order " << orderId << " cancelled successfully" << std::endl;
+            
+            // Clear current order if it's the one being cancelled
+            if (currentOrder_ && currentOrder_->getOrderId() == orderId) {
+                setCurrentOrder(nullptr);
+            }
+            
+            // Publish cancellation event
+            auto eventManager = getEventManager();
+            if (eventManager) {
+                Wt::Json::Object eventData;
+                eventData["orderId"] = Wt::Json::Value(orderId);
+                eventData["status"] = Wt::Json::Value("cancelled");
+                eventData["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
+                    std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
+                
+                publishEvent(POSEvents::ORDER_CANCELLED, eventData);
+            }
+        }
+        
+        if (callback) callback(success);
+    });
+}
+
+void EnhancedPOSService::sendOrderToKitchenAsync(int orderId,
+                                                std::function<void(bool)> callback) {
+    std::cout << "[EnhancedPOSService] Sending order " << orderId << " to kitchen via API..." << std::endl;
+    
+    updateOrderStatusAsync(orderId, Order::SENT_TO_KITCHEN, [this, orderId, callback](bool success) {
+        if (success) {
+            std::cout << "[EnhancedPOSService] Order " << orderId << " sent to kitchen successfully" << std::endl;
+            
+            // Publish kitchen event
+            auto eventManager = getEventManager();
+            if (eventManager) {
+                Wt::Json::Object eventData;
+                eventData["orderId"] = Wt::Json::Value(orderId);
+                eventData["status"] = Wt::Json::Value("sent_to_kitchen");
+                eventData["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
+                    std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
+                
+                publishEvent(POSEvents::ORDER_SENT_TO_KITCHEN, eventData);
+            }
+        }
+        
+        if (callback) callback(success);
+    });
+}
+
+void EnhancedPOSService::removeItemFromCurrentOrderAsync(size_t itemIndex,
+                                                        std::function<void(bool)> callback) {
+    if (!currentOrder_) {
+        std::cerr << "[EnhancedPOSService] No current order to remove item from" << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    if (itemIndex >= currentOrder_->getItems().size()) {
+        std::cerr << "[EnhancedPOSService] Invalid item index: " << itemIndex << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    try {
+        // Remove item locally
+        currentOrder_->removeItem(itemIndex);
+        
+        // Save current order to API
+        saveCurrentOrderAsync([this, callback](bool success) {
+            if (success) {
+                // Publish event
+                auto eventManager = getEventManager();
+                if (eventManager) {
+                    auto eventData = POSEvents::createOrderModifiedEvent(currentOrder_);
+                    publishEvent(POSEvents::ORDER_ITEM_REMOVED, eventData);
+                }
+                
+                std::cout << "[EnhancedPOSService] Removed item from current order and saved to API" << std::endl;
+            } else {
+                std::cerr << "[EnhancedPOSService] Failed to save order to API after removing item" << std::endl;
+            }
+            
+            if (callback) callback(success);
+        });
+        
+    } catch (const std::exception& e) {
+        handleAPIError("removeItemFromCurrentOrder", e.what());
+        if (callback) callback(false);
+    }
+}
+
+void EnhancedPOSService::updateCurrentOrderItemQuantityAsync(size_t itemIndex, int newQuantity,
+                                                            std::function<void(bool)> callback) {
+    if (!currentOrder_) {
+        std::cerr << "[EnhancedPOSService] No current order to update item in" << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    if (itemIndex >= currentOrder_->getItems().size()) {
+        std::cerr << "[EnhancedPOSService] Invalid item index: " << itemIndex << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    if (newQuantity <= 0) {
+        std::cerr << "[EnhancedPOSService] Invalid quantity: " << newQuantity << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    try {
+        // Update quantity locally
+        currentOrder_->updateItemQuantity(itemIndex, newQuantity);
+        
+        // Save current order to API
+        saveCurrentOrderAsync([this, callback](bool success) {
+            if (success) {
+                // Publish event
+                auto eventManager = getEventManager();
+                if (eventManager) {
+                    auto eventData = POSEvents::createOrderModifiedEvent(currentOrder_);
+                    publishEvent(POSEvents::ORDER_MODIFIED, eventData);
+                }
+                
+                std::cout << "[EnhancedPOSService] Updated item quantity in current order and saved to API" << std::endl;
+            } else {
+                std::cerr << "[EnhancedPOSService] Failed to save order to API after updating quantity" << std::endl;
+            }
+            
+            if (callback) callback(success);
+        });
+        
+    } catch (const std::exception& e) {
+        handleAPIError("updateCurrentOrderItemQuantity", e.what());
+        if (callback) callback(false);
+    }
+}
+
+void EnhancedPOSService::sendCurrentOrderToKitchenAsync(std::function<void(bool)> callback) {
+    if (!currentOrder_) {
+        std::cerr << "[EnhancedPOSService] No current order to send to kitchen" << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    if (currentOrder_->getItems().empty()) {
+        std::cerr << "[EnhancedPOSService] Cannot send empty order to kitchen" << std::endl;
+        if (callback) callback(false);
+        return;
+    }
+    
+    int orderId = currentOrder_->getOrderId();
+    
+    sendOrderToKitchenAsync(orderId, [this, callback](bool success) {
+        if (success) {
+            // Clear current order after sending to kitchen
+            setCurrentOrder(nullptr);
+        }
+        
+        if (callback) callback(success);
+    });
+}
+
+void EnhancedPOSService::refreshMenuCacheAsync(std::function<void(bool)> callback) {
+    getMenuItemsAsync(true, [callback](std::vector<std::shared_ptr<MenuItem>> items, bool success) {
+        if (success) {
+            std::cout << "[EnhancedPOSService] Menu cache refreshed with " << items.size() << " items" << std::endl;
+        } else {
+            std::cout << "[EnhancedPOSService] Failed to refresh menu cache" << std::endl;
+        }
+        
+        if (callback) callback(success);
+    });
+}
+
+void EnhancedPOSService::getAvailableMenuItemsAsync(std::function<void(std::vector<std::shared_ptr<MenuItem>>, bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback({}, false);
+        return;
+    }
+    
+    // Fetch available items from API
+    menuItemRepository_->findAvailable([callback](std::vector<MenuItem> items, bool success) {
+        std::vector<std::shared_ptr<MenuItem>> sharedItems;
+        
+        if (success) {
+            sharedItems.reserve(items.size());
+            for (const auto& item : items) {
+                if (item.isAvailable()) {
+                    sharedItems.push_back(std::make_shared<MenuItem>(item));
+                }
+            }
+        }
+        
+        if (callback) callback(sharedItems, success);
+    });
+}
+
+void EnhancedPOSService::getKitchenTicketsAsync(std::function<void(std::vector<KitchenInterface::KitchenTicket>, bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback({}, false);
+        return;
+    }
+    
+    // For now, we'll simulate kitchen tickets from orders
+    // In a real implementation, you'd have a separate KitchenTicket endpoint
+    getActiveOrdersAsync([callback](std::vector<std::shared_ptr<Order>> orders, bool success) {
+        std::vector<KitchenInterface::KitchenTicket> tickets;
+        
+        if (success) {
+            for (const auto& order : orders) {
+                if (order->getStatus() == Order::SENT_TO_KITCHEN || 
+                    order->getStatus() == Order::PREPARING) {
+                    
+                    KitchenInterface::KitchenTicket ticket;
+                    ticket.orderId = order->getOrderId();
+                    ticket.tableNumber = order->getTableNumber();
+                    ticket.timestamp = order->getTimestamp();
+                    ticket.status = (order->getStatus() == Order::SENT_TO_KITCHEN) ? 
+                                   KitchenInterface::ORDER_RECEIVED : 
+                                   KitchenInterface::PREP_STARTED;
+                    
+                    // Convert order items to string list
+                    for (const auto& item : order->getItems()) {
+                        std::string itemStr = std::to_string(item.getQuantity()) + "x " + 
+                                            item.getMenuItem().getName();
+                        if (!item.getSpecialInstructions().empty()) {
+                            itemStr += " (" + item.getSpecialInstructions() + ")";
+                        }
+                        ticket.items.push_back(itemStr);
+                    }
+                    
+                    tickets.push_back(ticket);
+                }
+            }
+        }
+        
+        if (callback) callback(tickets, success);
+    });
+}
+
+void EnhancedPOSService::getEstimatedWaitTimeAsync(std::function<void(int, bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback(0, false);
+        return;
+    }
+    
+    // Calculate estimated wait time based on active orders
+    getKitchenTicketsAsync([callback](std::vector<KitchenInterface::KitchenTicket> tickets, bool success) {
+        int estimatedTime = 0;
+        
+        if (success) {
+            // Simple calculation: 15 minutes base + 5 minutes per order in queue
+            estimatedTime = 15 + (static_cast<int>(tickets.size()) * 5);
+            
+            // Cap at reasonable maximum
+            if (estimatedTime > 60) {
+                estimatedTime = 60;
+            }
+        }
+        
+        if (callback) callback(estimatedTime, success);
+    });
+}
+
+void EnhancedPOSService::getKitchenQueueStatusAsync(std::function<void(Wt::Json::Object, bool)> callback) {
+    if (!initialized_) {
+        Wt::Json::Object emptyStatus;
+        emptyStatus["queueSize"] = Wt::Json::Value(0);
+        emptyStatus["estimatedWaitTime"] = Wt::Json::Value(0);
+        if (callback) callback(emptyStatus, false);
+        return;
+    }
+    
+    getKitchenTicketsAsync([callback](std::vector<KitchenInterface::KitchenTicket> tickets, bool success) {
+        Wt::Json::Object status;
+        
+        if (success) {
+            status["queueSize"] = Wt::Json::Value(static_cast<int>(tickets.size()));
+            
+            // Calculate estimated wait time
+            int estimatedTime = 15 + (static_cast<int>(tickets.size()) * 5);
+            if (estimatedTime > 60) estimatedTime = 60;
+            
+            status["estimatedWaitTime"] = Wt::Json::Value(estimatedTime);
+            status["isBusy"] = Wt::Json::Value(tickets.size() > 5);
+            status["timestamp"] = Wt::Json::Value(static_cast<int64_t>(
+                std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())));
+        } else {
+            status["queueSize"] = Wt::Json::Value(0);
+            status["estimatedWaitTime"] = Wt::Json::Value(0);
+            status["isBusy"] = Wt::Json::Value(false);
+        }
+        
+        if (callback) callback(status, success);
+    });
+}
+
+void EnhancedPOSService::processPaymentAsync(std::shared_ptr<Order> order,
+                                            PaymentProcessor::PaymentMethod method,
+                                            double amount, double tipAmount,
+                                            std::function<void(PaymentProcessor::PaymentResult, bool)> callback) {
+    if (!order) {
+        PaymentProcessor::PaymentResult result;
+        result.success = false;
+        result.errorMessage = "Invalid order";
+        if (callback) callback(result, false);
+        return;
+    }
+    
+    // For now, process payment locally and simulate API call
+    // In a real implementation, you'd call a Payment API endpoint
+    
+    try {
+        // Use the local payment processor
+        auto result = processPayment(order, method, amount, tipAmount);
+        
+        if (result.success) {
+            // Update order status to indicate payment received
+            updateOrderStatusAsync(order->getOrderId(), Order::SERVED, [result, order, callback](bool statusUpdateSuccess) {
+                if (statusUpdateSuccess) {
+                    std::cout << "[EnhancedPOSService] Payment processed and order status updated" << std::endl;
+                } else {
+                    std::cout << "[EnhancedPOSService] Payment processed but failed to update order status" << std::endl;
+                }
+                
+                if (callback) callback(result, result.success);
+            });
+        } else {
+            if (callback) callback(result, false);
+        }
+        
+    } catch (const std::exception& e) {
+        PaymentProcessor::PaymentResult result;
+        result.success = false;
+        result.errorMessage = "Payment processing error: " + std::string(e.what());
+        
+        handleAPIError("processPayment", e.what());
+        if (callback) callback(result, false);
+    }
+}
+
+void EnhancedPOSService::getTransactionHistoryAsync(std::function<void(std::vector<PaymentProcessor::PaymentResult>, bool)> callback) {
+    if (!initialized_) {
+        if (callback) callback({}, false);
+        return;
+    }
+    
+    // For now, return local transaction history
+    // In a real implementation, you'd fetch from a Transactions API endpoint
+    
+    try {
+        auto transactions = getTransactionHistory();
+        if (callback) callback(transactions, true);
+        
+    } catch (const std::exception& e) {
+        handleAPIError("getTransactionHistory", e.what());
+        if (callback) callback({}, false);
+    }
+}
