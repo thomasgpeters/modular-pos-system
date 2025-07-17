@@ -12,10 +12,10 @@
  * @brief Centralized configuration management for the Restaurant POS System
  * 
  * This manager handles all configuration settings including restaurant
- * information, system settings, and feature flags.
+ * information, system settings, feature flags, and API integration.
  * 
  * @author Restaurant POS Team
- * @version 2.0.0
+ * @version 2.1.0 - Enhanced with API configuration
  */
 
  
@@ -25,7 +25,7 @@
  * 
  * The ConfigurationManager provides centralized access to all configuration
  * settings with support for different sources (files, environment variables,
- * defaults) and type-safe access methods.
+ * defaults) and type-safe access methods. Enhanced with API integration settings.
  */
 class ConfigurationManager {
 public:
@@ -270,6 +270,7 @@ private:
     void setDefaultUIConfig();
     void setDefaultFeatureFlags();
     void setDefaultPaymentConfig();
+    void setDefaultAPIConfig();  // ADDED: API configuration method
     
     // Type conversion helpers
     template<typename T>

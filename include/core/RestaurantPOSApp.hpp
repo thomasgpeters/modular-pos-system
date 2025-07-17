@@ -1,6 +1,8 @@
 #ifndef RESTAURANTPOSAPP_ENHANCED_H
 #define RESTAURANTPOSAPP_ENHANCED_H
 
+#include "../api/APIServiceFactory.hpp" // ADD THIS INCLUDE
+
 #include "../services/POSService.hpp"
 #include "../services/ThemeService.hpp"
 #include "../events/EventManager.hpp"

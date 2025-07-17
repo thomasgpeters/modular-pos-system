@@ -45,7 +45,32 @@ void ConfigurationManager::loadDefaults() {
     // Payment configuration
     setDefaultPaymentConfig();
     
-    std::cout << "[ConfigurationManager] Default configuration loaded" << std::endl;
+    // NEW: API configuration
+    setDefaultAPIConfig();
+    
+    std::cout << "[ConfigurationManager] Default configuration loaded with API settings" << std::endl;
+}
+
+// NEW: Set default API configuration
+void ConfigurationManager::setDefaultAPIConfig() {
+    auto& api = getOrCreateSection("api");
+    
+    // Basic API settings
+    api["enabled"] = false;  // Disabled by default for safety
+    api["base_url"] = std::string("http://localhost:5656/api");
+    api["auth_token"] = std::string("");  // Empty by default
+    api["timeout"] = 30;  // 30 seconds
+    api["enable_caching"] = true;
+    api["debug_mode"] = false;
+    
+    // Retry settings
+    api["max_retries"] = 3;
+    api["retry_delay_ms"] = 1000;
+    
+    // Cache settings
+    api["cache_timeout_minutes"] = 5;
+    
+    std::cout << "[ConfigurationManager] API configuration defaults set" << std::endl;
 }
 
 void ConfigurationManager::setDefaultRestaurantConfig() {
@@ -193,12 +218,6 @@ T ConfigurationManager::convertValue(const ConfigValue& value, const T& defaultV
 
 // Explicit template instantiations for common types
 template int ConfigurationManager::convertValue<int>(const ConfigValue& value, const int& defaultValue) const;
-// template double ConfigurationManager::convertValue<double>(const ConfigValue& value, const double& defaultValue) const;
-// template bool ConfigurationManager::convertValue<bool>(const ConfigValue& value, const bool& defaultValue) const;
-// template std::string ConfigurationManager::convertValue<std::string>(const ConfigValue& value, const std::string& defaultValue) const;
-// template std::vector<std::string> ConfigurationManager::convertValue<std::vector<std::string>>(const ConfigValue& value, const std::vector<std::string>& defaultValue) const;
-// template std::vector<double> ConfigurationManager::convertValue<std::vector<double>>(const ConfigValue& value, const std::vector<double>& defaultValue) const;
-
 
 // Restaurant configuration getters
 std::string ConfigurationManager::getRestaurantName() const {

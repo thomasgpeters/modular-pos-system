@@ -1,5 +1,5 @@
 //============================================================================
-// src/core/RestaurantPOSApp.cpp - Enhanced to ensure POS mode loads by default
+// src/core/RestaurantPOSApp.cpp - Updated to use APIServiceFactory
 //============================================================================
 
 #include "../../include/core/RestaurantPOSApp.hpp"
@@ -52,6 +52,56 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     std::cout << "✓ RestaurantPOSApp initialized successfully in POS mode" << std::endl;
 }
 
+void RestaurantPOSApp::initializeServices() {
+    std::cout << "[RestaurantPOSApp] Initializing services..." << std::endl;
+    
+    // Create event manager first (other services depend on it)
+    eventManager_ = std::make_shared<EventManager>();
+    
+    // Create configuration manager and initialize with API settings
+    configManager_ = std::make_shared<ConfigurationManager>();
+    configManager_->initialize();
+    
+    // ENABLE API for testing (you can also set this via config file or environment)
+    configManager_->setValue<bool>("api.enabled", true);
+    configManager_->setValue<std::string>("api.base_url", "http://localhost:5656/api");
+    configManager_->setValue<std::string>("api.auth_token", "");  // Add token if needed
+    configManager_->setValue<int>("api.timeout", 30);
+    configManager_->setValue<bool>("api.enable_caching", true);
+    configManager_->setValue<bool>("api.debug_mode", true);  // Enable debug for testing
+    
+    std::cout << "[RestaurantPOSApp] API configuration:" << std::endl;
+    std::cout << "  - API Enabled: " << configManager_->getValue<bool>("api.enabled", false) << std::endl;
+    std::cout << "  - API Base URL: " << configManager_->getValue<std::string>("api.base_url", "not set") << std::endl;
+    std::cout << "  - Debug Mode: " << configManager_->getValue<bool>("api.debug_mode", false) << std::endl;
+    
+    // FIXED: Use APIServiceFactory to create appropriate POS service
+    posService_ = APIServiceFactory::createPOSService(eventManager_, configManager_);
+    
+    if (!posService_) {
+        std::cerr << "[RestaurantPOSApp] CRITICAL: Failed to create POS service!" << std::endl;
+        throw std::runtime_error("Failed to create POS service");
+    }
+    
+    // Check if we got an enhanced service
+    auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
+    if (enhancedService) {
+        std::cout << "[RestaurantPOSApp] ✓ EnhancedPOSService created and connected: " << 
+                     (enhancedService->isConnected() ? "YES" : "NO") << std::endl;
+    } else {
+        std::cout << "[RestaurantPOSApp] ✓ Standard POSService created (local data)" << std::endl;
+    }
+    
+    // Initialize menu
+    posService_->initializeMenu();
+    
+    // Create theme service
+    themeService_ = std::make_shared<ThemeService>(this);
+    
+    std::cout << "✓ Core services initialized successfully" << std::endl;
+}
+
+// Rest of the implementation remains the same...
 RestaurantPOSApp::~RestaurantPOSApp() {
     std::cout << "[RestaurantPOSApp] Destructor called" << std::endl;
     
@@ -172,7 +222,7 @@ void RestaurantPOSApp::ensurePOSModeDefault() {
         // Optional: Add a welcome message to confirm POS mode is loaded
         if (eventManager_) {
             auto welcomeEvent = POSEvents::createNotificationData(
-                "Welcome to Restaurant POS System - POS Mode Ready",
+                "Welcome to Restaurant POS System - API Integration Ready",
                 "success",
                 3000
             );
@@ -342,26 +392,7 @@ void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
     }
 }
 
-// ... (rest of the implementation remains the same)
-
-void RestaurantPOSApp::initializeServices() {
-    // Create event manager first (other services depend on it)
-    eventManager_ = std::make_shared<EventManager>();
-    
-    // Create configuration manager
-    configManager_ = std::make_shared<ConfigurationManager>();
-    configManager_->initialize();
-    
-    // Create POS service
-    posService_ = std::make_shared<POSService>(eventManager_);
-    posService_->initializeMenu();
-    
-    // Create theme service
-    themeService_ = std::make_shared<ThemeService>(this);
-    
-    std::cout << "✓ Core services initialized" << std::endl;
-}
-
+// Keep all other methods exactly as they were
 void RestaurantPOSApp::initializeComponentFactory() {
     componentFactory_ = std::make_unique<UIComponentFactory>(
         posService_, eventManager_, configManager_);
@@ -449,8 +480,6 @@ void RestaurantPOSApp::addCustomCSS() {
     useStyleSheet("assets/css/mode-styles.css");
 }
 
-// In RestaurantPOSApp.cpp - Keep responsive 5-second updates but make them smarter
-
 void RestaurantPOSApp::setupRealTimeUpdates() {
     // Create timer for periodic updates - keep responsive 5-second interval
     updateTimer_ = std::make_unique<Wt::WTimer>();
@@ -495,6 +524,7 @@ void RestaurantPOSApp::logApplicationStart() {
     std::cout << "\n" << std::string(60, '=') << std::endl;
     std::cout << "🍽️  RESTAURANT POS SYSTEM STARTING" << std::endl;
     std::cout << "📋 Default Mode: Point of Sale (POS)" << std::endl;
+    std::cout << "🔗 API Integration: Enabled" << std::endl;
     std::cout << std::string(60, '=') << std::endl;
 }
 
