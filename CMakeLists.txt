@@ -278,6 +278,7 @@ set(SOURCES
     # Utilities
     src/utils/CSSLoader.cpp
     src/utils/FormatUtils.cpp
+    src/utils/Logging.cpp
     src/utils/UIHelpers.cpp
 )
 
@@ -343,6 +344,7 @@ set(HEADERS
     # Utilities
     include/utils/CSSLoader.hpp
     include/utils/FormatUtils.hpp
+    include/utils/Logging.hpp
     include/utils/UIHelpers.hpp
 )
 
@@ -359,6 +361,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} 
     Wt::Wt
     Wt::HTTP
+    Threads::Threads
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE 
@@ -507,3 +510,14 @@ foreach(css_file ${COMPONENT_CSS_FILES})
 endforeach()
 
 message(STATUS "✓ CSS file structure verified/created")
+
+# ============================================================================
+# LOGGING MESSAGES / LEVELS
+# ============================================================================
+
+# Create logs directory during build
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory logs
+    COMMENT "Creating logs directory"
+)
+

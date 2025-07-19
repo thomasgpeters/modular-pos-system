@@ -3,6 +3,8 @@
 
 #include "../api/APIServiceFactory.hpp" // ADD THIS INCLUDE
 
+#include "../../include/utils/Logging.hpp"
+
 #include "../services/POSService.hpp"
 #include "../services/ThemeService.hpp"
 #include "../events/EventManager.hpp"
