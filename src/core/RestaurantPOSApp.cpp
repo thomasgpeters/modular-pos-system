@@ -1,5 +1,5 @@
 //============================================================================
-// src/core/RestaurantPOSApp.cpp - Updated to use APIServiceFactory
+// src/core/RestaurantPOSApp.cpp - Updated to use APIServiceFactory with Logger Integration
 //============================================================================
 
 #include "../../include/core/RestaurantPOSApp.hpp"
@@ -7,9 +7,11 @@
 #include <Wt/WBootstrap5Theme.h>
 #include <Wt/WEnvironment.h>
 #include <iostream>
+#include <sstream>
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     : Wt::WApplication(env)
+    , logger_(Logger::getInstance())  // FIXED: Initialize reference in initialization list
     , isDestroying_(false)      // Initialize in declaration order
     , currentMode_(POS_MODE)    // Start with POS mode as default
     , mainContainer_(nullptr)
@@ -49,11 +51,11 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     // ENHANCED: Ensure POS mode is loaded and visible by default
     ensurePOSModeDefault();
     
-    std::cout << "✓ RestaurantPOSApp initialized successfully in POS mode" << std::endl;
+    logger_.info("✓ RestaurantPOSApp initialized successfully in POS mode");
 }
 
 void RestaurantPOSApp::initializeServices() {
-    std::cout << "[RestaurantPOSApp] Initializing services..." << std::endl;
+    logger_.info("[RestaurantPOSApp] Initializing services...");
     
     // Create event manager first (other services depend on it)
     eventManager_ = std::make_shared<EventManager>();
@@ -70,26 +72,28 @@ void RestaurantPOSApp::initializeServices() {
     configManager_->setValue<bool>("api.enable_caching", true);
     configManager_->setValue<bool>("api.debug_mode", true);  // Enable debug for testing
     
-    std::cout << "[RestaurantPOSApp] API configuration:" << std::endl;
-    std::cout << "  - API Enabled: " << configManager_->getValue<bool>("api.enabled", false) << std::endl;
-    std::cout << "  - API Base URL: " << configManager_->getValue<std::string>("api.base_url", "not set") << std::endl;
-    std::cout << "  - Debug Mode: " << configManager_->getValue<bool>("api.debug_mode", false) << std::endl;
+    logger_.info("[RestaurantPOSApp] API configuration:");
+    
+    // CLEANED UP: Using LoggingUtils for cleaner boolean logging
+    LOG_CONFIG_BOOL(logger_, info, "API Enabled", configManager_->getValue<bool>("api.enabled", false));
+    LOG_CONFIG_STRING(logger_, info, "API Base URL", configManager_->getValue<std::string>("api.base_url", "not set"));
+    LOG_CONFIG_BOOL(logger_, info, "Debug Mode", configManager_->getValue<bool>("api.debug_mode", false));
     
     // FIXED: Use APIServiceFactory to create appropriate POS service
     posService_ = APIServiceFactory::createPOSService(eventManager_, configManager_);
     
     if (!posService_) {
-        std::cerr << "[RestaurantPOSApp] CRITICAL: Failed to create POS service!" << std::endl;
+        LOG_COMPONENT_ERROR(logger_, "RestaurantPOSApp", "service creation", "Failed to create POS service");
         throw std::runtime_error("Failed to create POS service");
     }
     
     // Check if we got an enhanced service
     auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
     if (enhancedService) {
-        std::cout << "[RestaurantPOSApp] ✓ EnhancedPOSService created and connected: " << 
-                     (enhancedService->isConnected() ? "YES" : "NO") << std::endl;
+        LOG_CONFIG_BOOL(logger_, info, "EnhancedPOSService connected", enhancedService->isConnected());
+        logger_.info("[RestaurantPOSApp] ✓ EnhancedPOSService created successfully");
     } else {
-        std::cout << "[RestaurantPOSApp] ✓ Standard POSService created (local data)" << std::endl;
+        logger_.info("[RestaurantPOSApp] ✓ Standard POSService created (local data)");
     }
     
     // Initialize menu
@@ -98,12 +102,12 @@ void RestaurantPOSApp::initializeServices() {
     // Create theme service
     themeService_ = std::make_shared<ThemeService>(this);
     
-    std::cout << "✓ Core services initialized successfully" << std::endl;
+    LOG_OPERATION_STATUS(logger_, "Core services initialization", true);
 }
 
-// Rest of the implementation remains the same...
+// Rest of the implementation with logger integration
 RestaurantPOSApp::~RestaurantPOSApp() {
-    std::cout << "[RestaurantPOSApp] Destructor called" << std::endl;
+    logger_.info("[RestaurantPOSApp] Destructor called");
     
     // Set flag to prevent further operations
     isDestroying_ = true;
@@ -125,15 +129,15 @@ RestaurantPOSApp::~RestaurantPOSApp() {
             }
         }
         
-        std::cout << "[RestaurantPOSApp] Cleanup completed" << std::endl;
+        logger_.info("[RestaurantPOSApp] Cleanup completed");
         
     } catch (const std::exception& e) {
-        std::cerr << "[RestaurantPOSApp] Error during destruction: " << e.what() << std::endl;
+        logger_.error(std::string("[RestaurantPOSApp] Error during destruction: ") + e.what());
     }
 }
 
 void RestaurantPOSApp::createModeContainers() {
-    std::cout << "[RestaurantPOSApp] Creating mode containers..." << std::endl;
+    logger_.info("[RestaurantPOSApp] Creating mode containers...");
     
     try {
         // Ensure services exist
@@ -146,7 +150,7 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Mode container not initialized");
         }
         
-        std::cout << "[RestaurantPOSApp] Creating POS mode container..." << std::endl;
+        logger_.info("[RestaurantPOSApp] Creating POS mode container...");
         
         // Create POS mode container as child
         posModeContainer_ = modeContainer_->addNew<POSModeContainer>(posService_, eventManager_);
@@ -158,7 +162,7 @@ void RestaurantPOSApp::createModeContainers() {
         posModeContainer_->setId("pos-mode-container");
         posModeContainer_->addStyleClass("mode-container pos-mode-active");
         
-        std::cout << "[RestaurantPOSApp] Creating Kitchen mode container..." << std::endl;
+        logger_.info("[RestaurantPOSApp] Creating Kitchen mode container...");
         
         kitchenModeContainer_ = modeContainer_->addNew<KitchenModeContainer>(posService_, eventManager_);
         if (!kitchenModeContainer_) {
@@ -174,23 +178,23 @@ void RestaurantPOSApp::createModeContainers() {
         posModeContainer_->show();  // Make POS visible from start
         kitchenModeContainer_->hide();  // Hide kitchen mode
         
-        std::cout << "[RestaurantPOSApp] ✓ Mode containers created successfully" << std::endl;
-        std::cout << "[RestaurantPOSApp] ✓ POS mode container is visible by default" << std::endl;
+        logger_.info("[RestaurantPOSApp] ✓ Mode containers created successfully");
+        logger_.info("[RestaurantPOSApp] ✓ POS mode container is visible by default");
         
     } catch (const std::exception& e) {
-        std::cerr << "[RestaurantPOSApp] CRITICAL ERROR creating mode containers: " << e.what() << std::endl;
+        logger_.error(std::string("[RestaurantPOSApp] CRITICAL ERROR creating mode containers: ") + e.what());
         throw;
     }
 }
 
 // NEW METHOD: Ensure POS mode is properly loaded and visible
 void RestaurantPOSApp::ensurePOSModeDefault() {
-    std::cout << "[RestaurantPOSApp] Ensuring POS mode is loaded by default..." << std::endl;
+    logger_.info("[RestaurantPOSApp] Ensuring POS mode is loaded by default...");
     
     try {
         // Verify containers exist
         if (!posModeContainer_ || !kitchenModeContainer_) {
-            std::cerr << "[RestaurantPOSApp] ERROR: Mode containers not created!" << std::endl;
+            logger_.error("[RestaurantPOSApp] ERROR: Mode containers not created!");
             return;
         }
         
@@ -217,7 +221,7 @@ void RestaurantPOSApp::ensurePOSModeDefault() {
             modeContainer_->removeStyleClass("kitchen-mode-active");
         }
         
-        std::cout << "[RestaurantPOSApp] ✓ POS mode is now active and visible" << std::endl;
+        logger_.info("[RestaurantPOSApp] ✓ POS mode is now active and visible");
         
         // Optional: Add a welcome message to confirm POS mode is loaded
         if (eventManager_) {
@@ -230,28 +234,32 @@ void RestaurantPOSApp::ensurePOSModeDefault() {
         }
         
     } catch (const std::exception& e) {
-        std::cerr << "[RestaurantPOSApp] ERROR ensuring POS mode default: " << e.what() << std::endl;
+        logger_.error(std::string("[RestaurantPOSApp] ERROR ensuring POS mode default: ") + e.what());
     }
 }
 
 void RestaurantPOSApp::switchMode(OperatingMode mode) {
-    std::cout << "[RestaurantPOSApp] Switching to mode: " << getModeDisplayName(mode) << std::endl;
+    std::ostringstream modeMsg;
+    modeMsg << "[RestaurantPOSApp] Switching to mode: " << getModeDisplayName(mode);
+    logger_.info(modeMsg.str());
     
     try {
         // Don't switch if already in the requested mode
         if (currentMode_ == mode) {
-            std::cout << "[RestaurantPOSApp] Already in " << getModeDisplayName(mode) << ", skipping switch" << std::endl;
+            std::ostringstream skipMsg;
+            skipMsg << "[RestaurantPOSApp] Already in " << getModeDisplayName(mode) << ", skipping switch";
+            logger_.info(skipMsg.str());
             return;
         }
         
         // Validate containers exist
         if (!modeContainer_) {
-            std::cerr << "[RestaurantPOSApp] FATAL: modeContainer_ is null!" << std::endl;
+            logger_.error("[RestaurantPOSApp] FATAL: modeContainer_ is null!");
             return;
         }
         
         if (!posModeContainer_ || !kitchenModeContainer_) {
-            std::cerr << "[RestaurantPOSApp] FATAL: Mode containers are null!" << std::endl;
+            logger_.error("[RestaurantPOSApp] FATAL: Mode containers are null!");
             return;
         }
         
@@ -269,7 +277,7 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
         
         // Show the appropriate container and apply styling
         if (mode == POS_MODE) {
-            std::cout << "[RestaurantPOSApp] Activating POS mode container" << std::endl;
+            logger_.info("[RestaurantPOSApp] Activating POS mode container");
             
             // Show and style POS container
             posModeContainer_->show();
@@ -280,13 +288,13 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
             // Refresh the container
             try {
                 posModeContainer_->refresh();
-                std::cout << "[RestaurantPOSApp] ✓ POS mode container refreshed" << std::endl;
+                logger_.info("[RestaurantPOSApp] ✓ POS mode container refreshed");
             } catch (const std::exception& e) {
-                std::cerr << "[RestaurantPOSApp] Error refreshing POS container: " << e.what() << std::endl;
+                logger_.error(std::string("[RestaurantPOSApp] Error refreshing POS container: ") + e.what());
             }
             
         } else if (mode == KITCHEN_MODE) {
-            std::cout << "[RestaurantPOSApp] Activating Kitchen mode container" << std::endl;
+            logger_.info("[RestaurantPOSApp] Activating Kitchen mode container");
             
             // Show and style Kitchen container
             kitchenModeContainer_->show();
@@ -297,9 +305,9 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
             // Refresh the container
             try {
                 kitchenModeContainer_->refresh();
-                std::cout << "[RestaurantPOSApp] ✓ Kitchen mode container refreshed" << std::endl;
+                logger_.info("[RestaurantPOSApp] ✓ Kitchen mode container refreshed");
             } catch (const std::exception& e) {
-                std::cerr << "[RestaurantPOSApp] Error refreshing Kitchen container: " << e.what() << std::endl;
+                logger_.error(std::string("[RestaurantPOSApp] Error refreshing Kitchen container: ") + e.what());
             }
         }
         
@@ -308,7 +316,7 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
             try {
                 commonHeader_->setCurrentMode(mode == POS_MODE ? ModeSelector::POS_MODE : ModeSelector::KITCHEN_MODE);
             } catch (const std::exception& e) {
-                std::cerr << "[RestaurantPOSApp] ERROR updating header: " << e.what() << std::endl;
+                logger_.error(std::string("[RestaurantPOSApp] ERROR updating header: ") + e.what());
             }
         }
         
@@ -319,12 +327,14 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
         try {
             onModeChanged(mode);
         } catch (const std::exception& e) {
-            std::cerr << "[RestaurantPOSApp] ERROR in mode change callback: " << e.what() << std::endl;
+            logger_.error(std::string("[RestaurantPOSApp] ERROR in mode change callback: ") + e.what());
         }
         
         // Log success
         logModeSwitch(mode);
-        std::cout << "[RestaurantPOSApp] ✓ Successfully switched to " << getModeDisplayName(mode) << std::endl;
+        std::ostringstream successMsg;
+        successMsg << "[RestaurantPOSApp] ✓ Successfully switched to " << getModeDisplayName(mode);
+        logger_.info(successMsg.str());
         
         // Show confirmation notification
         if (eventManager_) {
@@ -337,14 +347,14 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
         }
         
     } catch (const std::exception& e) {
-        std::cerr << "[RestaurantPOSApp] CRITICAL ERROR switching modes: " << e.what() << std::endl;
+        logger_.error(std::string("[RestaurantPOSApp] CRITICAL ERROR switching modes: ") + e.what());
         
         // Emergency recovery to POS mode
         if (posModeContainer_) {
             kitchenModeContainer_->hide();
             posModeContainer_->show();
             currentMode_ = POS_MODE;
-            std::cout << "[RestaurantPOSApp] Emergency recovery: Restored to POS mode" << std::endl;
+            logger_.info("[RestaurantPOSApp] Emergency recovery: Restored to POS mode");
         }
     }
 }
@@ -371,11 +381,13 @@ void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
     }
     
     // Log the mode change with enhanced detail
-    std::cout << "🔄 Mode Change Complete: " << getModeDisplayName(newMode) << std::endl;
+    std::ostringstream changeMsg;
+    changeMsg << "🔄 Mode Change Complete: " << getModeDisplayName(newMode);
+    logger_.info(changeMsg.str());
     
     // Apply mode-specific behavior
     if (newMode == POS_MODE) {
-        std::cout << "📋 POS Mode: Ready for order taking and management" << std::endl;
+        logger_.info("📋 POS Mode: Ready for order taking and management");
         
         // Ensure POS components are ready
         if (posModeContainer_) {
@@ -383,7 +395,7 @@ void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
         }
         
     } else if (newMode == KITCHEN_MODE) {
-        std::cout << "👨‍🍳 Kitchen Mode: Ready for order preparation tracking" << std::endl;
+        logger_.info("👨‍🍳 Kitchen Mode: Ready for order preparation tracking");
         
         // Ensure Kitchen components are ready
         if (kitchenModeContainer_) {
@@ -392,7 +404,7 @@ void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
     }
 }
 
-// Keep all other methods exactly as they were
+// Keep all other methods with logger integration...
 void RestaurantPOSApp::initializeComponentFactory() {
     componentFactory_ = std::make_unique<UIComponentFactory>(
         posService_, eventManager_, configManager_);
@@ -400,7 +412,7 @@ void RestaurantPOSApp::initializeComponentFactory() {
     // Register theme service with factory
     componentFactory_->registerThemeService(themeService_);
     
-    std::cout << "✓ Component factory initialized" << std::endl;
+    logger_.info("✓ Component factory initialized");
 }
 
 void RestaurantPOSApp::setupMainLayout() {
@@ -418,7 +430,7 @@ void RestaurantPOSApp::setupMainLayout() {
     mainLayout_->setContentsMargins(0, 0, 0, 0);
     mainLayout_->setSpacing(0);
     
-    std::cout << "✓ Main layout initialized for POS mode" << std::endl;
+    logger_.info("✓ Main layout initialized for POS mode");
 }
 
 void RestaurantPOSApp::createCommonComponents() {
@@ -440,7 +452,7 @@ void RestaurantPOSApp::createCommonComponents() {
     commonFooter_ = mainLayout_->addWidget(
         std::make_unique<CommonFooter>(posService_, eventManager_));
     
-    std::cout << "✓ Common components created" << std::endl;
+    logger_.info("✓ Common components created");
 }
 
 void RestaurantPOSApp::setupEventListeners() {
@@ -451,7 +463,7 @@ void RestaurantPOSApp::setupEventListeners() {
         });
     }
     
-    std::cout << "✓ Event listeners set up" << std::endl;
+    logger_.info("✓ Event listeners set up");
 }
 
 void RestaurantPOSApp::initializeThemeService() {
@@ -487,12 +499,12 @@ void RestaurantPOSApp::setupRealTimeUpdates() {
     updateTimer_->timeout().connect(this, &RestaurantPOSApp::onPeriodicUpdate);
     updateTimer_->start();
     
-    std::cout << "✓ Real-time updates enabled (5 second interval with smart refresh)" << std::endl;
+    logger_.info("✓ Real-time updates enabled (5 second interval with smart refresh)");
 }
 
 void RestaurantPOSApp::onPeriodicUpdate() {
     // Smart periodic update - only refresh data, never recreate UI components
-    std::cout << "[RestaurantPOSApp] Periodic data refresh (preserving UI state)" << std::endl;
+    logger_.debug("[RestaurantPOSApp] Periodic data refresh (preserving UI state)");
     
     // Update footer status
     if (commonFooter_) {
@@ -516,20 +528,24 @@ void RestaurantPOSApp::onThemeChanged(ThemeService::Theme oldTheme, ThemeService
     );
     eventManager_->publish(POSEvents::THEME_CHANGED, themeEventData);
     
-    std::cout << "✓ Theme changed from " << themeService_->getThemeName(oldTheme) 
-              << " to " << themeService_->getThemeName(newTheme) << std::endl;
+    std::ostringstream themeMsg;
+    themeMsg << "✓ Theme changed from " << themeService_->getThemeName(oldTheme) 
+             << " to " << themeService_->getThemeName(newTheme);
+    logger_.info(themeMsg.str());
 }
 
 void RestaurantPOSApp::logApplicationStart() {
-    std::cout << "\n" << std::string(60, '=') << std::endl;
-    std::cout << "🍽️  RESTAURANT POS SYSTEM STARTING" << std::endl;
-    std::cout << "📋 Default Mode: Point of Sale (POS)" << std::endl;
-    std::cout << "🔗 API Integration: Enabled" << std::endl;
-    std::cout << std::string(60, '=') << std::endl;
+    logger_.info("\n" + std::string(60, '='));
+    logger_.info("🍽️  RESTAURANT POS SYSTEM STARTING");
+    logger_.info("📋 Default Mode: Point of Sale (POS)");
+    logger_.info("🔗 API Integration: Enabled");
+    logger_.info(std::string(60, '='));
 }
 
 void RestaurantPOSApp::logModeSwitch(OperatingMode mode) {
-    std::cout << "🔄 Mode Switch Complete: " << getModeDisplayName(mode) << std::endl;
+    std::ostringstream switchMsg;
+    switchMsg << "🔄 Mode Switch Complete: " << getModeDisplayName(mode);
+    logger_.info(switchMsg.str());
 }
 
 std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
@@ -541,31 +557,46 @@ std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
 }
 
 void RestaurantPOSApp::debugWidgetState() {
-    std::cout << "[DEBUG] Widget State Check:" << std::endl;
-    std::cout << "  - modeContainer_: " << (modeContainer_ ? "VALID" : "NULL") << std::endl;
-    std::cout << "  - posModeContainer_: " << (posModeContainer_ ? "VALID" : "NULL") << std::endl;
-    std::cout << "  - kitchenModeContainer_: " << (kitchenModeContainer_ ? "VALID" : "NULL") << std::endl;
+    logger_.debug("[DEBUG] Widget State Check:");
+    logger_.debug(std::string("  - modeContainer_: ") + (modeContainer_ ? "VALID" : "NULL"));
+    logger_.debug(std::string("  - posModeContainer_: ") + (posModeContainer_ ? "VALID" : "NULL"));
+    logger_.debug(std::string("  - kitchenModeContainer_: ") + (kitchenModeContainer_ ? "VALID" : "NULL"));
     
     if (modeContainer_) {
-        std::cout << "  - modeContainer children: " << modeContainer_->children().size() << std::endl;
+        std::ostringstream childMsg;
+        childMsg << "  - modeContainer children: " << modeContainer_->children().size();
+        logger_.debug(childMsg.str());
         
         // Check if our containers are in the mode container
         int posIndex = modeContainer_->indexOf(posModeContainer_);
         int kitchenIndex = modeContainer_->indexOf(kitchenModeContainer_);
         
-        std::cout << "  - POS container index: " << posIndex << std::endl;
-        std::cout << "  - Kitchen container index: " << kitchenIndex << std::endl;
+        std::ostringstream indexMsg;
+        indexMsg << "  - POS container index: " << posIndex;
+        logger_.debug(indexMsg.str());
+        
+        indexMsg.str(""); indexMsg.clear();
+        indexMsg << "  - Kitchen container index: " << kitchenIndex;
+        logger_.debug(indexMsg.str());
         
         if (posModeContainer_) {
-            std::cout << "  - POS container visible: " << (posModeContainer_->isVisible() ? "YES" : "NO") << std::endl;
+            std::string visibleMsg = std::string("  - POS container visible: ") + 
+                                   (posModeContainer_->isVisible() ? "YES" : "NO");
+            logger_.debug(visibleMsg);
         }
         if (kitchenModeContainer_) {
-            std::cout << "  - Kitchen container visible: " << (kitchenModeContainer_->isVisible() ? "YES" : "NO") << std::endl;
+            std::string visibleMsg = std::string("  - Kitchen container visible: ") + 
+                                   (kitchenModeContainer_->isVisible() ? "YES" : "NO");
+            logger_.debug(visibleMsg);
         }
     }
     
-    std::cout << "  - currentMode_: " << static_cast<int>(currentMode_) << " (" << getModeDisplayName(currentMode_) << ")" << std::endl;
-    std::cout << "  - isDestroying_: " << (isDestroying_ ? "TRUE" : "FALSE") << std::endl;
+    std::ostringstream modeMsg;
+    modeMsg << "  - currentMode_: " << static_cast<int>(currentMode_) << " (" << getModeDisplayName(currentMode_) << ")";
+    logger_.debug(modeMsg.str());
+    
+    std::string destroyMsg = std::string("  - isDestroying_: ") + (isDestroying_ ? "TRUE" : "FALSE");
+    logger_.debug(destroyMsg);
 }
 
 // Cleanup methods remain the same...

@@ -344,6 +344,7 @@ set(HEADERS
     # Utilities
     include/utils/CSSLoader.hpp
     include/utils/FormatUtils.hpp
+    include/utils/LoggingUtils.hpp
     include/utils/Logging.hpp
     include/utils/UIHelpers.hpp
 )

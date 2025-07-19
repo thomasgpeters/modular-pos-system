@@ -3,6 +3,7 @@
 
 #include "../api/APIServiceFactory.hpp" // ADD THIS INCLUDE
 
+#include "../../include/utils/LoggingUtils.hpp"
 #include "../../include/utils/Logging.hpp"
 
 #include "../services/POSService.hpp"
@@ -55,6 +56,11 @@ KEY FIXES APPLIED:
    - Added widget state debugging method
    - Comprehensive logging of widget operations
 
+5. LOGGER INTEGRATION:
+   - Added Logger reference member for consistent logging
+   - Replaced std::cout with proper logging calls
+   - Enhanced error reporting and debugging
+
 The crash was caused by using clear() which DELETES child widgets, 
 then trying to add those deleted widgets to containers later.
 Using removeWidget() preserves the widgets for reuse.
@@ -70,14 +76,15 @@ Using removeWidget() preserves the widgets for reuse.
  * - Kitchen Mode: Order preparation and kitchen status
  * - Common header with mode switching and theme controls
  * - Intuitive workflow for restaurant operations
+ * - Integrated logging framework for debugging and monitoring
  * 
  * @author Restaurant POS Team
- * @version 3.0.0 - Enhanced with mode switching
+ * @version 3.1.0 - Enhanced with mode switching and logging
  */
 
 /**
  * @class RestaurantPOSApp
- * @brief Enhanced main application with dual operating modes
+ * @brief Enhanced main application with dual operating modes and logging
  */
 class RestaurantPOSApp : public Wt::WApplication {
 public:
@@ -114,6 +121,9 @@ public:
     OperatingMode getCurrentMode() const { return currentMode_; }
 
 private:
+    // FIXED: Logger reference member - must be initialized first in constructor
+    Logger& logger_;
+    
     // Add this flag to prevent operations during destruction
     bool isDestroying_;
 
