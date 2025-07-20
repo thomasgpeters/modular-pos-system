@@ -1,5 +1,5 @@
 //============================================================================
-// include/services/EnhancedPOSService.hpp - API-Integrated POS Service
+// include/services/EnhancedPOSService.hpp - API-Integrated POS Service with Logging
 //============================================================================
 
 #ifndef ENHANCEDPOSSERVICE_H
@@ -13,6 +13,8 @@
 #include "../PaymentProcessor.hpp"
 #include "../events/EventManager.hpp"
 #include "../events/POSEvents.hpp"
+#include "../utils/Logging.hpp"      // ADD LOGGING
+#include "../utils/LoggingUtils.hpp" // ADD LOGGING UTILS
 
 // IMPORTANT: Include base class BEFORE declaring derived class
 #include "POSService.hpp"
@@ -33,11 +35,12 @@
 
 /**
  * @class EnhancedPOSService
- * @brief API-integrated POS service with middleware persistence
+ * @brief API-integrated POS service with middleware persistence and comprehensive logging
  * 
  * This enhanced version extends POSService to replace local data storage 
  * with API calls to the middleware system, providing real persistence 
- * and multi-client synchronization.
+ * and multi-client synchronization. Enhanced with detailed logging for
+ * debugging, monitoring, and performance tracking.
  */
 class EnhancedPOSService : public POSService {
 public:
@@ -61,7 +64,7 @@ public:
     };
     
     /**
-     * @brief Constructs the enhanced POS service
+     * @brief Constructs the enhanced POS service with logging
      * @param eventManager Event manager for notifications
      * @param config Service configuration
      */
@@ -368,7 +371,7 @@ protected:
     void initializeCaches();
     
     /**
-     * @brief Handles API connection errors
+     * @brief Handles API connection errors with logging
      * @param operation Operation that failed
      * @param error Error message
      */

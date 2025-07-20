@@ -402,7 +402,7 @@ void PaymentDialog::processPayment() {
     // Publish payment event
     if (eventManager_) {
         eventManager_->publish(POSEvents::PAYMENT_COMPLETED,
-            POSEvents::createPaymentCompletedEvent(result, order_));
+            POSEvents::createPaymentCompletedData(result, order_));
     }
     
     // Call callback

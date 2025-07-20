@@ -1,474 +1,53 @@
-/* ============================================================================
-   Theme-Reactive CSS - Component Integration with Theme System
-   File: docroot/assets/css/theme-reactive.css
-   ============================================================================ */
+/* =============================================================================
+   CREATE FILE: assets/css/theme-reactive.css
+   ============================================================================= */
 
-/* =================================================================
-   BASE THEME-REACTIVE CLASSES
-   ================================================================= */
-
-.theme-reactive-table {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-.theme-reactive-header {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-.theme-reactive-cell {
+/* Reactive Theme System */
+.theme-initialized {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.theme-reactive-text {
-    transition: color 0.3s ease;
+/* Theme-specific overrides */
+.theme-colorful .mode-container-wrapper {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-.theme-reactive-title {
-    transition: color 0.3s ease;
+.theme-colorful .common-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
 }
 
-.theme-reactive-badge {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-.theme-reactive-button {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-/* =================================================================
-   LIGHT THEME STYLING
-   ================================================================= */
-
-.theme-light .pos-section-header {
-    background-color: var(--bs-primary, #0066cc) !important;
-    color: white !important;
-    border-color: var(--bs-primary, #0066cc) !important;
-}
-
-.theme-light .theme-reactive-title {
-    color: white !important;
-}
-
-.theme-light .theme-reactive-table {
-    background-color: white !important;
+.theme-light .common-header {
+    background: #ffffff !important;
     color: #212529 !important;
-    border-color: #dee2e6 !important;
+    border-bottom: 1px solid #dee2e6;
 }
 
-.theme-light .pos-table-header {
-    background-color: var(--bs-primary, #0066cc) !important;
-    color: white !important;
+.theme-dark .common-header {
+    background: #212529 !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid #495057;
 }
 
-.theme-light .theme-reactive-header {
-    background-color: var(--bs-primary, #0066cc) !important;
-    color: white !important;
-}
-
-.theme-light .theme-reactive-text {
-    color: #212529 !important;
-}
-
-.theme-light .theme-reactive-primary {
-    color: var(--bs-primary, #0066cc) !important;
-}
-
-.theme-light .theme-reactive-success {
-    color: #198754 !important;
-}
-
-.theme-light .theme-reactive-muted {
-    color: #6c757d !important;
-}
-
-.theme-light .pos-row-even {
-    background-color: #f8f9fa !important;
-}
-
-.theme-light .pos-row-odd {
-    background-color: white !important;
-}
-
-/* =================================================================
-   DARK THEME STYLING
-   ================================================================= */
-
-.theme-dark .pos-section-header {
-    background-color: #4dabf7 !important;
-    color: #212529 !important;
-    border-color: #4dabf7 !important;
-}
-
-.theme-dark .theme-reactive-title {
-    color: #212529 !important;
-}
-
-.theme-dark .theme-reactive-table {
-    background-color: #343a40 !important;
-    color: white !important;
-    border-color: #495057 !important;
-}
-
-.theme-dark .pos-table-header {
-    background-color: #4dabf7 !important;
-    color: #212529 !important;
-}
-
-.theme-dark .theme-reactive-header {
-    background-color: #4dabf7 !important;
-    color: #212529 !important;
-}
-
-.theme-dark .theme-reactive-text {
-    color: white !important;
-}
-
-.theme-dark .theme-reactive-primary {
-    color: #4dabf7 !important;
-}
-
-.theme-dark .theme-reactive-success {
-    color: #51cf66 !important;
-}
-
-.theme-dark .theme-reactive-muted {
-    color: #adb5bd !important;
-}
-
-.theme-dark .pos-row-even {
-    background-color: #495057 !important;
-}
-
-.theme-dark .pos-row-odd {
-    background-color: #343a40 !important;
-}
-
-.theme-dark .theme-reactive-cell {
-    border-color: #495057 !important;
-}
-
-/* =================================================================
-   WARM THEME STYLING
-   ================================================================= */
-
-.theme-warm .pos-section-header {
-    background-color: #8b4513 !important;
-    color: white !important;
-    border-color: #8b4513 !important;
-}
-
-.theme-warm .theme-reactive-title {
-    color: white !important;
-}
-
-.theme-warm .theme-reactive-table {
-    background-color: #f4f1e8 !important;
-    color: #5d4e37 !important;
-    border-color: #d2b48c !important;
-}
-
-.theme-warm .pos-table-header {
-    background-color: #8b4513 !important;
-    color: white !important;
-}
-
-.theme-warm .theme-reactive-header {
-    background-color: #8b4513 !important;
-    color: white !important;
-}
-
-.theme-warm .theme-reactive-text {
-    color: #5d4e37 !important;
-}
-
-.theme-warm .theme-reactive-primary {
-    color: #8b4513 !important;
-}
-
-.theme-warm .theme-reactive-success {
-    color: #228b22 !important;
-}
-
-.theme-warm .theme-reactive-muted {
-    color: #8b7355 !important;
-}
-
-.theme-warm .pos-row-even {
-    background-color: #faf8f3 !important;
-}
-
-.theme-warm .pos-row-odd {
-    background-color: #f4f1e8 !important;
-}
-
-/* =================================================================
-   COOL THEME STYLING
-   ================================================================= */
-
-.theme-cool .pos-section-header {
-    background-color: #1e40af !important;
-    color: white !important;
-    border-color: #1e40af !important;
-}
-
-.theme-cool .theme-reactive-title {
-    color: white !important;
-}
-
-.theme-cool .theme-reactive-table {
-    background-color: #e6f3ff !important;
-    color: #1e3a8a !important;
-    border-color: #93c5fd !important;
-}
-
-.theme-cool .pos-table-header {
-    background-color: #1e40af !important;
-    color: white !important;
-}
-
-.theme-cool .theme-reactive-header {
-    background-color: #1e40af !important;
-    color: white !important;
-}
-
-.theme-cool .theme-reactive-text {
-    color: #1e3a8a !important;
-}
-
-.theme-cool .theme-reactive-primary {
-    color: #1e40af !important;
-}
-
-.theme-cool .theme-reactive-success {
-    color: #059669 !important;
-}
-
-.theme-cool .theme-reactive-muted {
-    color: #64748b !important;
-}
-
-.theme-cool .pos-row-even {
-    background-color: #f0f8ff !important;
-}
-
-.theme-cool .pos-row-odd {
-    background-color: #e6f3ff !important;
-}
-
-/* =================================================================
-   BASE THEME STYLING (Default/Bootstrap)
-   ================================================================= */
-
-.theme-base .pos-section-header {
-    background-color: #007bff !important;
-    color: white !important;
-    border-color: #007bff !important;
-}
-
-.theme-base .theme-reactive-title {
-    color: white !important;
-}
-
-.theme-base .theme-reactive-table {
-    background-color: white !important;
-    color: #212529 !important;
-    border-color: #dee2e6 !important;
-}
-
-.theme-base .pos-table-header {
-    background-color: #007bff !important;
-    color: white !important;
-}
-
-.theme-base .theme-reactive-header {
-    background-color: #007bff !important;
-    color: white !important;
-}
-
-.theme-base .theme-reactive-text {
-    color: #212529 !important;
-}
-
-.theme-base .theme-reactive-primary {
-    color: #007bff !important;
-}
-
-.theme-base .theme-reactive-success {
-    color: #28a745 !important;
-}
-
-.theme-base .theme-reactive-muted {
-    color: #6c757d !important;
-}
-
-.theme-base .pos-row-even {
-    background-color: #f8f9fa !important;
-}
-
-.theme-base .pos-row-odd {
-    background-color: white !important;
-}
-
-/* =================================================================
-   HOVER EFFECTS (Theme-Aware)
-   ================================================================= */
-
-.theme-light .pos-table-cell:hover {
-    background-color: #e7f3ff !important;
-}
-
-.theme-dark .pos-table-cell:hover {
-    background-color: #495057 !important;
-}
-
-.theme-warm .pos-table-cell:hover {
-    background-color: #f0ead6 !important;
-}
-
-.theme-cool .pos-table-cell:hover {
-    background-color: #dbeafe !important;
-}
-
-.theme-base .pos-table-cell:hover {
-    background-color: #e7f3ff !important;
-}
-
-/* =================================================================
-   EMPTY STATE STYLING
-   ================================================================= */
-
-.theme-light .pos-empty-state {
-    background-color: #f8f9fa !important;
-    color: #6c757d !important;
-}
-
-.theme-dark .pos-empty-state {
-    background-color: #343a40 !important;
-    color: #adb5bd !important;
-}
-
-.theme-warm .pos-empty-state {
-    background-color: #f4f1e8 !important;
-    color: #8b7355 !important;
-}
-
-.theme-cool .pos-empty-state {
-    background-color: #e6f3ff !important;
-    color: #64748b !important;
-}
-
-.theme-base .pos-empty-state {
-    background-color: #f8f9fa !important;
-    color: #6c757d !important;
-}
-
-/* =================================================================
-   BUTTON OVERRIDES FOR THEME CONSISTENCY
-   ================================================================= */
-
-.theme-dark .btn-outline-primary {
-    color: #4dabf7 !important;
-    border-color: #4dabf7 !important;
-}
-
-.theme-dark .btn-outline-primary:hover {
-    background-color: #4dabf7 !important;
-    color: #212529 !important;
-}
-
-.theme-warm .btn-outline-primary {
-    color: #8b4513 !important;
-    border-color: #8b4513 !important;
-}
-
-.theme-warm .btn-outline-primary:hover {
-    background-color: #8b4513 !important;
-    color: white !important;
-}
-
-.theme-cool .btn-outline-primary {
-    color: #1e40af !important;
-    border-color: #1e40af !important;
-}
-
-.theme-cool .btn-outline-primary:hover {
-    background-color: #1e40af !important;
-    color: white !important;
-}
-
-/* =================================================================
-   RESPONSIVE ADJUSTMENTS
-   ================================================================= */
-
+/* Responsive design */
 @media (max-width: 768px) {
-    .pos-section-header {
-        padding: 1rem !important;
+    .common-header {
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        flex: 0 0 50px !important;
     }
     
-    .pos-table-cell {
-        padding: 0.5rem !important;
-        font-size: 0.875rem;
+    .mode-container-wrapper {
+        margin: 0.25rem !important;
+        padding: 0.75rem !important;
     }
     
-    .pos-action-buttons .btn {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
+    .common-footer {
+        height: 35px !important;
+        min-height: 35px !important;
+        max-height: 35px !important;
+        flex: 0 0 35px !important;
     }
-}
-
-/* =================================================================
-   ANIMATION ENHANCEMENTS
-   ================================================================= */
-
-.pos-orders-table tbody tr {
-    transition: all 0.2s ease;
-}
-
-.pos-orders-table tbody tr:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.pos-count-badge {
-    transition: all 0.3s ease;
-}
-
-.pos-count-badge:hover {
-    transform: scale(1.05);
-}
-
-/* =================================================================
-   ACCESSIBILITY IMPROVEMENTS
-   ================================================================= */
-
-.pos-table-header,
-.theme-reactive-title {
-    font-weight: 600 !important;
-}
-
-.pos-status-badge {
-    font-weight: 500 !important;
-    padding: 0.25em 0.6em !important;
-}
-
-.pos-action-buttons .btn {
-    min-width: 70px;
-    margin: 0.125rem;
-}
-
-/* Focus indicators */
-.pos-action-buttons .btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
-}
-
-.theme-dark .pos-action-buttons .btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(77, 171, 247, 0.25) !important;
-}
-
-.theme-warm .pos-action-buttons .btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25) !important;
-}
-
-.theme-cool .pos-action-buttons .btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(30, 64, 175, 0.25) !important;
 }

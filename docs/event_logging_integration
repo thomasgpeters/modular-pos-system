@@ -1,0 +1,124 @@
+Integrate the logging framework into both EventManager and POSEvents. Let me start with the EventManager:## Summary of EventManager & POSEvents Logging Integration creating a comprehensive event-driven logging system for your Restaurant POS application. Here's what's been implemented:
+
+## **🔧 Enhanced EventManager Features**
+
+### **Core Logging Integration**
+- **Logger reference member** properly initialized in constructor
+- **Publisher/subscriber identification** for debugging
+- **Detailed event operation logging** (subscribe, unsubscribe, publish)
+- **Error handling with context** for failed event handlers
+- **Statistics tracking** (events published, handler invocations, success rates)
+
+### **Key Methods Enhanced**
+```cpp
+// Enhanced subscription with logging
+eventManager->subscribe(eventType, handler, "ComponentName");
+
+// Enhanced publishing with publisher identification
+eventManager->publish(eventType, data, "PublisherName");
+
+// New debugging methods
+eventManager->logSubscriptionStatistics();
+eventManager->logAllSubscriptions();
+```
+
+## **🎯 Enhanced POSEvents Features**
+
+### **EventLogger Utility Class**
+Specialized logging for different POS event types:
+```cpp
+// Order event logging
+POSEvents::EventLogger::logOrderEvent(eventType, order, context);
+
+// Kitchen event logging  
+POSEvents::EventLogger::logKitchenEvent(eventType, orderId, status, previousStatus);
+
+// Payment event logging
+POSEvents::EventLogger::logPaymentEvent(eventType, result, order);
+```
+
+### **Enhanced Event Creation with Optional Logging**
+```cpp
+// Create events with automatic logging
+auto orderEvent = POSEvents::createOrderCreatedData(order, true);  // Enable logging
+auto paymentEvent = POSEvents::createPaymentCompletedData(result, order, true);
+auto notificationEvent = POSEvents::createNotificationData(message, "info", 3000, true);
+```
+
+## **🔍 Key Benefits for Your C++ Wt Project**
+
+### **1. Modular Design (Your Preference)**
+- **Decoupled logging**: LoggingUtils separate from core event functionality
+- **Theme framework compatibility**: No interference with Bootstrap/theme switching
+- **Clean interfaces**: Enhanced functionality without breaking existing code
+
+### **2. Comprehensive Debugging**
+```cpp
+// Detailed event flow tracking
+[SUBSCRIBE] OrderManager -> ORDER_CREATED (handle: 1)
+[PUBLISH] RestaurantPOSApp -> NOTIFICATION_REQUESTED (2 subscribers)
+[ORDER_CREATED] Order ID: 123, Table: Table 5, Items: 3, Total: $45.99
+```
+
+### **3. Production-Ready Monitoring**
+```cpp
+// Automatic statistics logging
+=== EventManager Statistics ===
+Total event types: 15
+Total active subscriptions: 32
+Total events published: 1,247
+Handler success rate: 99.85%
+```
+
+### **4. Error Recovery & Resilience**
+- **Failed event handlers don't crash the system**
+- **Detailed error logging with component context**
+- **Emergency recovery patterns** demonstrated in RestaurantPOSApp
+
+## **🚀 Usage in Your Restaurant POS System**
+
+### **Component Integration Example**
+```cpp
+class MyPOSComponent {
+private:
+    Logger& logger_;
+    std::shared_ptr<EventManager> eventManager_;
+    
+public:
+    MyPOSComponent() 
+        : logger_(Logger::getInstance())
+        , eventManager_(eventManager) {
+        
+        // Subscribe with logging
+        eventManager_->subscribe(POSEvents::ORDER_CREATED, 
+            [this](const std::any& data) { handleOrder(data); },
+            "MyPOSComponent");  // Subscriber name for debugging
+    }
+    
+    void publishEvent() {
+        auto eventData = POSEvents::createOrderCreatedData(order, true);  // Auto-log
+        eventManager_->publish(POSEvents::ORDER_CREATED, eventData, "MyPOSComponent");
+    }
+};
+```
+
+### **System-wide Event Monitoring**
+The EventMonitor example shows how to create a centralized monitoring system that logs all major POS operations for debugging and analytics.
+
+## **🎨 Bootstrap Theme Framework Compatibility**
+
+The logging system is designed to work seamlessly with your theme switching requirements:
+- **No CSS conflicts**: Pure C++ logging with no UI dependencies
+- **Theme change events logged**: Automatic logging of theme switches
+- **Mode switching support**: Detailed logging of POS/Kitchen mode changes
+- **Performance optimized**: Minimal impact on UI rendering
+
+## **📊 What You Get**
+
+1. **Complete event visibility** throughout your POS system
+2. **Production-ready error handling** with detailed context
+3. **Performance monitoring** and statistics tracking
+4. **Debugging support** with subscriber/publisher identification
+5. **Modular, maintainable code** following your architectural preferences
+
+The system now provides excellent observability for debugging, monitoring, and maintaining your Restaurant POS application while maintaining the clean, modular architecture you prefer! 🍽️✨

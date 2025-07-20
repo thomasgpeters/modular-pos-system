@@ -8,6 +8,8 @@
 #include "../PaymentProcessor.hpp"
 #include "../events/EventManager.hpp"
 #include "../events/POSEvents.hpp"
+#include "../utils/Logging.hpp"  // ADD LOGGING
+#include "../utils/LoggingUtils.hpp"
 
 #include <memory>
 #include <vector>
@@ -21,22 +23,24 @@
  * 
  * This service class coordinates between all the major components:
  * OrderManager, KitchenInterface, PaymentProcessor, and EventManager.
+ * Enhanced with comprehensive logging for debugging and monitoring.
  * 
  * @author Restaurant POS Team
- * @version 2.1.0 - Enhanced with quantity/instructions support and proper events
+ * @version 2.2.0 - Enhanced with logging integration
  */
 
 /**
  * @class POSService
- * @brief Main service coordinator for the POS system
+ * @brief Main service coordinator for the POS system with logging
  * 
  * The POSService acts as a facade and coordinator between the major
  * subsystems of the POS: orders, kitchen, payments, and events.
+ * Enhanced with comprehensive logging capabilities.
  */
 class POSService {
 public:
     /**
-     * @brief Constructs the POS service
+     * @brief Constructs the POS service with logging
      * @param eventManager Event manager for notifications
      */
     explicit POSService(std::shared_ptr<EventManager> eventManager);
@@ -259,17 +263,23 @@ public:
      */
     void onOrderModified(std::function<void(std::shared_ptr<Order>)> callback);
 
-// Add this to the protected: section of POSService.hpp
-// (Look for "private:" and add this section right before it)
-
 protected:
     /**
      * @brief Gets the event manager (for derived classes)
      * @return Shared pointer to event manager
      */
     std::shared_ptr<EventManager> getEventManager() const { return eventManager_; }
+    
+    /**
+     * @brief Gets the logger (for derived classes)
+     * @return Reference to logger
+     */
+    Logger& getLogger() const { return logger_; }
 
 private:
+    // LOGGING: Logger reference member
+    Logger& logger_;
+    
     // Core subsystem components
     std::shared_ptr<EventManager> eventManager_;
     std::unique_ptr<OrderManager> orderManager_;

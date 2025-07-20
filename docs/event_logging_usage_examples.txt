@@ -1,0 +1,433 @@
+/**
+ * @file EventLoggingUsageExamples.cpp
+ * @brief Examples of how to use the enhanced EventManager and POSEvents with logging
+ * 
+ * This file shows practical examples of integrating the enhanced event system
+ * with logging throughout your Restaurant POS application.
+ */
+
+#include "../../include/events/EventManager.hpp"
+#include "../../include/events/POSEvents.hpp"
+#include "../../include/utils/LoggingUtils.hpp"
+
+// ============================================================================
+// Example 1: Order Management with Enhanced Event Logging
+// ============================================================================
+
+class OrderManager {
+private:
+    std::shared_ptr<EventManager> eventManager_;
+    Logger& logger_;
+    
+public:
+    OrderManager(std::shared_ptr<EventManager> em) 
+        : eventManager_(em), logger_(Logger::getInstance()) {}
+    
+    void createNewOrder(int tableNumber, const std::string& tableId) {
+        try {
+            // Create the order
+            auto order = std::make_shared<Order>(tableNumber, tableId);
+            
+            // ENHANCED: Create order event with automatic logging
+            auto orderEventData = POSEvents::createOrderCreatedData(order, true);
+            
+            // Publish with publisher identification for logging
+            eventManager_->publish(POSEvents::ORDER_CREATED, orderEventData, "OrderManager");
+            
+            // Also publish current order change with logging
+            auto currentOrderData = POSEvents::createCurrentOrderChangedData(
+                order, 
+                nullptr, 
+                "new_order_created",
+                true  // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::CURRENT_ORDER_CHANGED, currentOrderData, "OrderManager");
+            
+            LOG_OPERATION_STATUS(logger_, "Order creation", true);
+            
+        } catch (const std::exception& e) {
+            LOG_COMPONENT_ERROR(logger_, "OrderManager", "createNewOrder", e.what());
+            
+            // Publish error event with logging
+            auto errorData = POSEvents::createErrorData(
+                "Failed to create new order: " + std::string(e.what()),
+                "ORD_CREATE_001",
+                "OrderManager",
+                false,  // Not critical
+                true    // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::SYSTEM_ERROR, errorData, "OrderManager");
+        }
+    }
+    
+    void addItemToOrder(std::shared_ptr<Order> order, const std::string& itemName, int quantity) {
+        if (!order) {
+            LOG_COMPONENT_ERROR(logger_, "OrderManager", "addItemToOrder", "Null order provided");
+            return;
+        }
+        
+        try {
+            // Add item to order (assuming this method exists)
+            size_t itemIndex = order->addItem(itemName, quantity);
+            
+            // Log the item addition with enhanced event data
+            auto itemEventData = POSEvents::createOrderItemAddedData(
+                order, 
+                itemIndex, 
+                itemName, 
+                quantity,
+                true  // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::ORDER_ITEM_ADDED, itemEventData, "OrderManager");
+            
+            // Also publish order modified event
+            auto orderModifiedData = POSEvents::createOrderCreatedData(order, false); // Don't double-log
+            eventManager_->publish(POSEvents::ORDER_MODIFIED, orderModifiedData, "OrderManager");
+            
+            // Manual logging for additional context
+            std::ostringstream itemMsg;
+            itemMsg << "Added " << quantity << "x " << itemName 
+                   << " to order " << order->getOrderId() 
+                   << " (total items: " << order->getItemCount() << ")";
+            logger_.info(itemMsg.str());
+            
+        } catch (const std::exception& e) {
+            LOG_COMPONENT_ERROR(logger_, "OrderManager", "addItemToOrder", e.what());
+        }
+    }
+};
+
+// ============================================================================
+// Example 2: Kitchen Management with Event Logging
+// ============================================================================
+
+class KitchenManager {
+private:
+    std::shared_ptr<EventManager> eventManager_;
+    Logger& logger_;
+    
+public:
+    KitchenManager(std::shared_ptr<EventManager> em) 
+        : eventManager_(em), logger_(Logger::getInstance()) {
+        
+        // Subscribe to order events with logging
+        eventManager_->subscribe(
+            POSEvents::ORDER_CREATED,
+            [this](const std::any& data) { handleNewOrder(data); },
+            "KitchenManager"  // Subscriber name for logging
+        );
+        
+        logger_.info("KitchenManager subscribed to order events");
+    }
+    
+    void handleNewOrder(const std::any& data) {
+        try {
+            auto orderData = std::any_cast<POSEvents::OrderEventData>(data);
+            
+            logger_.info("Kitchen received new order: " + std::to_string(orderData.order->getOrderId()));
+            
+            // Change kitchen status to preparing
+            updateOrderStatus(orderData.order->getOrderId(), 
+                            KitchenInterface::ORDER_PREPARING,
+                            KitchenInterface::ORDER_RECEIVED);
+            
+        } catch (const std::bad_any_cast& e) {
+            LOG_COMPONENT_ERROR(logger_, "KitchenManager", "handleNewOrder", "Invalid event data: " + std::string(e.what()));
+        }
+    }
+    
+    void updateOrderStatus(int orderId, 
+                          KitchenInterface::KitchenStatus newStatus,
+                          KitchenInterface::KitchenStatus oldStatus) {
+        try {
+            // Update status in kitchen system (implementation specific)
+            // setKitchenOrderStatus(orderId, newStatus);
+            
+            // Create and publish kitchen status event with logging
+            auto kitchenEventData = POSEvents::createKitchenStatusChangedData(
+                orderId, 
+                newStatus, 
+                oldStatus,
+                true  // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::KITCHEN_STATUS_CHANGED, kitchenEventData, "KitchenManager");
+            
+            // Send notification to UI
+            std::string statusMessage = "Order " + std::to_string(orderId) + 
+                                      " status changed to " + 
+                                      POSEvents::EventLogger::kitchenStatusToString(newStatus);
+            
+            auto notificationData = POSEvents::createNotificationData(
+                statusMessage,
+                "info",
+                3000,
+                true  // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, notificationData, "KitchenManager");
+            
+        } catch (const std::exception& e) {
+            LOG_COMPONENT_ERROR(logger_, "KitchenManager", "updateOrderStatus", e.what());
+        }
+    }
+};
+
+// ============================================================================
+// Example 3: Payment Processing with Event Logging
+// ============================================================================
+
+class PaymentManager {
+private:
+    std::shared_ptr<EventManager> eventManager_;
+    Logger& logger_;
+    
+public:
+    PaymentManager(std::shared_ptr<EventManager> em) 
+        : eventManager_(em), logger_(Logger::getInstance()) {}
+    
+    void processPayment(std::shared_ptr<Order> order, 
+                       PaymentProcessor::PaymentMethod method,
+                       double amount) {
+        if (!order) {
+            LOG_COMPONENT_ERROR(logger_, "PaymentManager", "processPayment", "Null order provided");
+            return;
+        }
+        
+        // Log payment initiation
+        logger_.info("Initiating payment for order " + std::to_string(order->getOrderId()) + 
+                    ", method: " + POSEvents::EventLogger::paymentMethodToString(method) +
+                    ", amount: $" + LoggingUtils::toString(amount));
+        
+        try {
+            // Simulate payment processing
+            PaymentProcessor::PaymentResult result;
+            result.success = true;  // Assume success for example
+            result.amountProcessed = amount;
+            result.method = method;
+            result.transactionId = "TXN_" + std::to_string(order->getOrderId()) + "_" + std::to_string(time(nullptr));
+            result.timestamp = std::chrono::system_clock::now();
+            
+            if (result.success) {
+                // Create and publish payment completed event with logging
+                auto paymentEventData = POSEvents::createPaymentCompletedData(
+                    result, 
+                    order,
+                    true  // Enable logging
+                );
+                
+                eventManager_->publish(POSEvents::PAYMENT_COMPLETED, paymentEventData, "PaymentManager");
+                
+                // Show success notification
+                auto successNotification = POSEvents::createNotificationData(
+                    "Payment of $" + LoggingUtils::toString(amount) + " processed successfully",
+                    "success",
+                    4000,
+                    true  // Enable logging
+                );
+                
+                eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, successNotification, "PaymentManager");
+                
+                LOG_OPERATION_STATUS(logger_, "Payment processing", true);
+                
+            } else {
+                // Handle payment failure
+                auto failureNotification = POSEvents::createNotificationData(
+                    "Payment failed: " + result.errorMessage,
+                    "error",
+                    5000,
+                    true  // Enable logging
+                );
+                
+                eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, failureNotification, "PaymentManager");
+                
+                LOG_OPERATION_STATUS(logger_, "Payment processing", false);
+            }
+            
+        } catch (const std::exception& e) {
+            LOG_COMPONENT_ERROR(logger_, "PaymentManager", "processPayment", e.what());
+            
+            // Publish payment failure event
+            auto errorData = POSEvents::createErrorData(
+                "Payment processing failed: " + std::string(e.what()),
+                "PAY_PROC_001",
+                "PaymentManager",
+                true,   // Critical error
+                true    // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::SYSTEM_ERROR, errorData, "PaymentManager");
+        }
+    }
+};
+
+// ============================================================================
+// Example 4: Menu Management with Event Logging
+// ============================================================================
+
+class MenuManager {
+private:
+    std::shared_ptr<EventManager> eventManager_;
+    Logger& logger_;
+    int currentItemCount_;
+    
+public:
+    MenuManager(std::shared_ptr<EventManager> em) 
+        : eventManager_(em), logger_(Logger::getInstance()), currentItemCount_(0) {}
+    
+    void refreshMenu() {
+        try {
+            // Simulate menu loading
+            currentItemCount_ = loadMenuFromDatabase();  // Hypothetical method
+            
+            // Create and publish menu updated event with logging
+            auto menuEventData = POSEvents::createMenuUpdatedData(
+                currentItemCount_, 
+                "manual_refresh",
+                true  // Enable logging
+            );
+            
+            eventManager_->publish(POSEvents::MENU_UPDATED, menuEventData, "MenuManager");
+            
+            // Notify UI to refresh
+            eventManager_->publish(POSEvents::UI_REFRESH_REQUESTED, std::any{}, "MenuManager");
+            
+            LOG_OPERATION_STATUS(logger_, "Menu refresh", true);
+            
+        } catch (const std::exception& e) {
+            LOG_COMPONENT_ERROR(logger_, "MenuManager", "refreshMenu", e.what());
+        }
+    }
+    
+private:
+    int loadMenuFromDatabase() {
+        // Simulate database loading
+        return 42; // Example item count
+    }
+};
+
+// ============================================================================
+// Example 5: Application-wide Event Monitoring
+// ============================================================================
+
+class EventMonitor {
+private:
+    std::shared_ptr<EventManager> eventManager_;
+    Logger& logger_;
+    
+public:
+    EventMonitor(std::shared_ptr<EventManager> em) 
+        : eventManager_(em), logger_(Logger::getInstance()) {
+        
+        // Subscribe to all major events for monitoring
+        setupEventMonitoring();
+    }
+    
+    void setupEventMonitoring() {
+        // Monitor order events
+        eventManager_->subscribe(POSEvents::ORDER_CREATED, 
+            [this](const std::any& data) { logOrderActivity("ORDER_CREATED", data); }, 
+            "EventMonitor");
+            
+        eventManager_->subscribe(POSEvents::ORDER_COMPLETED, 
+            [this](const std::any& data) { logOrderActivity("ORDER_COMPLETED", data); }, 
+            "EventMonitor");
+        
+        // Monitor payment events  
+        eventManager_->subscribe(POSEvents::PAYMENT_COMPLETED, 
+            [this](const std::any& data) { logPaymentActivity(data); }, 
+            "EventMonitor");
+        
+        // Monitor system errors
+        eventManager_->subscribe(POSEvents::SYSTEM_ERROR, 
+            [this](const std::any& data) { logSystemError(data); }, 
+            "EventMonitor");
+        
+        logger_.info("EventMonitor setup complete - monitoring all major POS events");
+    }
+    
+private:
+    void logOrderActivity(const std::string& eventType, const std::any& data) {
+        try {
+            auto orderData = std::any_cast<POSEvents::OrderEventData>(data);
+            
+            std::ostringstream activity;
+            activity << "[MONITOR] " << eventType << " - Order " 
+                    << orderData.order->getOrderId() 
+                    << " for table " << orderData.order->getTableIdentifier()
+                    << " (Total: $" << std::fixed << std::setprecision(2) << orderData.order->getTotal() << ")";
+            
+            logger_.info(activity.str());
+            
+        } catch (const std::bad_any_cast& e) {
+            logger_.warn("EventMonitor: Invalid order event data for " + eventType);
+        }
+    }
+    
+    void logPaymentActivity(const std::any& data) {
+        try {
+            auto paymentData = std::any_cast<POSEvents::PaymentEventData>(data);
+            
+            std::ostringstream payment;
+            payment << "[MONITOR] PAYMENT_COMPLETED - Order " 
+                   << paymentData.order->getOrderId()
+                   << ", Amount: $" << std::fixed << std::setprecision(2) << paymentData.result.amountProcessed
+                   << ", Method: " << POSEvents::EventLogger::paymentMethodToString(paymentData.result.method);
+            
+            logger_.info(payment.str());
+            
+        } catch (const std::bad_any_cast& e) {
+            logger_.warn("EventMonitor: Invalid payment event data");
+        }
+    }
+    
+    void logSystemError(const std::any& data) {
+        try {
+            auto errorData = std::any_cast<POSEvents::ErrorEventData>(data);
+            
+            std::ostringstream error;
+            error << "[MONITOR] SYSTEM_ERROR - " << errorData.component 
+                  << " [" << errorData.errorCode << "]: " << errorData.errorMessage;
+            
+            if (errorData.isCritical) {
+                logger_.error(error.str());
+            } else {
+                logger_.warn(error.str());
+            }
+            
+        } catch (const std::bad_any_cast& e) {
+            logger_.error("EventMonitor: Invalid error event data");
+        }
+    }
+};
+
+// ============================================================================
+// Usage Example in Main Application
+// ============================================================================
+
+void setupPOSSystemWithLogging() {
+    // Create event manager with logging
+    auto eventManager = std::make_shared<EventManager>();
+    
+    // Create managers
+    auto orderManager = std::make_unique<OrderManager>(eventManager);
+    auto kitchenManager = std::make_unique<KitchenManager>(eventManager);
+    auto paymentManager = std::make_unique<PaymentManager>(eventManager);
+    auto menuManager = std::make_unique<MenuManager>(eventManager);
+    auto eventMonitor = std::make_unique<EventMonitor>(eventManager);
+    
+    Logger& logger = Logger::getInstance();
+    
+    // Log system startup
+    logger.info("POS System initialized with comprehensive event logging");
+    eventManager->logSubscriptionStatistics();
+    
+    // Example workflow with logging
+    orderManager->createNewOrder(5, "Table 5");
+    menuManager->refreshMenu();
+    
+    // The events will be automatically logged throughout the system!
+}

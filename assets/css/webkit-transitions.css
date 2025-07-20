@@ -1,0 +1,38 @@
+/* =============================================================================
+   CREATE FILE: assets/css/webkit-transitions.css
+   ============================================================================= */
+
+/* Webkit Transitions and Animations */
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+/* Smooth transitions */
+.pos-app-container * {
+    -webkit-transition: all 0.2s ease;
+    transition: all 0.2s ease;
+}
+
+/* Theme transitions */
+body {
+    -webkit-transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Button hover effects */
+.btn {
+    -webkit-transition: all 0.2s ease;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    -webkit-transform: translateY(-1px);
+    transform: translateY(-1px);
+}
+
+/* Smooth scrolling */
+.mode-container-wrapper {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}

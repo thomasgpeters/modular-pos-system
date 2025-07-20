@@ -1,1 +1,159 @@
 /* pos-layout.css - Add your styles here */
+/* =============================================================================
+   Fixed Main Layout CSS - Add this to assets/css/pos-layout.css
+   ============================================================================= */
+
+/* Main Application Container - Full Height with Flex Layout */
+.pos-app-container {
+    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--light-color);
+    color: var(--dark-color);
+}
+
+/* Header - Fixed Height, No Flex Grow */
+.common-header {
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    flex: 0 0 60px !important; /* Don't grow, don't shrink, fixed 60px */
+    flex-shrink: 0 !important;
+}
+
+/* Main Content Area - Takes Remaining Space */
+.mode-container-wrapper {
+    flex: 1 1 auto !important; /* Grow to fill remaining space */
+    overflow: auto;
+    padding: var(--spacing-lg);
+    background: var(--white);
+    margin: var(--spacing-md);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow shrinking */
+}
+
+/* Footer - Fixed Height, No Flex Grow */
+.common-footer {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px !important; /* Don't grow, don't shrink, fixed 40px */
+    flex-shrink: 0 !important;
+    padding: 0.5rem 1rem;
+    background: var(--theme-bg-secondary, #f8f9fa);
+    border-top: 1px solid var(--theme-border-color, #dee2e6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+/* Mode Container - Full Height Usage */
+#main-mode-container {
+    flex: 1 1 auto !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* POS and Kitchen Mode Containers */
+#pos-mode-container,
+#kitchen-mode-container {
+    flex: 1 1 auto !important;
+    overflow: auto;
+    min-height: 0;
+    height: 100%;
+    padding: 1rem;
+}
+
+/* Ensure proper scrolling for content */
+.pos-mode-container,
+.kitchen-mode-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+}
+
+/* Layout Debug Classes */
+.debug-layout .pos-app-container {
+    border: 2px solid red;
+}
+
+.debug-layout .common-header {
+    border: 2px solid blue;
+    background: rgba(0, 0, 255, 0.1) !important;
+}
+
+.debug-layout .mode-container-wrapper {
+    border: 2px solid green;
+    background: rgba(0, 255, 0, 0.1) !important;
+}
+
+.debug-layout .common-footer {
+    border: 2px solid orange;
+    background: rgba(255, 165, 0, 0.1) !important;
+}
+
+/* Responsive Layout Adjustments */
+@media (max-width: 768px) {
+    .pos-app-container {
+        height: 100vh;
+        max-height: 100vh;
+    }
+    
+    .common-header {
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        flex: 0 0 50px !important;
+    }
+    
+    .mode-container-wrapper {
+        margin: var(--spacing-sm);
+        padding: var(--spacing-md);
+    }
+    
+    .common-footer {
+        height: 35px !important;
+        min-height: 35px !important;
+        max-height: 35px !important;
+        flex: 0 0 35px !important;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .mode-container-wrapper {
+        margin: var(--spacing-xs);
+        padding: var(--spacing-sm);
+    }
+}
+
+/* Print Layout */
+@media print {
+    .pos-app-container {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    
+    .common-header,
+    .common-footer {
+        display: none !important;
+    }
+    
+    .mode-container-wrapper {
+        margin: 0 !important;
+        padding: 1rem !important;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+}

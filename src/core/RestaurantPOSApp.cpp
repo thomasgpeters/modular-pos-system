@@ -1,5 +1,5 @@
 //============================================================================
-// src/core/RestaurantPOSApp.cpp - Updated to use APIServiceFactory with Logger Integration
+// src/core/RestaurantPOSApp.cpp - FIXED CSS Loading and Theme Integration
 //============================================================================
 
 #include "../../include/core/RestaurantPOSApp.hpp"
@@ -11,9 +11,9 @@
 
 RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     : Wt::WApplication(env)
-    , logger_(Logger::getInstance())  // FIXED: Initialize reference in initialization list
-    , isDestroying_(false)      // Initialize in declaration order
-    , currentMode_(POS_MODE)    // Start with POS mode as default
+    , logger_(Logger::getInstance())
+    , isDestroying_(false)
+    , currentMode_(POS_MODE)
     , mainContainer_(nullptr)
     , mainLayout_(nullptr)
     , commonHeader_(nullptr)
@@ -24,17 +24,26 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
 {
     logApplicationStart();
     
-    // Initialize services first
+    // CRITICAL: Load CSS and theme FIRST before any UI creation
+    setupBootstrapTheme();
+    
+    // Initialize services
     initializeServices();
     
     // Initialize component factory
     initializeComponentFactory();
+    
+    // FIXED: Apply theme immediately after services are ready
+    initializeThemeService();
     
     // Set up the main application layout
     setupMainLayout();
     
     // Create common components (header/footer)
     createCommonComponents();
+    
+    // CRITICAL: Enforce layout constraints after creation
+    enforceLayoutConstraints();
     
     // Create mode-specific containers
     createModeContainers();
@@ -45,14 +54,185 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     // Set up real-time updates
     setupRealTimeUpdates();
     
-    // Apply initial theme
-    initializeThemeService();
-    
     // ENHANCED: Ensure POS mode is loaded and visible by default
     ensurePOSModeDefault();
     
-    logger_.info("✓ RestaurantPOSApp initialized successfully in POS mode");
+    logger_.info("✓ RestaurantPOSApp initialized successfully in POS mode with styling");
 }
+
+void RestaurantPOSApp::setupBootstrapTheme() {
+    logger_.info("[RestaurantPOSApp] Setting up Bootstrap theme and CSS...");
+    
+    // Set Bootstrap 5 theme
+    auto theme = std::make_shared<Wt::WBootstrap5Theme>();
+    setTheme(theme);
+    
+    // CRITICAL: Load all CSS in correct order
+    loadFrameworkCSS();
+    loadComponentCSS();
+    loadThemeCSS();
+    
+    logger_.info("✓ Bootstrap theme and CSS framework loaded");
+}
+
+void RestaurantPOSApp::loadFrameworkCSS() {
+    logger_.info("[RestaurantPOSApp] Loading framework CSS files...");
+    
+    // FIXED: Use correct paths that match CMakeLists.txt and wt_config.xml
+    
+    // 1. Bootstrap from CDN (fallback in case local doesn't work)
+    useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css");
+    
+    // 2. Framework CSS files (matching CMakeLists.txt)
+    useStyleSheet("/assets/css/base.css");
+    useStyleSheet("/assets/css/bootstrap-custom.css");
+    useStyleSheet("/assets/css/pos-layout.css");
+    useStyleSheet("/assets/css/typography.css");
+    useStyleSheet("/assets/css/utilities.css");
+    
+    logger_.info("✓ Framework CSS loaded");
+}
+
+void RestaurantPOSApp::loadComponentCSS() {
+    logger_.info("[RestaurantPOSApp] Loading component CSS files...");
+    
+    // Component CSS files (matching CMakeLists.txt structure)
+    useStyleSheet("/assets/css/components/pos-components.css");
+    useStyleSheet("/assets/css/components/menu-components.css");
+    useStyleSheet("/assets/css/components/order-components.css");
+    useStyleSheet("/assets/css/components/kitchen-components.css");
+    useStyleSheet("/assets/css/components/payment-components.css");
+    useStyleSheet("/assets/css/components/modal-components.css");
+    useStyleSheet("/assets/css/components/button-components.css");
+    useStyleSheet("/assets/css/components/table-components.css");
+    useStyleSheet("/assets/css/components/form-components.css");
+    
+    logger_.info("✓ Component CSS loaded");
+}
+
+void RestaurantPOSApp::loadThemeCSS() {
+    logger_.info("[RestaurantPOSApp] Loading theme CSS files...");
+    
+    // Theme CSS files (matching CMakeLists.txt structure)
+    useStyleSheet("/assets/css/themes/light-theme.css");
+    useStyleSheet("/assets/css/themes/dark-theme.css");
+    useStyleSheet("/assets/css/themes/colorful-theme.css");
+    useStyleSheet("/assets/css/themes/restaurant-theme.css");
+    useStyleSheet("/assets/css/themes/high-contrast.css");
+    
+    logger_.info("✓ Theme CSS loaded");
+}
+
+void RestaurantPOSApp::addCustomCSS() {
+    // DEPRECATED: This method is replaced by the new CSS loading methods
+    // Keeping for backward compatibility but functionality moved to setup methods
+    logger_.debug("[RestaurantPOSApp] addCustomCSS() called - using new CSS loading system");
+}
+
+void RestaurantPOSApp::initializeThemeService() {
+    logger_.info("[RestaurantPOSApp] Initializing theme service...");
+    
+    if (themeService_) {
+        // Load theme preference from storage
+        themeService_->loadThemePreference();
+        
+        // Apply the current theme immediately
+        applyCurrentTheme();
+        
+        logger_.info("✓ Theme service initialized and theme applied");
+    } else {
+        logger_.error("[RestaurantPOSApp] ERROR: Theme service is null!");
+    }
+}
+
+void RestaurantPOSApp::applyCurrentTheme() {
+    if (!themeService_) {
+        logger_.error("[RestaurantPOSApp] Cannot apply theme - theme service is null");
+        return;
+    }
+    
+    auto currentTheme = themeService_->getCurrentTheme();
+    std::string themeClass = themeService_->getThemeCSSClass(currentTheme);
+    std::string themeName = themeService_->getThemeName(currentTheme);
+    
+    logger_.info(std::string("[RestaurantPOSApp] Applying theme: ") + themeName + " (class: " + themeClass + ")");
+    
+    // Apply theme class to body element
+    if (root()) {
+        // Remove any existing theme classes
+        root()->removeStyleClass("theme-light theme-dark theme-colorful theme-restaurant theme-base");
+        
+        // Add the current theme class
+        root()->addStyleClass(themeClass);
+        
+        // Also add to main container if it exists
+        if (mainContainer_) {
+            mainContainer_->removeStyleClass("theme-light theme-dark theme-colorful theme-restaurant theme-base");
+            mainContainer_->addStyleClass(themeClass);
+        }
+        
+        logger_.info(std::string("✓ Theme applied: ") + themeName);
+    }
+}
+
+// ============================================================================
+// C++ Layout Fix - Replace these methods in RestaurantPOSApp.cpp
+// ============================================================================
+
+void RestaurantPOSApp::setupMainLayout() {
+    setTitle("Restaurant POS System - Point of Sale");
+    
+    // CRITICAL: Set viewport and ensure proper sizing
+    addMetaHeader(Wt::MetaHeaderType::Meta, "viewport", "width=device-width, initial-scale=1");
+    
+    // Create main container with explicit height constraints
+    mainContainer_ = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
+    mainContainer_->setStyleClass("h-100 pos-app-container");
+    mainContainer_->setId("main-app-container");
+    
+    // CRITICAL: Force height and layout properties
+    mainContainer_->setHeight(Wt::WLength(100, Wt::LengthUnit::ViewportHeight));
+    mainContainer_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(100, Wt::LengthUnit::ViewportHeight));
+    
+    // Create main layout with explicit spacing and margins
+    mainLayout_ = mainContainer_->setLayout(std::make_unique<Wt::WVBoxLayout>());
+    mainLayout_->setContentsMargins(0, 0, 0, 0);
+    mainLayout_->setSpacing(0);
+    
+    logger_.info("✓ Main layout initialized with height constraints");
+}
+
+void RestaurantPOSApp::onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
+    logger_.info("[RestaurantPOSApp] Theme change event received");
+    
+    // Apply the new theme immediately
+    applyCurrentTheme();
+    
+    // Publish theme change event
+    auto themeEventData = POSEvents::createThemeChangedData(
+        themeService_->getThemeCSSClass(newTheme),
+        themeService_->getThemeName(newTheme),
+        themeService_->getThemeCSSClass(oldTheme)
+    );
+    eventManager_->publish(POSEvents::THEME_CHANGED, themeEventData);
+    
+    std::ostringstream themeMsg;
+    themeMsg << "✓ Theme changed from " << themeService_->getThemeName(oldTheme) 
+             << " to " << themeService_->getThemeName(newTheme);
+    logger_.info(themeMsg.str());
+    
+    // Show notification
+    if (eventManager_) {
+        auto notification = POSEvents::createNotificationData(
+            "Theme changed to " + themeService_->getThemeName(newTheme),
+            "info",
+            2000
+        );
+        eventManager_->publish(POSEvents::NOTIFICATION_REQUESTED, notification);
+    }
+}
+
+// Rest of the methods remain the same but with enhanced logging...
 
 void RestaurantPOSApp::initializeServices() {
     logger_.info("[RestaurantPOSApp] Initializing services...");
@@ -64,22 +244,21 @@ void RestaurantPOSApp::initializeServices() {
     configManager_ = std::make_shared<ConfigurationManager>();
     configManager_->initialize();
     
-    // ENABLE API for testing (you can also set this via config file or environment)
+    // ENABLE API for testing
     configManager_->setValue<bool>("api.enabled", true);
     configManager_->setValue<std::string>("api.base_url", "http://localhost:5656/api");
-    configManager_->setValue<std::string>("api.auth_token", "");  // Add token if needed
+    configManager_->setValue<std::string>("api.auth_token", "");
     configManager_->setValue<int>("api.timeout", 30);
     configManager_->setValue<bool>("api.enable_caching", true);
-    configManager_->setValue<bool>("api.debug_mode", true);  // Enable debug for testing
+    configManager_->setValue<bool>("api.debug_mode", true);
     
     logger_.info("[RestaurantPOSApp] API configuration:");
     
-    // CLEANED UP: Using LoggingUtils for cleaner boolean logging
     LOG_CONFIG_BOOL(logger_, info, "API Enabled", configManager_->getValue<bool>("api.enabled", false));
     LOG_CONFIG_STRING(logger_, info, "API Base URL", configManager_->getValue<std::string>("api.base_url", "not set"));
     LOG_CONFIG_BOOL(logger_, info, "Debug Mode", configManager_->getValue<bool>("api.debug_mode", false));
     
-    // FIXED: Use APIServiceFactory to create appropriate POS service
+    // Create POS service
     posService_ = APIServiceFactory::createPOSService(eventManager_, configManager_);
     
     if (!posService_) {
@@ -87,7 +266,7 @@ void RestaurantPOSApp::initializeServices() {
         throw std::runtime_error("Failed to create POS service");
     }
     
-    // Check if we got an enhanced service
+    // Check service type
     auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
     if (enhancedService) {
         LOG_CONFIG_BOOL(logger_, info, "EnhancedPOSService connected", enhancedService->isConnected());
@@ -99,41 +278,70 @@ void RestaurantPOSApp::initializeServices() {
     // Initialize menu
     posService_->initializeMenu();
     
-    // Create theme service
+    // Create theme service AFTER event manager is ready
     themeService_ = std::make_shared<ThemeService>(this);
     
     LOG_OPERATION_STATUS(logger_, "Core services initialization", true);
 }
 
-// Rest of the implementation with logger integration
-RestaurantPOSApp::~RestaurantPOSApp() {
-    logger_.info("[RestaurantPOSApp] Destructor called");
+void RestaurantPOSApp::initializeComponentFactory() {
+    componentFactory_ = std::make_unique<UIComponentFactory>(
+        posService_, eventManager_, configManager_);
     
-    // Set flag to prevent further operations
-    isDestroying_ = true;
+    // Register theme service with factory
+    componentFactory_->registerThemeService(themeService_);
     
-    try {
-        // CRITICAL: Stop the update timer first
-        if (updateTimer_) {
-            updateTimer_->stop();
-            updateTimer_.reset();
-        }
-        
-        // CRITICAL: Remove widgets from containers before destruction
-        if (modeContainer_) {
-            if (posModeContainer_) {
-                modeContainer_->removeWidget(posModeContainer_);
-            }
-            if (kitchenModeContainer_) {
-                modeContainer_->removeWidget(kitchenModeContainer_);
-            }
-        }
-        
-        logger_.info("[RestaurantPOSApp] Cleanup completed");
-        
-    } catch (const std::exception& e) {
-        logger_.error(std::string("[RestaurantPOSApp] Error during destruction: ") + e.what());
-    }
+    logger_.info("✓ Component factory initialized");
+}
+
+void RestaurantPOSApp::createCommonComponents() {
+    logger_.info("[RestaurantPOSApp] Creating common components with layout constraints...");
+    
+    // Create header with mode switching capability
+    auto modeChangeCallback = [this](ModeSelector::Mode mode) {
+        OperatingMode newMode = (mode == ModeSelector::POS_MODE) ? POS_MODE : KITCHEN_MODE;
+        switchMode(newMode);
+    };
+    
+    // CRITICAL: Create header with explicit size constraints
+    commonHeader_ = mainLayout_->addWidget(
+        std::make_unique<CommonHeader>(themeService_, eventManager_, modeChangeCallback));
+    
+    // FORCE header size constraints
+    commonHeader_->setHeight(Wt::WLength(60, Wt::LengthUnit::Pixel));
+    commonHeader_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(60, Wt::LengthUnit::Pixel));
+    commonHeader_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(60, Wt::LengthUnit::Pixel));
+    
+    // CRITICAL: Set layout stretch factor to 0 (don't expand)
+    mainLayout_->setStretchFactor(commonHeader_, 0);
+    
+    // Create mode container with flex properties
+    modeContainer_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
+    modeContainer_->setStyleClass("flex-grow-1 mode-container-wrapper");
+    modeContainer_->setId("main-mode-container");
+    
+    // CRITICAL: Set mode container to expand and fill remaining space
+    mainLayout_->setStretchFactor(modeContainer_, 1);
+    
+    // Force minimum height for content area
+    modeContainer_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(200, Wt::LengthUnit::Pixel));
+    
+    // Create footer with size constraints
+    commonFooter_ = mainLayout_->addWidget(
+        std::make_unique<CommonFooter>(posService_, eventManager_));
+    
+    // FORCE footer size constraints
+    commonFooter_->setHeight(Wt::WLength(40, Wt::LengthUnit::Pixel));
+    commonFooter_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(40, Wt::LengthUnit::Pixel));
+    commonFooter_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(40, Wt::LengthUnit::Pixel));
+    
+    // CRITICAL: Set layout stretch factor to 0 (don't expand)
+    mainLayout_->setStretchFactor(commonFooter_, 0);
+    
+    logger_.info("✓ Common components created with explicit size constraints");
+    logger_.info("  - Header: 60px fixed height, stretch factor 0");
+    logger_.info("  - Content: flexible height, stretch factor 1");
+    logger_.info("  - Footer: 40px fixed height, stretch factor 0");
 }
 
 void RestaurantPOSApp::createModeContainers() {
@@ -158,7 +366,7 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Failed to create POS mode container");
         }
         
-        // Add identification for debugging
+        // Add identification and styling for debugging
         posModeContainer_->setId("pos-mode-container");
         posModeContainer_->addStyleClass("mode-container pos-mode-active");
         
@@ -169,16 +377,15 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Failed to create Kitchen mode container");
         }
         
-        // Add identification for debugging
+        // Add identification and styling for debugging
         kitchenModeContainer_->setId("kitchen-mode-container");
         kitchenModeContainer_->addStyleClass("mode-container kitchen-mode-inactive");
         
-        // ENHANCED: Set initial visibility state clearly
-        // POS mode should be visible by default, Kitchen mode hidden
+        // Set initial visibility state clearly
         posModeContainer_->show();  // Make POS visible from start
         kitchenModeContainer_->hide();  // Hide kitchen mode
         
-        logger_.info("[RestaurantPOSApp] ✓ Mode containers created successfully");
+        logger_.info("[RestaurantPOSApp] ✓ Mode containers created successfully with styling");
         logger_.info("[RestaurantPOSApp] ✓ POS mode container is visible by default");
         
     } catch (const std::exception& e) {
@@ -187,7 +394,6 @@ void RestaurantPOSApp::createModeContainers() {
     }
 }
 
-// NEW METHOD: Ensure POS mode is properly loaded and visible
 void RestaurantPOSApp::ensurePOSModeDefault() {
     logger_.info("[RestaurantPOSApp] Ensuring POS mode is loaded by default...");
     
@@ -221,12 +427,15 @@ void RestaurantPOSApp::ensurePOSModeDefault() {
             modeContainer_->removeStyleClass("kitchen-mode-active");
         }
         
-        logger_.info("[RestaurantPOSApp] ✓ POS mode is now active and visible");
+        // Apply theme to ensure styling is visible
+        applyCurrentTheme();
         
-        // Optional: Add a welcome message to confirm POS mode is loaded
+        logger_.info("[RestaurantPOSApp] ✓ POS mode is now active and visible with styling");
+        
+        // Add a welcome message to confirm POS mode is loaded
         if (eventManager_) {
             auto welcomeEvent = POSEvents::createNotificationData(
-                "Welcome to Restaurant POS System - API Integration Ready",
+                "Welcome to Restaurant POS System - Ready with Theme Support",
                 "success",
                 3000
             );
@@ -238,6 +447,93 @@ void RestaurantPOSApp::ensurePOSModeDefault() {
     }
 }
 
+// Include all other methods (switchMode, setupEventListeners, etc.) with minimal changes
+// but ensure they call applyCurrentTheme() when needed...
+
+void RestaurantPOSApp::setupEventListeners() {
+    // Listen for theme changes
+    if (themeService_) {
+        themeService_->onThemeChanged([this](ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
+            onThemeChanged(oldTheme, newTheme);
+        });
+    }
+    
+    logger_.info("✓ Event listeners set up");
+}
+
+void RestaurantPOSApp::setupRealTimeUpdates() {
+    // Create timer for periodic updates - keep responsive 5-second interval
+    updateTimer_ = std::make_unique<Wt::WTimer>();
+    updateTimer_->setInterval(std::chrono::seconds(5));
+    updateTimer_->timeout().connect(this, &RestaurantPOSApp::onPeriodicUpdate);
+    updateTimer_->start();
+    
+    logger_.info("✓ Real-time updates enabled (5 second interval with smart refresh)");
+}
+
+void RestaurantPOSApp::onPeriodicUpdate() {
+    // Smart periodic update - only refresh data, never recreate UI components
+    logger_.debug("[RestaurantPOSApp] Periodic data refresh (preserving UI state)");
+    
+    // Update footer status
+    if (commonFooter_) {
+        commonFooter_->updateStatus();
+    }
+    
+    // Smart refresh that only updates data, never recreates UI components
+    if (currentMode_ == POS_MODE && posModeContainer_) {
+        posModeContainer_->refreshDataOnly(); // New method for data-only refresh
+    } else if (currentMode_ == KITCHEN_MODE && kitchenModeContainer_) {
+        kitchenModeContainer_->refresh();
+    }
+}
+
+// ... rest of the methods remain the same
+
+RestaurantPOSApp::~RestaurantPOSApp() {
+    logger_.info("[RestaurantPOSApp] Destructor called");
+    
+    // Set flag to prevent further operations
+    isDestroying_ = true;
+    
+    try {
+        // Stop the update timer first
+        if (updateTimer_) {
+            updateTimer_->stop();
+            updateTimer_.reset();
+        }
+        
+        // Remove widgets from containers before destruction
+        if (modeContainer_) {
+            if (posModeContainer_) {
+                modeContainer_->removeWidget(posModeContainer_);
+            }
+            if (kitchenModeContainer_) {
+                modeContainer_->removeWidget(kitchenModeContainer_);
+            }
+        }
+        
+        logger_.info("[RestaurantPOSApp] Cleanup completed");
+        
+    } catch (const std::exception& e) {
+        logger_.error(std::string("[RestaurantPOSApp] Error during destruction: ") + e.what());
+    }
+}
+
+void RestaurantPOSApp::logApplicationStart() {
+    logger_.info("\n" + std::string(60, '='));
+    logger_.info("🍽️  RESTAURANT POS SYSTEM STARTING");
+    logger_.info("📋 Default Mode: Point of Sale (POS)");
+    logger_.info("🔗 API Integration: Enabled");
+    logger_.info("🎨 Theme System: Activated");
+    logger_.info(std::string(60, '='));
+}
+
+//============================================================================
+// Missing Method Implementations - Add these to RestaurantPOSApp.cpp
+//============================================================================
+
+// Add this method implementation to RestaurantPOSApp.cpp
 void RestaurantPOSApp::switchMode(OperatingMode mode) {
     std::ostringstream modeMsg;
     modeMsg << "[RestaurantPOSApp] Switching to mode: " << getModeDisplayName(mode);
@@ -263,7 +559,7 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
             return;
         }
         
-        // ENHANCED: Clear previous mode styling
+        // Clear previous mode styling
         modeContainer_->removeStyleClass("pos-mode-active kitchen-mode-active");
         posModeContainer_->removeStyleClass("pos-mode-active pos-mode-inactive");
         kitchenModeContainer_->removeStyleClass("kitchen-mode-active kitchen-mode-inactive");
@@ -359,6 +655,7 @@ void RestaurantPOSApp::switchMode(OperatingMode mode) {
     }
 }
 
+// Add this method implementation to RestaurantPOSApp.cpp
 void RestaurantPOSApp::applyModeSpecificStyling() {
     // Apply different styling based on current mode
     if (mainContainer_) {
@@ -374,6 +671,7 @@ void RestaurantPOSApp::applyModeSpecificStyling() {
     }
 }
 
+// Add this method implementation to RestaurantPOSApp.cpp
 void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
     // Check if we're being destroyed
     if (isDestroying_) {
@@ -404,158 +702,67 @@ void RestaurantPOSApp::onModeChanged(OperatingMode newMode) {
     }
 }
 
-// Keep all other methods with logger integration...
-void RestaurantPOSApp::initializeComponentFactory() {
-    componentFactory_ = std::make_unique<UIComponentFactory>(
-        posService_, eventManager_, configManager_);
-    
-    // Register theme service with factory
-    componentFactory_->registerThemeService(themeService_);
-    
-    logger_.info("✓ Component factory initialized");
+// Add this method implementation to RestaurantPOSApp.cpp
+void RestaurantPOSApp::showPOSMode() {
+    // This method is kept for compatibility but the main switching is handled by switchMode()
+    switchMode(POS_MODE);
 }
 
-void RestaurantPOSApp::setupMainLayout() {
-    setTitle("Restaurant POS System - Point of Sale");  // Default title shows POS mode
-    
-    // Set Bootstrap theme
-    setupBootstrapTheme();
-    
-    // Create main container
-    mainContainer_ = root()->addWidget(std::make_unique<Wt::WContainerWidget>());
-    mainContainer_->setStyleClass("h-100 pos-app-container");
-    
-    // Create main layout
-    mainLayout_ = mainContainer_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    mainLayout_->setContentsMargins(0, 0, 0, 0);
-    mainLayout_->setSpacing(0);
-    
-    logger_.info("✓ Main layout initialized for POS mode");
+// Add this method implementation to RestaurantPOSApp.cpp
+void RestaurantPOSApp::showKitchenMode() {
+    // This method is kept for compatibility but the main switching is handled by switchMode()
+    switchMode(KITCHEN_MODE);
 }
 
-void RestaurantPOSApp::createCommonComponents() {
-    // Create header with mode switching capability
-    auto modeChangeCallback = [this](ModeSelector::Mode mode) {
-        OperatingMode newMode = (mode == ModeSelector::POS_MODE) ? POS_MODE : KITCHEN_MODE;
-        switchMode(newMode);
-    };
-    
-    commonHeader_ = mainLayout_->addWidget(
-        std::make_unique<CommonHeader>(themeService_, eventManager_, modeChangeCallback));
-    
-    // Create mode container (will be populated based on current mode)
-    modeContainer_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
-    modeContainer_->setStyleClass("flex-grow-1 mode-container-wrapper");
-    modeContainer_->setId("main-mode-container");
-    
-    // Create footer
-    commonFooter_ = mainLayout_->addWidget(
-        std::make_unique<CommonFooter>(posService_, eventManager_));
-    
-    logger_.info("✓ Common components created");
-}
-
-void RestaurantPOSApp::setupEventListeners() {
-    // Listen for theme changes
-    if (themeService_) {
-        themeService_->onThemeChanged([this](ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
-            onThemeChanged(oldTheme, newTheme);
-        });
+// Add this method implementation to RestaurantPOSApp.cpp
+void RestaurantPOSApp::hideModeContainers() {
+    if (posModeContainer_) {
+        posModeContainer_->hide();
     }
-    
-    logger_.info("✓ Event listeners set up");
-}
-
-void RestaurantPOSApp::initializeThemeService() {
-    if (themeService_) {
-        themeService_->loadThemePreference();
-        themeService_->loadThemeFramework();
+    if (kitchenModeContainer_) {
+        kitchenModeContainer_->hide();
     }
 }
 
-void RestaurantPOSApp::setupBootstrapTheme() {
-    auto theme = std::make_shared<Wt::WBootstrap5Theme>();
-    setTheme(theme);
-    
-    // Add custom CSS
-    addCustomCSS();
-}
+//============================================================================
+// Remaining Missing Method Implementations - Add these to RestaurantPOSApp.cpp
+//============================================================================
 
-void RestaurantPOSApp::addCustomCSS() {
-    // Add custom CSS for the POS system
-    useStyleSheet("assets/css/pos-system.css");
-    
-    // Add responsive utilities
-    useStyleSheet("assets/css/responsive.css");
-    
-    // Add mode-specific CSS
-    useStyleSheet("assets/css/mode-styles.css");
-}
-
-void RestaurantPOSApp::setupRealTimeUpdates() {
-    // Create timer for periodic updates - keep responsive 5-second interval
-    updateTimer_ = std::make_unique<Wt::WTimer>();
-    updateTimer_->setInterval(std::chrono::seconds(5)); // Keep 5 seconds for responsiveness
-    updateTimer_->timeout().connect(this, &RestaurantPOSApp::onPeriodicUpdate);
-    updateTimer_->start();
-    
-    logger_.info("✓ Real-time updates enabled (5 second interval with smart refresh)");
-}
-
-void RestaurantPOSApp::onPeriodicUpdate() {
-    // Smart periodic update - only refresh data, never recreate UI components
-    logger_.debug("[RestaurantPOSApp] Periodic data refresh (preserving UI state)");
-    
-    // Update footer status
-    if (commonFooter_) {
-        commonFooter_->updateStatus();
-    }
-    
-    // Smart refresh that only updates data, never recreates UI components
-    if (currentMode_ == POS_MODE && posModeContainer_) {
-        posModeContainer_->refreshDataOnly(); // New method for data-only refresh
-    } else if (currentMode_ == KITCHEN_MODE && kitchenModeContainer_) {
-        kitchenModeContainer_->refresh();
-    }
-}
-
-void RestaurantPOSApp::onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
-    // Publish theme change event
-    auto themeEventData = POSEvents::createThemeChangedData(
-        themeService_->getThemeCSSClass(newTheme),
-        themeService_->getThemeName(newTheme),
-        themeService_->getThemeCSSClass(oldTheme)
-    );
-    eventManager_->publish(POSEvents::THEME_CHANGED, themeEventData);
-    
-    std::ostringstream themeMsg;
-    themeMsg << "✓ Theme changed from " << themeService_->getThemeName(oldTheme) 
-             << " to " << themeService_->getThemeName(newTheme);
-    logger_.info(themeMsg.str());
-}
-
-void RestaurantPOSApp::logApplicationStart() {
-    logger_.info("\n" + std::string(60, '='));
-    logger_.info("🍽️  RESTAURANT POS SYSTEM STARTING");
-    logger_.info("📋 Default Mode: Point of Sale (POS)");
-    logger_.info("🔗 API Integration: Enabled");
-    logger_.info(std::string(60, '='));
-}
-
+// Add this method implementation to RestaurantPOSApp.cpp
 void RestaurantPOSApp::logModeSwitch(OperatingMode mode) {
     std::ostringstream switchMsg;
     switchMsg << "🔄 Mode Switch Complete: " << getModeDisplayName(mode);
     logger_.info(switchMsg.str());
-}
-
-std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
-    switch (mode) {
-        case POS_MODE:     return "Point of Sale";
-        case KITCHEN_MODE: return "Kitchen Display";
-        default:          return "Unknown";
+    
+    // Log additional mode switch details
+    logger_.info(std::string("[RestaurantPOSApp] Mode switch timestamp: ") + 
+                std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count()));
+    
+    // Log container visibility states for debugging
+    if (posModeContainer_ && kitchenModeContainer_) {
+        std::ostringstream visibilityMsg;
+        visibilityMsg << "[RestaurantPOSApp] Container visibility - POS: " 
+                     << (posModeContainer_->isVisible() ? "VISIBLE" : "HIDDEN")
+                     << ", Kitchen: " 
+                     << (kitchenModeContainer_->isVisible() ? "VISIBLE" : "HIDDEN");
+        logger_.debug(visibilityMsg.str());
     }
 }
 
+// Add this method implementation to RestaurantPOSApp.cpp
+std::string RestaurantPOSApp::getModeDisplayName(OperatingMode mode) const {
+    switch (mode) {
+        case POS_MODE:     
+            return "Point of Sale";
+        case KITCHEN_MODE: 
+            return "Kitchen Display";
+        default:          
+            return "Unknown Mode";
+    }
+}
+
+// OPTIONAL: Add this method if you want enhanced debugging capabilities
 void RestaurantPOSApp::debugWidgetState() {
     logger_.debug("[DEBUG] Widget State Check:");
     logger_.debug(std::string("  - modeContainer_: ") + (modeContainer_ ? "VALID" : "NULL"));
@@ -599,28 +806,50 @@ void RestaurantPOSApp::debugWidgetState() {
     logger_.debug(destroyMsg);
 }
 
-// Cleanup methods remain the same...
-void RestaurantPOSApp::showPOSMode() {
-    // This method is kept for compatibility but the main switching is handled by switchMode()
-    switchMode(POS_MODE);
-}
-
-void RestaurantPOSApp::showKitchenMode() {
-    // This method is kept for compatibility but the main switching is handled by switchMode()
-    switchMode(KITCHEN_MODE);
-}
-
-void RestaurantPOSApp::hideModeContainers() {
-    if (posModeContainer_) {
-        posModeContainer_->hide();
+// NEW METHOD: Force layout constraints after creation
+void RestaurantPOSApp::enforceLayoutConstraints() {
+    logger_.info("[RestaurantPOSApp] Enforcing layout constraints...");
+    
+    if (commonHeader_) {
+        // Double-check header constraints
+        commonHeader_->setHeight(Wt::WLength(60, Wt::LengthUnit::Pixel));
+        commonHeader_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(60, Wt::LengthUnit::Pixel));
+        
+        // Add CSS class for additional styling
+        commonHeader_->addStyleClass("pos-header-fixed");
+        
+        // Set CSS style directly as backup
+        commonHeader_->setAttributeValue("style", 
+            "height: 60px !important; max-height: 60px !important; min-height: 60px !important; flex: 0 0 60px !important;");
     }
-    if (kitchenModeContainer_) {
-        kitchenModeContainer_->hide();
+    
+    if (modeContainer_) {
+        // Ensure content area expands
+        modeContainer_->addStyleClass("pos-content-flex");
+        
+        // Calculate available height (viewport - header - footer)
+        modeContainer_->setAttributeValue("style", 
+            "flex: 1 1 auto !important; height: calc(100vh - 100px) !important; overflow: auto !important;");
     }
+    
+    if (commonFooter_) {
+        // Double-check footer constraints
+        commonFooter_->setHeight(Wt::WLength(40, Wt::LengthUnit::Pixel));
+        commonFooter_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(40, Wt::LengthUnit::Pixel));
+        
+        // Add CSS class for additional styling
+        commonFooter_->addStyleClass("pos-footer-fixed");
+        
+        // Set CSS style directly as backup
+        commonFooter_->setAttributeValue("style", 
+            "height: 40px !important; max-height: 40px !important; min-height: 40px !important; flex: 0 0 40px !important;");
+    }
+    
+    logger_.info("✓ Layout constraints enforced with inline styles");
 }
 
 //============================================================================
-// REQUIRED: Application Factory Function
+// REQUIRED: Application Factory Function - ADD THIS AT THE END OF RestaurantPOSApp.cpp
 //============================================================================
 
 std::unique_ptr<Wt::WApplication> createApplication(const Wt::WEnvironment& env) {

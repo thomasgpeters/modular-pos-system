@@ -1,248 +1,505 @@
-/* ============================================================================
-   Light Theme - assets/css/themes/light-theme.css
-   ============================================================================ */
+/* =============================================================================
+   light-theme.css - Light Theme for Restaurant POS System
+   Clean, professional light theme with excellent readability
+   ============================================================================= */
 
+/* Theme-specific CSS custom properties */
 .theme-light {
-  /* Enhanced Light Theme with High Contrast */
-  --pos-primary: #0056b3;
-  --pos-primary-hover: #004085;
-  --pos-primary-active: #003366;
-  --pos-secondary: #5a6268;
-  --pos-secondary-hover: #464c52;
-  
-  /* Bright, Clean Backgrounds */
-  --pos-bg-primary: #ffffff;
-  --pos-bg-secondary: #f8f9fa;
-  --pos-bg-tertiary: #e9ecef;
-  --pos-bg-accent: #f1f5f9;
-  
-  /* High Contrast Text */
-  --pos-text-primary: #212529;
-  --pos-text-secondary: #495057;
-  --pos-text-muted: #6c757d;
-  --pos-text-inverse: #ffffff;
-  
-  /* Enhanced Borders */
-  --pos-border-primary: #dee2e6;
-  --pos-border-secondary: #e9ecef;
-  --pos-border-accent: #cbd5e0;
-  
-  /* Crisp Shadows */
-  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
-  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
-  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.25);
+    /* Color palette for light theme */
+    --theme-bg-primary: #ffffff;
+    --theme-bg-secondary: #f8f9fa;
+    --theme-bg-tertiary: #e9ecef;
+    --theme-text-primary: #212529;
+    --theme-text-secondary: #6c757d;
+    --theme-text-muted: #adb5bd;
+    
+    /* Interactive colors */
+    --theme-border-color: #dee2e6;
+    --theme-border-light: #f1f3f4;
+    --theme-shadow: rgba(0, 0, 0, 0.1);
+    --theme-shadow-hover: rgba(0, 0, 0, 0.15);
+    
+    /* Status colors */
+    --theme-success: #198754;
+    --theme-warning: #fd7e14;
+    --theme-danger: #dc3545;
+    --theme-info: #0dcaf0;
+    
+    /* Component-specific colors */
+    --theme-header-bg: #ffffff;
+    --theme-header-border: #e5e7eb;
+    --theme-sidebar-bg: #f9fafb;
+    --theme-card-bg: #ffffff;
+    --theme-card-hover: #f8f9fa;
+    
+    /* Apply base theme styles */
+    background-color: var(--theme-bg-secondary);
+    color: var(--theme-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ============================================================================
-   Dark Theme - docroot/assets/css/themes/dark-theme.css
-   ============================================================================ */
+/* =============================================================================
+   Main Layout Components
+   ============================================================================= */
 
-.theme-dark {
-  /* Modern Dark Theme */
-  --pos-primary: #4dabf7;
-  --pos-primary-hover: #339af0;
-  --pos-primary-active: #228be6;
-  --pos-secondary: #868e96;
-  --pos-secondary-hover: #6c757d;
-  
-  /* Dark Backgrounds */
-  --pos-bg-primary: #212529;
-  --pos-bg-secondary: #343a40;
-  --pos-bg-tertiary: #495057;
-  --pos-bg-accent: #2d3339;
-  
-  /* Light Text on Dark */
-  --pos-text-primary: #f8f9fa;
-  --pos-text-secondary: #ced4da;
-  --pos-text-muted: #adb5bd;
-  --pos-text-inverse: #212529;
-  
-  /* Status Colors - Adjusted for Dark Theme */
-  --pos-success: #51cf66;
-  --pos-warning: #ffd43b;
-  --pos-danger: #ff6b6b;
-  --pos-info: #4dabf7;
-  
-  /* Dark Theme Borders */
-  --pos-border-primary: #495057;
-  --pos-border-secondary: #6c757d;
-  --pos-border-accent: #5a6269;
-  
-  /* Soft Shadows for Dark Theme */
-  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
-  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-  
-  /* Dark Theme Specific */
-  --pos-header-bg: var(--pos-bg-tertiary);
-  --pos-footer-bg: var(--pos-bg-secondary);
+.theme-light .pos-app-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    color: var(--theme-text-primary);
 }
 
-/* ============================================================================
-   Warm Theme - docroot/assets/css/themes/warm-theme.css  
-   ============================================================================ */
-
-.theme-warm {
-  /* Restaurant-Friendly Warm Earth Tones */
-  --pos-primary: #8b4513;
-  --pos-primary-hover: #6d3410;
-  --pos-primary-active: #5c2c0e;
-  --pos-secondary: #a0522d;
-  --pos-secondary-hover: #8b4513;
-  
-  /* Warm, Inviting Backgrounds */
-  --pos-bg-primary: #fdf6e3;
-  --pos-bg-secondary: #f4f1e8;
-  --pos-bg-tertiary: #eee8d5;
-  --pos-bg-accent: #f7f2e9;
-  
-  /* Warm Text Colors */
-  --pos-text-primary: #5d4e37;
-  --pos-text-secondary: #8b7355;
-  --pos-text-muted: #a0956b;
-  --pos-text-inverse: #fdf6e3;
-  
-  /* Warm Status Colors */
-  --pos-success: #2d5016;
-  --pos-warning: #b8860b;
-  --pos-danger: #a0522d;
-  --pos-info: #8b4513;
-  
-  /* Warm Borders */
-  --pos-border-primary: #d6cc9a;
-  --pos-border-secondary: #e8ddb5;
-  --pos-border-accent: #ddd4aa;
-  
-  /* Warm Shadows */
-  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(139, 69, 19, 0.1);
-  --pos-shadow: 0 0.5rem 1rem rgba(139, 69, 19, 0.15);
-  --pos-shadow-lg: 0 1rem 3rem rgba(139, 69, 19, 0.2);
-  
-  /* Kitchen Mode - Enhanced for Restaurant Feel */
-  --pos-kitchen-bg: var(--pos-bg-primary);
-  --pos-kitchen-panel: var(--pos-bg-secondary);
-  --pos-kitchen-accent: var(--pos-primary);
+.theme-light .mode-container-wrapper {
+    background: var(--theme-card-bg);
+    color: var(--theme-text-primary);
+    border: 1px solid var(--theme-border-color);
+    box-shadow: 0 4px 6px var(--theme-shadow);
 }
 
-/* ============================================================================
-   Cool Theme - docroot/assets/css/themes/cool-theme.css
-   ============================================================================ */
-
-.theme-cool {
-  /* Modern Tech-Focused Cool Blues */
-  --pos-primary: #1e40af;
-  --pos-primary-hover: #1d4ed8;
-  --pos-primary-active: #1e3a8a;
-  --pos-secondary: #64748b;
-  --pos-secondary-hover: #475569;
-  
-  /* Cool, Professional Backgrounds */
-  --pos-bg-primary: #f0f8ff;
-  --pos-bg-secondary: #e6f3ff;
-  --pos-bg-tertiary: #dbeafe;
-  --pos-bg-accent: #eff6ff;
-  
-  /* Cool Text Colors */
-  --pos-text-primary: #1e3a8a;
-  --pos-text-secondary: #3730a3;
-  --pos-text-muted: #6366f1;
-  --pos-text-inverse: #f0f8ff;
-  
-  /* Cool Status Colors */
-  --pos-success: #059669;
-  --pos-warning: #d97706;
-  --pos-danger: #dc2626;
-  --pos-info: #0284c7;
-  
-  /* Cool Borders */
-  --pos-border-primary: #bfdbfe;
-  --pos-border-secondary: #dbeafe;
-  --pos-border-accent: #93c5fd;
-  
-  /* Cool Shadows */
-  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(30, 64, 175, 0.1);
-  --pos-shadow: 0 0.5rem 1rem rgba(30, 64, 175, 0.15);
-  --pos-shadow-lg: 0 1rem 3rem rgba(30, 64, 175, 0.2);
-  
-  /* Kitchen Mode - Tech-Enhanced */
-  --pos-kitchen-bg: var(--pos-bg-primary);
-  --pos-kitchen-panel: var(--pos-bg-secondary);
-  --pos-kitchen-accent: var(--pos-info);
+.theme-light .mode-container-wrapper:hover {
+    box-shadow: 0 8px 15px var(--theme-shadow-hover);
 }
 
-/* ============================================================================
-   Theme-Specific Component Overrides
-   ============================================================================ */
+/* =============================================================================
+   Header Components
+   ============================================================================= */
 
-/* Dark Theme Specific Adjustments */
-.theme-dark .pos-form-control {
-  background-color: var(--pos-bg-secondary);
-  border-color: var(--pos-border-primary);
-  color: var(--pos-text-primary);
+.theme-light .common-header,
+.theme-light .navbar {
+    background-color: var(--theme-header-bg);
+    border-bottom: 2px solid var(--theme-header-border);
+    color: var(--theme-text-primary);
+    box-shadow: 0 2px 4px var(--theme-shadow);
 }
 
-.theme-dark .pos-form-control:focus {
-  background-color: var(--pos-bg-secondary);
-  border-color: var(--pos-primary);
-  box-shadow: 0 0 0 0.2rem rgba(77, 171, 247, 0.25);
+.theme-light .navbar-brand {
+    color: var(--theme-text-primary);
+    font-weight: 600;
 }
 
-.theme-dark .pos-table thead th {
-  background-color: var(--pos-bg-tertiary);
-  color: var(--pos-text-primary);
+.theme-light .nav-link {
+    color: var(--theme-text-secondary);
+    transition: color 0.2s ease;
 }
 
-.theme-dark .pos-button.btn-primary {
-  background-color: var(--pos-primary);
-  border-color: var(--pos-primary);
-  color: var(--pos-bg-primary);
+.theme-light .nav-link:hover {
+    color: var(--theme-text-primary);
 }
 
-/* Warm Theme Specific Adjustments */
-.theme-warm .pos-button.btn-primary {
-  background-color: var(--pos-primary);
-  border-color: var(--pos-primary);
-  color: var(--pos-text-inverse);
-  box-shadow: 0 2px 4px rgba(139, 69, 19, 0.2);
+.theme-light .nav-link.active {
+    color: var(--primary-color);
+    font-weight: 500;
 }
 
-.theme-warm .pos-header {
-  background: linear-gradient(135deg, var(--pos-primary) 0%, #a0522d 100%);
+/* =============================================================================
+   Button Styles
+   ============================================================================= */
+
+.theme-light .btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.theme-warm .panel-container {
-  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.1);
-  border: 1px solid var(--pos-border-primary);
+.theme-light .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Cool Theme Specific Adjustments */
-.theme-cool .pos-button.btn-primary {
-  background: linear-gradient(135deg, var(--pos-primary) 0%, #1d4ed8 100%);
-  border: none;
-  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+.theme-light .btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border: none;
+    color: white;
 }
 
-.theme-cool .pos-header {
-  background: linear-gradient(135deg, var(--pos-primary) 0%, #0284c7 100%);
+.theme-light .btn-secondary {
+    background-color: var(--theme-bg-tertiary);
+    border: 1px solid var(--theme-border-color);
+    color: var(--theme-text-primary);
 }
 
-.theme-cool .panel-container {
-  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.1);
-  border: 1px solid var(--pos-border-primary);
+.theme-light .btn-secondary:hover {
+    background-color: var(--theme-border-color);
 }
 
-/* ============================================================================
-   Animation Enhancements for Each Theme
-   ============================================================================ */
-
-.theme-dark .pos-button:hover {
-  box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+.theme-light .btn-success {
+    background: linear-gradient(135deg, var(--theme-success) 0%, #157347 100%);
+    border: none;
+    color: white;
 }
 
-.theme-warm .pos-button:hover {
-  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+.theme-light .btn-warning {
+    background: linear-gradient(135deg, var(--theme-warning) 0%, #e25a1c 100%);
+    border: none;
+    color: white;
 }
 
-.theme-cool .pos-button:hover {
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
+.theme-light .btn-danger {
+    background: linear-gradient(135deg, var(--theme-danger) 0%, #bb2d3b 100%);
+    border: none;
+    color: white;
+}
+
+/* =============================================================================
+   Card Components
+   ============================================================================= */
+
+.theme-light .card {
+    background-color: var(--theme-card-bg);
+    border: 1px solid var(--theme-border-light);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--theme-shadow);
+    transition: all 0.2s ease;
+}
+
+.theme-light .card:hover {
+    box-shadow: 0 4px 12px var(--theme-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.theme-light .card-header {
+    background: linear-gradient(135deg, var(--theme-bg-secondary) 0%, var(--theme-bg-tertiary) 100%);
+    border-bottom: 1px solid var(--theme-border-color);
+    color: var(--theme-text-primary);
+    font-weight: 600;
+}
+
+.theme-light .card-body {
+    color: var(--theme-text-primary);
+}
+
+.theme-light .card-footer {
+    background-color: var(--theme-bg-secondary);
+    border-top: 1px solid var(--theme-border-light);
+    color: var(--theme-text-secondary);
+}
+
+/* =============================================================================
+   Form Elements
+   ============================================================================= */
+
+.theme-light .form-control {
+    background-color: var(--theme-bg-primary);
+    border: 1px solid var(--theme-border-color);
+    border-radius: 6px;
+    color: var(--theme-text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.theme-light .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    background-color: var(--theme-bg-primary);
+}
+
+.theme-light .form-label {
+    color: var(--theme-text-primary);
+    font-weight: 500;
+}
+
+.theme-light .form-select {
+    background-color: var(--theme-bg-primary);
+    border: 1px solid var(--theme-border-color);
+    color: var(--theme-text-primary);
+}
+
+/* =============================================================================
+   Table Styles
+   ============================================================================= */
+
+.theme-light .table {
+    color: var(--theme-text-primary);
+    background-color: var(--theme-bg-primary);
+}
+
+.theme-light .table th {
+    background-color: var(--theme-bg-secondary);
+    border-bottom: 2px solid var(--theme-border-color);
+    color: var(--theme-text-primary);
+    font-weight: 600;
+}
+
+.theme-light .table td {
+    border-bottom: 1px solid var(--theme-border-light);
+}
+
+.theme-light .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.theme-light .table-hover tbody tr:hover {
+    background-color: var(--theme-card-hover);
+}
+
+/* =============================================================================
+   Modal Components
+   ============================================================================= */
+
+.theme-light .modal-content {
+    background-color: var(--theme-bg-primary);
+    border: 1px solid var(--theme-border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.theme-light .modal-header {
+    background: linear-gradient(135deg, var(--theme-bg-secondary) 0%, var(--theme-bg-primary) 100%);
+    border-bottom: 1px solid var(--theme-border-color);
+    color: var(--theme-text-primary);
+}
+
+.theme-light .modal-body {
+    color: var(--theme-text-primary);
+}
+
+.theme-light .modal-footer {
+    background-color: var(--theme-bg-secondary);
+    border-top: 1px solid var(--theme-border-light);
+}
+
+/* =============================================================================
+   Alert Components
+   ============================================================================= */
+
+.theme-light .alert {
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+.theme-light .alert-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    border-color: rgba(25, 135, 84, 0.2);
+    color: #0f5132;
+}
+
+.theme-light .alert-warning {
+    background-color: rgba(253, 126, 20, 0.1);
+    border-color: rgba(253, 126, 20, 0.2);
+    color: #664d03;
+}
+
+.theme-light .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.2);
+    color: #721c24;
+}
+
+.theme-light .alert-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.2);
+    color: #055160;
+}
+
+/* =============================================================================
+   POS-Specific Components
+   ============================================================================= */
+
+.theme-light .menu-item-card {
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-border-light);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.theme-light .menu-item-card:hover {
+    background: var(--theme-card-hover);
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--theme-shadow-hover);
+}
+
+.theme-light .order-summary {
+    background: var(--theme-bg-secondary);
+    border: 1px solid var(--theme-border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.theme-light .kitchen-ticket {
+    background: var(--theme-card-bg);
+    border-left: 4px solid var(--theme-warning);
+    box-shadow: 0 2px 8px var(--theme-shadow);
+}
+
+.theme-light .order-status-pending {
+    border-left-color: var(--theme-warning);
+}
+
+.theme-light .order-status-preparing {
+    border-left-color: var(--theme-info);
+}
+
+.theme-light .order-status-ready {
+    border-left-color: var(--theme-success);
+}
+
+/* =============================================================================
+   Navigation and Tabs
+   ============================================================================= */
+
+.theme-light .nav-tabs {
+    border-bottom: 1px solid var(--theme-border-color);
+}
+
+.theme-light .nav-tabs .nav-link {
+    background-color: var(--theme-bg-secondary);
+    border: 1px solid var(--theme-border-color);
+    color: var(--theme-text-secondary);
+    border-radius: 6px 6px 0 0;
+    margin-right: 2px;
+}
+
+.theme-light .nav-tabs .nav-link:hover {
+    background-color: var(--theme-card-hover);
+    color: var(--theme-text-primary);
+}
+
+.theme-light .nav-tabs .nav-link.active {
+    background-color: var(--theme-bg-primary);
+    border-bottom-color: var(--theme-bg-primary);
+    color: var(--theme-text-primary);
+    font-weight: 500;
+}
+
+/* =============================================================================
+   Badges and Labels
+   ============================================================================= */
+
+.theme-light .badge {
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+.theme-light .badge-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.theme-light .badge-success {
+    background-color: var(--theme-success);
+    color: white;
+}
+
+.theme-light .badge-warning {
+    background-color: var(--theme-warning);
+    color: white;
+}
+
+.theme-light .badge-danger {
+    background-color: var(--theme-danger);
+    color: white;
+}
+
+/* =============================================================================
+   Footer Styles
+   ============================================================================= */
+
+.theme-light .common-footer {
+    background: linear-gradient(135deg, var(--theme-bg-secondary) 0%, var(--theme-bg-tertiary) 100%);
+    border-top: 1px solid var(--theme-border-color);
+    color: var(--theme-text-secondary);
+    box-shadow: 0 -2px 4px var(--theme-shadow);
+}
+
+.theme-light .footer-status {
+    color: var(--theme-text-primary);
+    font-weight: 500;
+}
+
+/* =============================================================================
+   Scrollbar Styling (Webkit browsers)
+   ============================================================================= */
+
+.theme-light ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.theme-light ::-webkit-scrollbar-track {
+    background: var(--theme-bg-secondary);
+    border-radius: 4px;
+}
+
+.theme-light ::-webkit-scrollbar-thumb {
+    background: var(--theme-border-color);
+    border-radius: 4px;
+}
+
+.theme-light ::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-text-muted);
+}
+
+/* =============================================================================
+   Loading and Transition Effects
+   ============================================================================= */
+
+.theme-light .loading-spinner {
+    color: var(--primary-color);
+}
+
+.theme-light .fade-in {
+    animation: lightThemeFadeIn 0.3s ease-in-out;
+}
+
+@keyframes lightThemeFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =============================================================================
+   Responsive Adjustments
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    .theme-light .mode-container-wrapper {
+        border-radius: 6px;
+        margin: 0.5rem;
+    }
+    
+    .theme-light .card {
+        border-radius: 6px;
+    }
+    
+    .theme-light .btn {
+        border-radius: 4px;
+    }
+}
+
+/* =============================================================================
+   High Contrast Mode Support
+   ============================================================================= */
+
+@media (prefers-contrast: high) {
+    .theme-light {
+        --theme-border-color: #000000;
+        --theme-text-secondary: #000000;
+        --theme-shadow: rgba(0, 0, 0, 0.3);
+    }
+    
+    .theme-light .btn {
+        border: 2px solid currentColor;
+    }
+}
+
+/* =============================================================================
+   Print Styles for Light Theme
+   ============================================================================= */
+
+@media print {
+    .theme-light {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .theme-light .mode-container-wrapper {
+        background: white !important;
+        border: 1px solid black !important;
+        box-shadow: none !important;
+    }
 }

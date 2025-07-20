@@ -1,419 +1,73 @@
-/* ============================================================================
-   Enhanced Theme Framework CSS - assets/css/theme-framework.css
-   
-   This provides the base CSS custom properties and framework for all themes
-   in the Restaurant POS System. Each theme overrides these variables.
-   ============================================================================ */
+/* =============================================================================
+   CREATE FILE: assets/css/theme-framework.css
+   ============================================================================= */
 
-/* =================================================================
-   CSS Custom Properties (CSS Variables) - Base Theme
-   ================================================================= */
-
+/* Theme Framework - Core theming system */
 :root {
-  /* Primary Brand Colors */
-  --pos-primary: #007bff;
-  --pos-primary-hover: #0056b3;
-  --pos-primary-active: #004085;
-  --pos-secondary: #6c757d;
-  --pos-secondary-hover: #545b62;
-  
-  /* Background Colors */
-  --pos-bg-primary: #ffffff;
-  --pos-bg-secondary: #f8f9fa;
-  --pos-bg-tertiary: #e9ecef;
-  --pos-bg-accent: #f1f3f4;
-  
-  /* Text Colors */
-  --pos-text-primary: #212529;
-  --pos-text-secondary: #6c757d;
-  --pos-text-muted: #adb5bd;
-  --pos-text-inverse: #ffffff;
-  
-  /* Status Colors */
-  --pos-success: #28a745;
-  --pos-warning: #ffc107;
-  --pos-danger: #dc3545;
-  --pos-info: #17a2b8;
-  
-  /* Border Colors */
-  --pos-border-primary: #dee2e6;
-  --pos-border-secondary: #e9ecef;
-  --pos-border-accent: #ced4da;
-  
-  /* Shadow & Effects */
-  --pos-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  --pos-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  --pos-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-  
-  /* Component Specific */
-  --pos-header-bg: var(--pos-primary);
-  --pos-header-text: var(--pos-text-inverse);
-  --pos-footer-bg: var(--pos-bg-secondary);
-  --pos-footer-text: var(--pos-text-secondary);
-  
-  /* Kitchen Mode Colors */
-  --pos-kitchen-bg: var(--pos-bg-primary);
-  --pos-kitchen-panel: var(--pos-bg-secondary);
-  --pos-kitchen-accent: var(--pos-info);
-  
-  /* Order Status Colors */
-  --pos-order-pending: var(--pos-warning);
-  --pos-order-preparing: var(--pos-info);
-  --pos-order-ready: var(--pos-success);
-  --pos-order-served: var(--pos-secondary);
-  --pos-order-cancelled: var(--pos-danger);
-  
-  /* Animation & Timing */
-  --pos-transition-fast: 0.15s ease-in-out;
-  --pos-transition: 0.3s ease-in-out;
-  --pos-transition-slow: 0.5s ease-in-out;
-  
-  /* Spacing Scale */
-  --pos-space-xs: 0.25rem;
-  --pos-space-sm: 0.5rem;
-  --pos-space-md: 1rem;
-  --pos-space-lg: 1.5rem;
-  --pos-space-xl: 2rem;
-  --pos-space-xxl: 3rem;
-  
-  /* Typography */
-  --pos-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --pos-font-size-sm: 0.875rem;
-  --pos-font-size: 1rem;
-  --pos-font-size-lg: 1.125rem;
-  --pos-font-size-xl: 1.25rem;
-  
-  /* Border Radius */
-  --pos-border-radius: 0.375rem;
-  --pos-border-radius-sm: 0.25rem;
-  --pos-border-radius-lg: 0.5rem;
-  --pos-border-radius-xl: 1rem;
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --info-color: #0dcaf0;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    --white: #ffffff;
 }
 
-/* =================================================================
-   Base Application Styling
-   ================================================================= */
-
+/* Application Layout */
 .pos-app-container {
-  font-family: var(--pos-font-family);
-  color: var(--pos-text-primary);
-  background-color: var(--pos-bg-primary);
-  transition: background-color var(--pos-transition), color var(--pos-transition);
-  min-height: 100vh;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
 }
 
-/* =================================================================
-   Common Component Styles
-   ================================================================= */
-
-.pos-container {
-  background-color: var(--pos-bg-primary);
-  color: var(--pos-text-primary);
-  transition: all var(--pos-transition);
+/* Header Fix */
+.common-header,
+.navbar {
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    flex: 0 0 60px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 1rem !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
 }
 
-.panel-container {
-  background-color: var(--pos-bg-primary);
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-  box-shadow: var(--pos-shadow-sm);
-  transition: all var(--pos-transition);
+/* Main Content Area */
+.mode-container-wrapper,
+#main-mode-container {
+    flex: 1 1 auto !important;
+    overflow: auto !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    margin: 0.5rem !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
 }
 
-.panel-container:hover {
-  box-shadow: var(--pos-shadow);
+/* Footer */
+.common-footer {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px !important;
+    overflow: hidden !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.8rem !important;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
 }
 
-.header-container {
-  background-color: var(--pos-header-bg);
-  color: var(--pos-header-text);
-  border-radius: var(--pos-border-radius) var(--pos-border-radius) 0 0;
+/* Theme Classes */
+.theme-light { background: #ffffff; color: #212529; }
+.theme-dark { background: #212529; color: #ffffff; }
+.theme-colorful { 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
 }
 
-.content-container {
-  background-color: var(--pos-bg-primary);
-  padding: var(--pos-space-md);
-}
-
-.sidebar-container {
-  background-color: var(--pos-bg-secondary);
-  border-right: 1px solid var(--pos-border-primary);
-  transition: all var(--pos-transition);
-}
-
-/* =================================================================
-   Button Styling
-   ================================================================= */
-
-.pos-button {
-  transition: all var(--pos-transition-fast);
-  border-radius: var(--pos-border-radius);
-  font-weight: 500;
-}
-
-.pos-button.btn-primary {
-  background-color: var(--pos-primary);
-  border-color: var(--pos-primary);
-  color: var(--pos-text-inverse);
-}
-
-.pos-button.btn-primary:hover {
-  background-color: var(--pos-primary-hover);
-  border-color: var(--pos-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--pos-shadow);
-}
-
-.pos-button.btn-primary:active {
-  background-color: var(--pos-primary-active);
-  border-color: var(--pos-primary-active);
-  transform: translateY(0);
-}
-
-/* =================================================================
-   Form Controls
-   ================================================================= */
-
-.pos-form-control {
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-  background-color: var(--pos-bg-primary);
-  color: var(--pos-text-primary);
-  transition: all var(--pos-transition-fast);
-}
-
-.pos-form-control:focus {
-  border-color: var(--pos-primary);
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  background-color: var(--pos-bg-primary);
-}
-
-.pos-select {
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-  background-color: var(--pos-bg-primary);
-  color: var(--pos-text-primary);
-  transition: all var(--pos-transition-fast);
-}
-
-/* =================================================================
-   Tables
-   ================================================================= */
-
-.pos-table {
-  background-color: var(--pos-bg-primary);
-  color: var(--pos-text-primary);
-}
-
-.pos-table thead th {
-  background-color: var(--pos-bg-secondary);
-  color: var(--pos-text-primary);
-  border-bottom: 2px solid var(--pos-border-primary);
-  font-weight: 600;
-}
-
-.pos-table tbody tr {
-  transition: background-color var(--pos-transition-fast);
-}
-
-.pos-table tbody tr:hover {
-  background-color: var(--pos-bg-accent);
-}
-
-.pos-table td, .pos-table th {
-  border-color: var(--pos-border-secondary);
-  padding: var(--pos-space-sm) var(--pos-space-md);
-}
-
-/* =================================================================
-   Status Badges
-   ================================================================= */
-
-.pos-badge {
-  border-radius: var(--pos-border-radius-sm);
-  font-weight: 500;
-  font-size: var(--pos-font-size-sm);
-  transition: all var(--pos-transition-fast);
-}
-
-.pos-status {
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Order Status Specific */
-.pos-status.status-pending {
-  color: var(--pos-order-pending);
-}
-
-.pos-status.status-preparing {
-  color: var(--pos-order-preparing);
-}
-
-.pos-status.status-ready {
-  color: var(--pos-order-ready);
-}
-
-.pos-status.status-served {
-  color: var(--pos-order-served);
-}
-
-.pos-status.status-cancelled {
-  color: var(--pos-order-cancelled);
-}
-
-/* =================================================================
-   Layout Components
-   ================================================================= */
-
-.pos-header {
-  background-color: var(--pos-header-bg);
-  color: var(--pos-header-text);
-  border-bottom: 1px solid var(--pos-border-primary);
-  box-shadow: var(--pos-shadow-sm);
-}
-
-.pos-footer {
-  background-color: var(--pos-footer-bg);
-  color: var(--pos-footer-text);
-  border-top: 1px solid var(--pos-border-primary);
-  font-size: var(--pos-font-size-sm);
-}
-
-/* =================================================================
-   Mode-Specific Styling
-   ================================================================= */
-
-/* POS Mode */
-.pos-mode .pos-mode-container {
-  background-color: var(--pos-bg-primary);
-}
-
-.pos-mode .order-display-container {
-  background-color: var(--pos-bg-primary);
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-}
-
-.pos-mode .menu-display-container {
-  background-color: var(--pos-bg-primary);
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-}
-
-/* Kitchen Mode */
-.kitchen-mode .kitchen-display-container {
-  background-color: var(--pos-kitchen-bg);
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-}
-
-.kitchen-mode .kitchen-left-panel,
-.kitchen-mode .kitchen-right-panel {
-  background-color: var(--pos-kitchen-panel);
-}
-
-/* =================================================================
-   Component-Specific Enhancements
-   ================================================================= */
-
-.pos-group-box {
-  border: 1px solid var(--pos-border-primary);
-  border-radius: var(--pos-border-radius);
-  background-color: var(--pos-bg-primary);
-  transition: all var(--pos-transition);
-}
-
-.pos-group-box.border-primary {
-  border-color: var(--pos-primary);
-}
-
-.pos-group-box.bg-light {
-  background-color: var(--pos-bg-secondary);
-}
-
-/* =================================================================
-   Animation Classes
-   ================================================================= */
-
-.pos-fade-in {
-  opacity: 0;
-  animation: possFadeIn 0.3s ease-in-out forwards;
-}
-
-@keyframes possFadeIn {
-  to {
-    opacity: 1;
-  }
-}
-
-.pos-slide-in {
-  transform: translateX(-20px);
-  opacity: 0;
-  animation: posSlideIn 0.3s ease-out forwards;
-}
-
-@keyframes posSlideIn {
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.pos-hover-shadow {
-  transition: box-shadow var(--pos-transition);
-}
-
-.pos-hover-shadow:hover {
-  box-shadow: var(--pos-shadow);
-}
-
-.pos-hover-lift {
-  transition: transform var(--pos-transition-fast);
-}
-
-.pos-hover-lift:hover {
-  transform: translateY(-2px);
-}
-
-/* =================================================================
-   Theme Transition Support
-   ================================================================= */
-
-.pos-theme-aware {
-  transition: 
-    background-color var(--pos-transition),
-    color var(--pos-transition),
-    border-color var(--pos-transition),
-    box-shadow var(--pos-transition);
-}
-
-/* =================================================================
-   Responsive Utilities
-   ================================================================= */
-
-@media (max-width: 768px) {
-  .pos-container {
-    padding: var(--pos-space-sm);
-  }
-  
-  .panel-container {
-    margin-bottom: var(--pos-space-md);
-  }
-  
-  .pos-table {
-    font-size: var(--pos-font-size-sm);
-  }
-}
-
-@media (max-width: 576px) {
-  .pos-button {
-    padding: 0.375rem 0.5rem;
-    font-size: var(--pos-font-size-sm);
-  }
-  
-  .pos-table td, .pos-table th {
-    padding: var(--pos-space-xs) var(--pos-space-sm);
-  }
-}
