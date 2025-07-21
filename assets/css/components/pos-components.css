@@ -1,252 +1,166 @@
 /* =============================================================================
-   POS Layout Improvements - Add this to assets/css/components/pos-components.css
+   POS Order Layout Fix - Add to assets/css/components/pos-components.css
    ============================================================================= */
 
-/* Main POS Container - Side by Side Layout */
+/* Main POS Container - Force Grid Layout for Order View */
 #pos-mode-container {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    grid-template-rows: auto 1fr !important;
     gap: 1rem !important;
     height: 100% !important;
     padding: 1rem !important;
-    background: transparent !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
     overflow: hidden !important;
 }
 
+/* Restaurant Menu Container - Left Side */
+.restaurant-menu,
+.menu-display,
+[class*="menu"] {
+    grid-column: 1 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
 
-/* Order Management - Right Side */
-.order-management,
-[class*="order-management"] {
+/* Current Order Container - Right Side */
+.current-order,
+.current-order-display,
+[class*="current-order"] {
     grid-column: 2 !important;
-    grid-row: 1 / 3 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Alternative: Target by position if classes aren't specific enough */
+#pos-mode-container > div:first-child {
+    grid-column: 1 !important;
+}
+
+#pos-mode-container > div:nth-child(2) {
+    grid-column: 2 !important;
+}
+
+/* Ensure all children use proper grid positioning */
+#pos-mode-container > * {
     background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 8px !important;
     padding: 1rem !important;
+    margin: 0 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    border: none !important; /* Remove extra borders */
     overflow-y: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
 }
 
-/* AGGRESSIVE CONTAINER FLATTENING - Remove all visual container boundaries */
-
-/* Hide ALL scrollbars in Active Orders */
-.active-orders-display,
-.active-orders-display *,
-[class*="active-order"],
-[class*="active-order"] * {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-    overflow: visible !important;
-}
-
-.active-orders-display::-webkit-scrollbar,
-.active-orders-display *::-webkit-scrollbar,
-[class*="active-order"]::-webkit-scrollbar,
-[class*="active-order"] *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* Main Active Orders Container - Completely transparent */
-.active-orders-display {
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-/* Flatten ALL nested divs in Active Orders */
-.active-orders-display div,
-.active-orders-display .container,
-.active-orders-display .container-fluid,
-.active-orders-display [class*="container"],
-.active-orders-display [class*="wrapper"],
-.active-orders-display [class*="Wt-"] {
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-/* Header - Standalone styling */
-.active-orders-display h2,
-.active-orders-display .card-header,
-.active-orders-display [class*="header"] {
+/* Headers for both panels */
+.restaurant-menu h2,
+.current-order h2,
+.menu-display h2,
+.current-order-display h2 {
     background: #4f7cff !important;
     color: white !important;
-    margin: 0 !important;
+    margin: -1rem -1rem 1rem -1rem !important;
     padding: 1rem !important;
-    border: none !important;
     border-radius: 8px 8px 0 0 !important;
     font-weight: 600 !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Table - Clean container */
-.active-orders-display table {
-    background: white !important;
-    border: none !important;
+/* Menu Items Table */
+.restaurant-menu table,
+.menu-display table {
+    width: 100% !important;
     border-collapse: collapse !important;
-    margin: 0 !important;
-    width: 100% !important;
-    border-radius: 0 0 8px 8px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    overflow: hidden !important;
+    margin-top: 1rem !important;
 }
 
-/* Table wrapper - if it exists */
-.active-orders-display .table-responsive,
-.active-orders-display .table-container,
-.active-orders-display [class*="table"] {
-    background: white !important;
-    border: none !important;
-    border-radius: 0 0 8px 8px !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* Table Headers */
-.active-orders-display th {
+.restaurant-menu th,
+.menu-display th {
     background: #4f7cff !important;
     color: white !important;
-    border: none !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-    padding: 0.75rem 0.5rem !important;
-    font-weight: 600 !important;
-    font-size: 0.85rem !important;
+    padding: 0.75rem !important;
     text-align: left !important;
-    border-radius: 0 !important;
-}
-
-.active-orders-display th:last-child {
-    border-right: none !important;
-}
-
-/* Table Cells */
-.active-orders-display td {
     border: none !important;
+}
+
+.restaurant-menu td,
+.menu-display td {
+    padding: 0.75rem !important;
     border-bottom: 1px solid #f1f5f9 !important;
-    padding: 0.75rem 0.5rem !important;
-    color: #2d3748 !important;
-    font-size: 0.9rem !important;
     vertical-align: middle !important;
-    background: transparent !important;
 }
 
-.active-orders-display tbody tr:last-child td {
-    border-bottom: none !important;
-}
-
-/* Row hover effects */
-.active-orders-display tbody tr {
-    transition: background-color 0.2s ease !important;
-}
-
-.active-orders-display tbody tr:nth-child(even) {
-    background: #fafbfc !important;
-}
-
-.active-orders-display tbody tr:hover {
-    background: #f1f3f4 !important;
-}
-
-/* Force remove any container borders that might appear */
-.active-orders-display *:not(table):not(th):not(td) {
-    border-left: none !important;
-    border-right: none !important;
-    border-top: none !important;
-    border-bottom: none !important;
-}
-
-/* Remove any box shadows except from main components */
-.active-orders-display *:not(table):not(.card-header):not(h2) {
-    box-shadow: none !important;
-}
-
-/* Ensure no nested padding creates whitespace */
-.active-orders-display * {
-    box-sizing: border-box !important;
-}
-
-/* Special handling for buttons and badges to keep their styling */
-.active-orders-display .btn {
-    border: 1px solid currentColor !important;
-    padding: 0.25rem 0.75rem !important;
-    font-size: 0.8rem !important;
-    border-radius: 4px !important;
-    margin: 0 0.125rem !important;
-    box-shadow: none !important;
-    background: transparent !important;
-}
-
-.active-orders-display .badge {
-    border: none !important;
-    padding: 0.25rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 500 !important;
-    border-radius: 12px !important;
-}
-
-.order-management .form-control,
-.order-management .form-select {
-    border: 1px solid #e2e8f0 !important;
+/* Order Summary Styling */
+.current-order .order-summary,
+.current-order-display .order-summary {
+    background: #f8f9fa !important;
     border-radius: 6px !important;
-    background: #ffffff !important;
-    box-shadow: none !important;
+    padding: 1rem !important;
+    margin-top: 1rem !important;
 }
 
-.order-management .form-control:focus,
-.order-management .form-select:focus {
-    border-color: #3182ce !important;
-    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1) !important;
+/* Empty Order State */
+.current-order .empty-order,
+.current-order-display .empty-order {
+    text-align: center !important;
+    color: #6c757d !important;
+    padding: 2rem !important;
+    font-style: italic !important;
 }
 
-/* Status badges - clean styling */
-.badge {
-    border: none !important;
+/* Add Item Buttons */
+.restaurant-menu .btn,
+.menu-display .btn {
     padding: 0.25rem 0.75rem !important;
-    font-size: 0.75rem !important;
-    font-weight: 500 !important;
-    border-radius: 12px !important;
-}
-
-/* Info messages */
-.alert,
-.info-message,
-[class*="info"] {
-    border: none !important;
-    border-left: 4px solid #3182ce !important;
-    background: #ebf8ff !important;
-    color: #2c5282 !important;
+    font-size: 0.875rem !important;
     border-radius: 4px !important;
-    padding: 0.75rem 1rem !important;
-    margin: 1rem 0 !important;
+    margin: 0.125rem !important;
 }
 
-/* Responsive - Stack on smaller screens */
+/* Order Actions */
+.current-order .btn,
+.current-order-display .btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    border-radius: 6px !important;
+    margin: 0.25rem !important;
+}
+
+/* Category Filters */
+.restaurant-menu .category-filter,
+.menu-display .category-filter {
+    margin-bottom: 1rem !important;
+    padding: 0.5rem !important;
+    background: #f8f9fa !important;
+    border-radius: 6px !important;
+}
+
+/* Price Display */
+.price {
+    font-weight: 600 !important;
+    color: #28a745 !important;
+}
+
+/* Total Display */
+.total-amount {
+    font-size: 1.25rem !important;
+    font-weight: bold !important;
+    color: #28a745 !important;
+}
+
+/* Responsive Layout */
 @media (max-width: 768px) {
     #pos-mode-container {
         grid-template-columns: 1fr !important;
@@ -255,17 +169,22 @@
         padding: 0.75rem !important;
     }
     
-    .active-orders-display,
-    [class*="active-order"] {
+    #pos-mode-container > div:first-child {
         grid-column: 1 !important;
         grid-row: 1 !important;
-        max-height: 300px !important;
+        max-height: 50vh !important;
     }
     
-    .order-management,
-    [class*="order-management"] {
+    #pos-mode-container > div:nth-child(2) {
         grid-column: 1 !important;
         grid-row: 2 !important;
+        max-height: 50vh !important;
+    }
+    
+    .restaurant-menu h2,
+    .current-order h2 {
+        font-size: 1.1rem !important;
+        padding: 0.75rem !important;
     }
 }
 
@@ -275,70 +194,25 @@
         gap: 0.5rem !important;
     }
     
-    .active-orders-display,
-    .order-management {
+    .restaurant-menu,
+    .current-order {
         padding: 0.75rem !important;
     }
     
-    .active-orders-display h2,
-    .order-management h2 {
-        font-size: 1.1rem !important;
+    .restaurant-menu h2,
+    .current-order h2 {
+        margin: -0.75rem -0.75rem 0.75rem -0.75rem !important;
+        padding: 0.75rem !important;
     }
 }
 
-/* Clean card styling for any nested cards */
-.card {
-    border: none !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-    border-radius: 6px !important;
+/* Force proper layout even with dynamic content */
+body #pos-mode-container {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
 }
 
-.card-header {
-    background: #f8f9fa !important;
-    border-bottom: 1px solid #e9ecef !important;
-    border-radius: 6px 6px 0 0 !important;
-}
-
-.card-body {
-    border-radius: 0 0 6px 6px !important;
-}
-
-/* Remove borders from nested containers */
-.container,
-.container-fluid,
-[class*="container"] {
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* Clean up any remaining double borders */
-* {
-    box-sizing: border-box !important;
-}
-
-*:not(.badge):not(.btn) {
-    border-radius: 6px !important;
-}
-
-/* Ensure proper scrolling */
-.active-orders-display,
-.order-management {
-    scrollbar-width: thin !important;
-    scrollbar-color: #cbd5e0 #f7fafc !important;
-}
-
-.active-orders-display::-webkit-scrollbar,
-.order-management::-webkit-scrollbar {
-    width: 6px !important;
-}
-
-.active-orders-display::-webkit-scrollbar-track,
-.order-management::-webkit-scrollbar-track {
-    background: #f7fafc !important;
-}
-
-.active-orders-display::-webkit-scrollbar-thumb,
-.order-management::-webkit-scrollbar-thumb {
-    background: #cbd5e0 !important;
-    border-radius: 3px !important;
+html #pos-mode-container {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
 }

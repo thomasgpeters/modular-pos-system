@@ -1,1 +1,79 @@
 /* components/menu-components.css - Add your component styles here */
+/* Restaurant Menu Container - Left Side */
+.restaurant-menu,
+.menu-display,
+[class*="menu"] {
+    grid-column: 1 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Current Order Container - Right Side */
+.current-order,
+.current-order-display,
+[class*="current-order"] {
+    grid-column: 2 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Ensure all children use proper grid positioning */
+#pos-mode-container > * {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    overflow-y: auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Headers for both panels */
+.restaurant-menu h2,
+.current-order h2,
+.menu-display h2,
+.current-order-display h2 {
+    background: #4f7cff !important;
+    color: white !important;
+    margin: -1rem -1rem 1rem -1rem !important;
+    padding: 1rem !important;
+    border-radius: 8px 8px 0 0 !important;
+    font-weight: 600 !important;
+}
+
+/* Menu Items Table */
+.restaurant-menu table,
+.menu-display table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 1rem !important;
+}
+
+.restaurant-menu th,
+.menu-display th {
+    background: #4f7cff !important;
+    color: white !important;
+    padding: 0.75rem !important;
+    text-align: left !important;
+    border: none !important;
+}
+
+.restaurant-menu td,
+.menu-display td {
+    padding: 0.75rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle !important;
+}

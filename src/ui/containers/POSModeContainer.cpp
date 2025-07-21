@@ -22,11 +22,10 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     , menuDisplay_(nullptr)
     , currentOrderDisplay_(nullptr)
     , workAreaTitle_(nullptr)
-    , newOrderButton_(nullptr)
-    , sendToKitchenButton_(nullptr)  // CHANGED: From closeOrderButton_
+    , sendToKitchenButton_(nullptr)  
     , toggleOrdersButton_(nullptr)
-    , currentUIMode_(UI_MODE_NONE)  // Track current UI state
-    , isDestroying_(false)  // Track destruction state
+    , currentUIMode_(UI_MODE_NONE)  
+    , isDestroying_(false)  
 {
     if (!posService_ || !eventManager_) {
         throw std::invalid_argument("POSModeContainer requires valid POSService and EventManager");
@@ -38,7 +37,7 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     setupEventListeners();
     updateWorkArea();
     
-    std::cout << "[POSModeContainer] Initialized with Send to Kitchen functionality" << std::endl;
+    std::cout << "[POSModeContainer] Initialized with corrected layout management" << std::endl;
 }
 
 POSModeContainer::~POSModeContainer() {
@@ -72,8 +71,6 @@ void POSModeContainer::initializeUI() {
     setupLayout();
     createLeftPanel();
     createRightPanel();
-    createOrderEntryArea();
-    createOrderEditArea();
 }
 
 void POSModeContainer::setupLayout() {
@@ -82,39 +79,37 @@ void POSModeContainer::setupLayout() {
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(15);
     
-    // FIXED: Create panels as children first, then set stretch factors
+    // Create panels as children first, then set stretch factors
     leftPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     rightPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     
-    // FIXED: Set stretch factors after widgets are added
-    layout->setStretchFactor(leftPanel_, 7);   // 30%
-    layout->setStretchFactor(rightPanel_, 3);  // 70%
+    // Set stretch factors: Left 60%, Right 40%
+    layout->setStretchFactor(leftPanel_, 6);   // 60% - for Active Orders or Menu Display
+    layout->setStretchFactor(rightPanel_, 4);  // 40% - for Order Entry or Current Order
     
     leftPanel_->setStyleClass("pos-left-panel");
     rightPanel_->setStyleClass("pos-right-panel");
+    
+    std::cout << "[POSModeContainer] Layout setup - Left: 60%, Right: 40%" << std::endl;
 }
 
 void POSModeContainer::createLeftPanel() {
-    // Left panel contains Active Orders Display
-    leftPanel_->setStyleClass("border-end bg-light p-3");
+    // Left panel will contain either Active Orders Display or Menu Display
+    leftPanel_->setStyleClass("border-end bg-light");
     
     auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(10);
+    leftLayout->setSpacing(0);
     
-    // Create Active Orders Display
-    activeOrdersDisplay_ = leftLayout->addWidget(
-        std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_));
-    
-    std::cout << "[POSModeContainer] Left panel (Active Orders) created" << std::endl;
+    std::cout << "[POSModeContainer] Left panel container created (will be populated dynamically)" << std::endl;
 }
 
 void POSModeContainer::createRightPanel() {
-    // Right panel contains the work area
-    rightPanel_->setStyleClass("pos-work-panel p-3");
+    // Right panel contains the work area and controls
+    rightPanel_->setStyleClass("pos-work-panel bg-white");
     
     auto rightLayout = rightPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setContentsMargins(15, 15, 15, 15);
     rightLayout->setSpacing(15);
     
     // Work area title and controls
@@ -128,16 +123,15 @@ void POSModeContainer::createRightPanel() {
     auto controlsContainer = headerContainer->addNew<Wt::WContainerWidget>();
     controlsContainer->setStyleClass("d-flex gap-2");
     
-    // FIXED: Store reference to toggle button instead of using findWidget
+    // Toggle Active Orders button (shown when orders are hidden)
     toggleOrdersButton_ = controlsContainer->addNew<Wt::WPushButton>("📋 Show Orders");
     toggleOrdersButton_->setStyleClass("btn btn-outline-info btn-sm");
     toggleOrdersButton_->clicked().connect([this]() {
         showActiveOrdersDisplay();
     });
-    toggleOrdersButton_->setId("toggle-orders-button");
     toggleOrdersButton_->hide(); // Hidden initially when orders display is visible
     
-    // CHANGED: Send to Kitchen button (replaces Close Order button)
+    // Send to Kitchen button
     sendToKitchenButton_ = controlsContainer->addNew<Wt::WPushButton>("🚀 Send to Kitchen");
     sendToKitchenButton_->setStyleClass("btn btn-success btn-sm");
     sendToKitchenButton_->clicked().connect([this]() {
@@ -149,19 +143,7 @@ void POSModeContainer::createRightPanel() {
     workArea_ = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     workArea_->setStyleClass("pos-dynamic-work-area");
     
-    std::cout << "[POSModeContainer] Right panel (Work Area) created with Send to Kitchen button" << std::endl;
-}
-
-void POSModeContainer::createOrderEntryArea() {
-    // Order entry area will be created in place when needed
-    // This avoids the ownership transfer issues
-    std::cout << "[POSModeContainer] Order entry area setup prepared" << std::endl;
-}
-
-void POSModeContainer::createOrderEditArea() {
-    // Order edit area will be created in place when needed
-    // This avoids the ownership transfer issues
-    std::cout << "[POSModeContainer] Order edit area setup prepared" << std::endl;
+    std::cout << "[POSModeContainer] Right panel (Work Area) created with controls" << std::endl;
 }
 
 void POSModeContainer::setupEventListeners() {
@@ -171,11 +153,7 @@ void POSModeContainer::setupEventListeners() {
     eventSubscriptions_.push_back(
         eventManager_->subscribe(POSEvents::CURRENT_ORDER_CHANGED,
             [this](const std::any& data) { 
-                // Extra safety check before handling events
-                if (isDestroying_) {
-                    std::cout << "[POSModeContainer] Ignoring CURRENT_ORDER_CHANGED - being destroyed" << std::endl;
-                    return;
-                }
+                if (isDestroying_) return;
                 
                 try {
                     handleCurrentOrderChanged(data); 
@@ -189,11 +167,7 @@ void POSModeContainer::setupEventListeners() {
     eventSubscriptions_.push_back(
         eventManager_->subscribe(POSEvents::ORDER_CREATED,
             [this](const std::any& data) { 
-                // Extra safety check before handling events
-                if (isDestroying_) {
-                    std::cout << "[POSModeContainer] Ignoring ORDER_CREATED - being destroyed" << std::endl;
-                    return;
-                }
+                if (isDestroying_) return;
                 
                 try {
                     handleOrderCreated(data); 
@@ -203,7 +177,7 @@ void POSModeContainer::setupEventListeners() {
             })
     );
     
-    // ADDED: Listen for order modifications to update Send to Kitchen button
+    // Listen for order modifications to update Send to Kitchen button
     eventSubscriptions_.push_back(
         eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
             [this](const std::any& data) { 
@@ -221,7 +195,6 @@ void POSModeContainer::setupEventListeners() {
 }
 
 void POSModeContainer::updateWorkArea() {
-    // Check if we're being destroyed
     if (isDestroying_) {
         std::cout << "[POSModeContainer] Skipping updateWorkArea - container is being destroyed" << std::endl;
         return;
@@ -244,41 +217,37 @@ void POSModeContainer::updateWorkArea() {
                 }
             } else {
                 workAreaTitle_->setText("🍽️ Order Management");
-                workAreaTitle_->addStyleClass("h4 text-primary mb-4");
             }
         } catch (const std::exception& e) {
             std::cerr << "[POSModeContainer] Error updating title: " << e.what() << std::endl;
         }
     }
     
-    // CHANGED: Update Send to Kitchen button instead of close button
+    // Update Send to Kitchen button
     updateSendToKitchenButton();
     
     // Only recreate UI if the mode has actually changed
     if (currentUIMode_ != targetMode) {
         std::cout << "[POSModeContainer] UI mode change detected - recreating interface" << std::endl;
         
-        // CRITICAL: Clear component pointers BEFORE destroying widgets
-        // This prevents the refresh methods from trying to access destroyed widgets
+        // Clear component pointers BEFORE destroying widgets
         orderEntryPanel_ = nullptr;
         menuDisplay_ = nullptr;
         currentOrderDisplay_ = nullptr;
+        activeOrdersDisplay_ = nullptr;
         
         // Process any pending events and clear widgets safely
-        if (workArea_ && workArea_->children().size() > 0) {
-            std::cout << "[POSModeContainer] Processing pending events before widget destruction" << std::endl;
+        try {
+            Wt::WApplication::instance()->processEvents();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             
-            try {
-                Wt::WApplication::instance()->processEvents();
-                
-                // Give extra time for events to settle
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                
-                workArea_->clear();
-                std::cout << "[POSModeContainer] Work area cleared safely" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "[POSModeContainer] Error clearing work area: " << e.what() << std::endl;
-            }
+            // Clear both panels
+            leftPanel_->clear();
+            workArea_->clear();
+            
+            std::cout << "[POSModeContainer] Panels cleared safely" << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "[POSModeContainer] Error clearing panels: " << e.what() << std::endl;
         }
         
         // Check again if we're still valid before creating new widgets
@@ -289,10 +258,8 @@ void POSModeContainer::updateWorkArea() {
         
         if (hasCurrentOrder) {
             showOrderEdit();
-            hideActiveOrdersDisplay(); // Hide orders list when editing
         } else {
             showOrderEntry();
-            showActiveOrdersDisplay();  // Show orders list when not editing
         }
         
         currentUIMode_ = targetMode;
@@ -302,176 +269,116 @@ void POSModeContainer::updateWorkArea() {
 }
 
 void POSModeContainer::showOrderEntry() {
-    // Check if we're being destroyed
     if (isDestroying_) {
         std::cout << "[POSModeContainer] Skipping showOrderEntry - container is being destroyed" << std::endl;
         return;
     }
     
-    std::cout << "[POSModeContainer] Creating order entry area" << std::endl;
+    std::cout << "[POSModeContainer] Creating order entry mode layout" << std::endl;
     
-    // Clear work area safely - defer any pending events first
-    if (workArea_->children().size() > 0) {
-        std::cout << "[POSModeContainer] Processing events before clearing work area" << std::endl;
-        
-        // Process events multiple times to ensure everything settles
-        for (int i = 0; i < 3; ++i) {
-            Wt::WApplication::instance()->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-        
-        std::cout << "[POSModeContainer] Clearing work area for order entry" << std::endl;
-        workArea_->clear();
+    // LEFT PANEL: Active Orders Display
+    try {
+        activeOrdersDisplay_ = leftPanel_->addNew<ActiveOrdersDisplay>(posService_, eventManager_);
+        activeOrdersDisplay_->addStyleClass("h-100");
+        std::cout << "[POSModeContainer] ✓ Active Orders Display created in left panel" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[POSModeContainer] Error creating Active Orders Display: " << e.what() << std::endl;
+        auto fallbackText = leftPanel_->addNew<Wt::WText>("❌ Unable to load active orders");
+        fallbackText->addStyleClass("text-center text-danger p-4");
     }
     
-    // Create order entry area directly in the work area
-    auto orderEntryArea = workArea_->addNew<Wt::WContainerWidget>();
-    orderEntryArea->setStyleClass("order-entry-area");
+    // RIGHT PANEL: Order Entry Panel
+    try {
+        orderEntryPanel_ = workArea_->addNew<OrderEntryPanel>(posService_, eventManager_);
+        orderEntryPanel_->addStyleClass("h-100");
+        
+        // Add instructions
+        auto instructionsText = workArea_->addNew<Wt::WText>(
+            "💡 Select a table/location and click 'Start New Order' to begin");
+        instructionsText->setStyleClass("text-center text-muted small mt-3");
+        
+        std::cout << "[POSModeContainer] ✓ Order Entry Panel created in right panel" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[POSModeContainer] Error creating Order Entry Panel: " << e.what() << std::endl;
+        auto fallbackText = workArea_->addNew<Wt::WText>("❌ Unable to load order entry");
+        fallbackText->addStyleClass("text-center text-danger p-4");
+    }
     
-    auto layout = orderEntryArea->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(20);
+    // Show toggle button (hidden initially since orders are visible)
+    if (toggleOrdersButton_) {
+        toggleOrdersButton_->hide();
+    }
     
-    // Order entry panel - store the pointer for refresh calls
-    std::cout << "[POSModeContainer] Creating new OrderEntryPanel" << std::endl;
-    orderEntryPanel_ = layout->addWidget(
-        std::make_unique<OrderEntryPanel>(posService_, eventManager_));
-    
-    // Instructions
-    auto instructionsText = layout->addWidget(std::make_unique<Wt::WText>(
-        "💡 Select a table/location and click 'Start New Order' to begin"));
-    instructionsText->setStyleClass("text-center text-muted small");
-    
-    std::cout << "[POSModeContainer] Order entry area created successfully" << std::endl;
+    std::cout << "[POSModeContainer] Order entry mode layout created successfully" << std::endl;
 }
 
 void POSModeContainer::showOrderEdit() {
-    // Check if we're being destroyed
     if (isDestroying_) {
         std::cout << "[POSModeContainer] Skipping showOrderEdit - container is being destroyed" << std::endl;
         return;
     }
     
-    std::cout << "[POSModeContainer] Creating order edit area" << std::endl;
+    std::cout << "[POSModeContainer] Creating order edit mode layout" << std::endl;
     
-    // Clear work area safely - defer any pending events first
-    if (workArea_->children().size() > 0) {
-        std::cout << "[POSModeContainer] Processing events before clearing work area" << std::endl;
-        
-        // Process events multiple times to ensure everything settles
-        for (int i = 0; i < 3; ++i) {
-            Wt::WApplication::instance()->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-        
-        std::cout << "[POSModeContainer] Clearing work area for order edit" << std::endl;
-        workArea_->clear();
+    // LEFT PANEL: Menu Display (replaces Active Orders Display)
+    try {
+        menuDisplay_ = leftPanel_->addNew<MenuDisplay>(posService_, eventManager_);
+        menuDisplay_->addStyleClass("h-100");
+        std::cout << "[POSModeContainer] ✓ Menu Display created in left panel" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[POSModeContainer] Error creating Menu Display: " << e.what() << std::endl;
+        auto fallbackText = leftPanel_->addNew<Wt::WText>("❌ Unable to load menu");
+        fallbackText->addStyleClass("text-center text-danger p-4");
     }
     
-    // Create order edit area directly in the work area
-    auto orderEditArea = workArea_->addNew<Wt::WContainerWidget>();
-    orderEditArea->setStyleClass("order-edit-area");
-    
-    auto layout = orderEditArea->setLayout(std::make_unique<Wt::WHBoxLayout>());
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(20);
-    
-    // Left side: Menu Display (takes more space when active orders are hidden)
-    auto menuContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    menuContainer->setStyleClass("menu-section");
-    
-    auto menuLayout = menuContainer->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    menuLayout->setContentsMargins(0, 0, 0, 0);
-    menuLayout->setSpacing(10);
-    
-    // Store the pointer for refresh calls
-    std::cout << "[POSModeContainer] Creating new MenuDisplay" << std::endl;
-    menuDisplay_ = menuLayout->addWidget(
-        std::make_unique<MenuDisplay>(posService_, eventManager_));
-    
-    // Right side: Current Order Display
-    auto orderContainer = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    orderContainer->setStyleClass("current-order-section");
-    
-    auto orderLayout = orderContainer->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    orderLayout->setContentsMargins(0, 0, 0, 0);
-    orderLayout->setSpacing(10);
-    
-    // Store the pointer for refresh calls
-    std::cout << "[POSModeContainer] Creating new CurrentOrderDisplay" << std::endl;
-    currentOrderDisplay_ = orderLayout->addWidget(
-        std::make_unique<CurrentOrderDisplay>(posService_, eventManager_));
-    
-    // Set layout proportions: Menu gets more space (65%), Current Order (35%)
-    layout->setStretchFactor(menuContainer, 65);
-    layout->setStretchFactor(orderContainer, 35);
-    
-    std::cout << "[POSModeContainer] Order edit area created successfully" << std::endl;
-}
-
-void POSModeContainer::hideActiveOrdersDisplay() {
-    if (!leftPanel_) return;
-    
-    std::cout << "[POSModeContainer] Hiding Active Orders Display - giving more space to work area" << std::endl;
-    
-    // Hide the left panel
-    leftPanel_->hide();
-    
-    // Update layout to give right panel full width
-    auto layout = dynamic_cast<Wt::WHBoxLayout*>(this->layout());
-    if (layout) {
-        // Update stretch factors
-        layout->setStretchFactor(leftPanel_, 0);   // 0% - hidden
-        layout->setStretchFactor(rightPanel_, 1);  // 100% - full width
+    // RIGHT PANEL: Current Order Display
+    try {
+        currentOrderDisplay_ = workArea_->addNew<CurrentOrderDisplay>(posService_, eventManager_);
+        currentOrderDisplay_->addStyleClass("h-100");
+        std::cout << "[POSModeContainer] ✓ Current Order Display created in right panel" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[POSModeContainer] Error creating Current Order Display: " << e.what() << std::endl;
+        auto fallbackText = workArea_->addNew<Wt::WText>("❌ Unable to load current order");
+        fallbackText->addStyleClass("text-center text-danger p-4");
     }
     
-    // FIXED: Use stored reference instead of findWidget
+    // Show toggle button so user can switch back to orders view
     if (toggleOrdersButton_) {
+        toggleOrdersButton_->setText("📋 Show Orders");
         toggleOrdersButton_->show();
     }
     
-    // Update styling for full-width mode
-    rightPanel_->addStyleClass("pos-full-width-mode");
+    std::cout << "[POSModeContainer] Order edit mode layout created successfully" << std::endl;
 }
 
 void POSModeContainer::showActiveOrdersDisplay() {
-    if (!leftPanel_) return;
+    if (isDestroying_) return;
     
-    std::cout << "[POSModeContainer] Showing Active Orders Display - restoring split layout" << std::endl;
+    std::cout << "[POSModeContainer] Switching to Active Orders Display" << std::endl;
     
-    // Show the left panel
-    leftPanel_->show();
-    
-    // Restore layout proportions
-    auto layout = dynamic_cast<Wt::WHBoxLayout*>(this->layout());
-    if (layout) {
-        layout->setStretchFactor(leftPanel_, 3);   // 30%
-        layout->setStretchFactor(rightPanel_, 7);  // 70%
+    // Force switch back to order entry mode to show active orders
+    if (posService_) {
+        posService_->setCurrentOrder(nullptr); // Clear current order
     }
     
-    // FIXED: Use stored reference instead of findWidget
-    if (toggleOrdersButton_) {
-        toggleOrdersButton_->hide();
-    }
-    
-    // Remove full-width styling
-    rightPanel_->removeStyleClass("pos-full-width-mode");
-    
-    // Refresh the active orders to ensure current data
-    if (activeOrdersDisplay_) {
-        activeOrdersDisplay_->refresh();
-    }
+    // This will trigger the layout change through the event system
+    currentUIMode_ = UI_MODE_NONE; // Force mode change
+    updateWorkArea();
 }
 
-// CHANGED: New method to send order to kitchen
+void POSModeContainer::hideActiveOrdersDisplay() {
+    // This method is no longer needed since we're using full panel replacement
+    // but kept for compatibility
+    std::cout << "[POSModeContainer] hideActiveOrdersDisplay() called - using full panel replacement instead" << std::endl;
+}
+
 void POSModeContainer::sendCurrentOrderToKitchen() {
-    // Check if we're being destroyed
     if (isDestroying_) {
         std::cout << "[POSModeContainer] Skipping sendCurrentOrderToKitchen - container is being destroyed" << std::endl;
         return;
     }
     
-    std::cout << "[POSModeContainer] Sending current order to kitchen - safe process" << std::endl;
+    std::cout << "[POSModeContainer] Sending current order to kitchen" << std::endl;
     
     // Validate that we have an order with items
     if (!hasCurrentOrder()) {
@@ -488,36 +395,20 @@ void POSModeContainer::sendCurrentOrderToKitchen() {
     int orderId = currentOrder ? currentOrder->getOrderId() : -1;
     
     try {
-        // Step 1: Process any pending events to clear the queue
-        std::cout << "[POSModeContainer] Processing pending events before sending to kitchen" << std::endl;
-        for (int i = 0; i < 3; ++i) {
-            Wt::WApplication::instance()->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-        
-        // Step 2: Clear component pointers immediately to prevent any refresh calls
+        // Step 1: Clear component pointers to prevent refresh calls
         std::cout << "[POSModeContainer] Clearing component pointers" << std::endl;
         orderEntryPanel_ = nullptr;
         menuDisplay_ = nullptr;
         currentOrderDisplay_ = nullptr;
+        activeOrdersDisplay_ = nullptr;
         
-        // Step 3: CLEAR THE WIDGETS FIRST to destroy them and unsubscribe from events
-        std::cout << "[POSModeContainer] Clearing work area widgets to stop event subscriptions" << std::endl;
-        if (workArea_ && workArea_->children().size() > 0) {
-            // Process events one more time before clearing
-            Wt::WApplication::instance()->processEvents();
-            workArea_->clear();  // This destroys widgets and their event subscriptions
-        }
+        // Step 2: Clear widgets to stop event subscriptions
+        std::cout << "[POSModeContainer] Clearing widgets" << std::endl;
+        if (leftPanel_) leftPanel_->clear();
+        if (workArea_) workArea_->clear();
         
-        // Step 4: Process events again to ensure widget destruction is complete
-        std::cout << "[POSModeContainer] Processing events after widget destruction" << std::endl;
-        for (int i = 0; i < 3; ++i) {
-            Wt::WApplication::instance()->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-        
-        // Step 5: NOW safely send the order to kitchen
-        std::cout << "[POSModeContainer] Sending order #" << orderId << " to kitchen (widgets destroyed)" << std::endl;
+        // Step 3: Send the order to kitchen
+        std::cout << "[POSModeContainer] Sending order #" << orderId << " to kitchen" << std::endl;
         if (posService_) {
             bool success = posService_->sendCurrentOrderToKitchen();
             
@@ -532,38 +423,26 @@ void POSModeContainer::sendCurrentOrderToKitchen() {
                 
             } else {
                 std::cout << "[POSModeContainer] ❌ Failed to send order #" << orderId << " to kitchen" << std::endl;
-                
-                // TODO: Show error message to user
-                // For now, still clear the current order
                 posService_->setCurrentOrder(nullptr);
             }
         }
         
-        // Step 6: Force UI mode change
-        std::cout << "[POSModeContainer] Forcing UI mode change after kitchen submission" << std::endl;
+        // Step 4: Force UI mode change and return to order entry
+        std::cout << "[POSModeContainer] Returning to order entry mode" << std::endl;
         currentUIMode_ = UI_MODE_NONE;
-        
-        // Step 7: Show order entry immediately (synchronous)
-        showOrderEntry();
-        
-        // Step 8: Show active orders display
-        showActiveOrdersDisplay();
-        
-        // Step 9: Update UI mode
+        showOrderEntry(); // This will show Active Orders on left, Order Entry on right
         currentUIMode_ = UI_MODE_ORDER_ENTRY;
         
-        std::cout << "[POSModeContainer] Order sent to kitchen and UI updated successfully" << std::endl;
+        std::cout << "[POSModeContainer] Order sent to kitchen and returned to order entry mode" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "[POSModeContainer] Error during send to kitchen: " << e.what() << std::endl;
         
-        // Emergency fallback - just clear everything
-        if (workArea_) {
-            workArea_->clear();
-        }
+        // Emergency fallback
+        if (leftPanel_) leftPanel_->clear();
+        if (workArea_) workArea_->clear();
         currentUIMode_ = UI_MODE_NONE;
         
-        // Still try to clear the current order
         if (posService_) {
             posService_->setCurrentOrder(nullptr);
         }
@@ -572,84 +451,40 @@ void POSModeContainer::sendCurrentOrderToKitchen() {
 
 // Event handlers
 void POSModeContainer::handleCurrentOrderChanged(const std::any& eventData) {
-    // Check if we're being destroyed
-    if (isDestroying_) {
-        std::cout << "[POSModeContainer] Ignoring current order changed event - container is being destroyed" << std::endl;
-        return;
-    }
+    if (isDestroying_) return;
     
-    std::cout << "[POSModeContainer] Current order changed - scheduling UI mode update" << std::endl;
+    std::cout << "[POSModeContainer] Current order changed - scheduling UI update" << std::endl;
     
-    // Use a longer timer to ensure all events settle completely
-    // Capture 'this' by weak reference to avoid use-after-free
-    Wt::WTimer::singleShot(std::chrono::milliseconds(500), [this]() {
-        // Double-check we're not being destroyed
-        if (isDestroying_) {
-            std::cout << "[POSModeContainer] Skipping deferred update - container destroyed" << std::endl;
+    // Use timer with safer capture using raw pointer
+    POSModeContainer* self = this;
+    
+    Wt::WTimer::singleShot(std::chrono::milliseconds(300), [self]() {
+        // Double-check we're still valid
+        if (self->isDestroying_ || !self->parent()) {
+            std::cout << "[POSModeContainer] Container destroyed during deferred update - aborting" << std::endl;
             return;
         }
         
-        std::cout << "[POSModeContainer] Executing deferred current order change update" << std::endl;
-        
-        // Force mode change by resetting currentUIMode_
-        currentUIMode_ = UI_MODE_NONE;
-        updateWorkArea();
+        try {
+            std::cout << "[POSModeContainer] Executing deferred current order change update" << std::endl;
+            self->currentUIMode_ = UI_MODE_NONE;
+            self->updateWorkArea();
+        } catch (const std::exception& e) {
+            std::cerr << "[POSModeContainer] Exception in deferred update: " << e.what() << std::endl;
+        }
     });
 }
 
 void POSModeContainer::handleOrderCreated(const std::any& eventData) {
-    // Check if we're being destroyed
-    if (isDestroying_) {
-        std::cout << "[POSModeContainer] Ignoring order created event - container is being destroyed" << std::endl;
-        return;
-    }
+    if (isDestroying_) return;
     
-    std::cout << "[POSModeContainer] Order created - refreshing displays" << std::endl;
-    
-    // Don't immediately force UI recreation - just refresh existing components
-    // The CURRENT_ORDER_CHANGED event will handle the UI mode switch if needed
-    if (activeOrdersDisplay_) {
-        try {
-            activeOrdersDisplay_->refresh();
-        } catch (const std::exception& e) {
-            std::cerr << "[POSModeContainer] Error refreshing active orders after order creation: " << e.what() << std::endl;
-        }
-    }
-    
-    // Use a longer timer to check if we need to update the work area after events settle
-    Wt::WTimer::singleShot(std::chrono::milliseconds(500), [this]() {
-        // Double-check we're not being destroyed
-        if (isDestroying_) {
-            std::cout << "[POSModeContainer] Skipping deferred order creation check - container destroyed" << std::endl;
-            return;
-        }
-        
-        std::cout << "[POSModeContainer] Executing deferred order creation check" << std::endl;
-        
-        bool hasCurrentOrder = this->hasCurrentOrder();
-        UIMode targetMode = hasCurrentOrder ? UI_MODE_ORDER_EDIT : UI_MODE_ORDER_ENTRY;
-        
-        std::cout << "[POSModeContainer] Deferred check - hasCurrentOrder: " << hasCurrentOrder 
-                  << ", currentUIMode: " << currentUIMode_ << ", targetMode: " << targetMode << std::endl;
-        
-        if (currentUIMode_ != targetMode) {
-            std::cout << "[POSModeContainer] Mode change needed after order creation" << std::endl;
-            currentUIMode_ = UI_MODE_NONE;
-            updateWorkArea();
-        }
-    });
+    std::cout << "[POSModeContainer] Order created - will be handled by current order changed event" << std::endl;
 }
 
 // Public interface methods
 void POSModeContainer::refresh() {
-    // Smart refresh - only update work area if needed, otherwise just refresh existing components
     bool hasCurrentOrder = this->hasCurrentOrder();
     UIMode targetMode = hasCurrentOrder ? UI_MODE_ORDER_EDIT : UI_MODE_ORDER_ENTRY;
-    
-    // Always refresh the active orders display
-    if (activeOrdersDisplay_) {
-        activeOrdersDisplay_->refresh();
-    }
     
     // Only call updateWorkArea if the UI mode needs to change
     if (currentUIMode_ != targetMode) {
@@ -661,26 +496,15 @@ void POSModeContainer::refresh() {
         refreshDataOnly();
     }
     
-    std::cout << "[POSModeContainer] Refresh completed (hasCurrentOrder: " << hasCurrentOrder 
-              << ", currentUIMode: " << currentUIMode_ << ")" << std::endl;
+    std::cout << "[POSModeContainer] Refresh completed" << std::endl;
 }
 
 void POSModeContainer::refreshDataOnly() {
-    // Data-only refresh - never recreates UI components, safe for periodic updates
     bool hasCurrentOrder = this->hasCurrentOrder();
     
     std::cout << "[POSModeContainer] Data-only refresh (preserving UI state)" << std::endl;
     
-    // Always refresh the active orders display (this is safe)
-    if (activeOrdersDisplay_) {
-        try {
-            activeOrdersDisplay_->refresh();
-        } catch (const std::exception& e) {
-            std::cerr << "[POSModeContainer] Error refreshing active orders: " << e.what() << std::endl;
-        }
-    }
-    
-    // Update title and buttons (these don't recreate components, just update text/visibility)
+    // Update title and buttons
     if (workAreaTitle_) {
         try {
             if (hasCurrentOrder) {
@@ -697,37 +521,24 @@ void POSModeContainer::refreshDataOnly() {
         }
     }
     
-    // CHANGED: Update Send to Kitchen button instead of close button
     updateSendToKitchenButton();
     
-    // CRITICAL: Only refresh components if they exist AND are valid
-    // Check both pointer existence and that the widget hasn't been destroyed
+    // Refresh components if they exist and are valid
     try {
-        if (!hasCurrentOrder && orderEntryPanel_ && orderEntryPanel_->parent()) {
-            // In order entry mode - refresh order entry panel (but preserve selections)
-            std::cout << "[POSModeContainer] Refreshing OrderEntryPanel" << std::endl;
+        if (activeOrdersDisplay_ && activeOrdersDisplay_->parent()) {
+            activeOrdersDisplay_->refresh();
+        }
+        if (orderEntryPanel_ && orderEntryPanel_->parent()) {
             orderEntryPanel_->refresh();
-        } else if (hasCurrentOrder) {
-            // In order edit mode - refresh menu and current order displays for live updates
-            if (menuDisplay_ && menuDisplay_->parent()) {
-                std::cout << "[POSModeContainer] Refreshing MenuDisplay" << std::endl;
-                menuDisplay_->refresh();
-            }
-            if (currentOrderDisplay_ && currentOrderDisplay_->parent()) {
-                std::cout << "[POSModeContainer] Refreshing CurrentOrderDisplay" << std::endl;
-                currentOrderDisplay_->refresh(); // This gives immediate feedback for cart updates
-            }
+        }
+        if (menuDisplay_ && menuDisplay_->parent()) {
+            menuDisplay_->refresh();
+        }
+        if (currentOrderDisplay_ && currentOrderDisplay_->parent()) {
+            currentOrderDisplay_->refresh();
         }
     } catch (const std::exception& e) {
         std::cerr << "[POSModeContainer] Error refreshing components: " << e.what() << std::endl;
-        
-        // Clear the component pointers since they're apparently invalid
-        if (!hasCurrentOrder) {
-            orderEntryPanel_ = nullptr;
-        } else {
-            menuDisplay_ = nullptr;
-            currentOrderDisplay_ = nullptr;
-        }
     }
     
     std::cout << "[POSModeContainer] Data-only refresh completed" << std::endl;
@@ -738,8 +549,7 @@ void POSModeContainer::createNewOrder(const std::string& tableIdentifier) {
         auto order = posService_->createOrder(tableIdentifier);
         if (order) {
             posService_->setCurrentOrder(order);
-            // Force UI mode change
-            currentUIMode_ = UI_MODE_NONE;
+            currentUIMode_ = UI_MODE_NONE; // Force UI mode change
             std::cout << "[POSModeContainer] New order created: #" << order->getOrderId() << std::endl;
         }
     }
@@ -748,13 +558,12 @@ void POSModeContainer::createNewOrder(const std::string& tableIdentifier) {
 void POSModeContainer::openOrderForEditing(std::shared_ptr<Order> order) {
     if (order && posService_) {
         posService_->setCurrentOrder(order);
-        // Force UI mode change
-        currentUIMode_ = UI_MODE_NONE;
+        currentUIMode_ = UI_MODE_NONE; // Force UI mode change
         std::cout << "[POSModeContainer] Order #" << order->getOrderId() << " opened for editing" << std::endl;
     }
 }
 
-// ADDED: Helper methods for Send to Kitchen functionality
+// Helper methods
 bool POSModeContainer::hasOrderWithItems() const {
     auto order = posService_ ? posService_->getCurrentOrder() : nullptr;
     return order && !order->getItems().empty();
@@ -769,9 +578,6 @@ void POSModeContainer::updateSendToKitchenButton() {
     
     bool hasCurrentOrder = this->hasCurrentOrder();
     bool hasItems = hasOrderWithItems();
-    
-    std::cout << "[POSModeContainer] Updating Send to Kitchen button - hasOrder: " << hasCurrentOrder 
-              << ", hasItems: " << hasItems << std::endl;
     
     try {
         if (hasCurrentOrder && hasItems) {
@@ -793,17 +599,18 @@ void POSModeContainer::updateSendToKitchenButton() {
 }
 
 void POSModeContainer::showOrderSentFeedback(int orderId) {
-    // Update the work area title temporarily to show success
     if (workAreaTitle_) {
         try {
             workAreaTitle_->setText("✅ Order #" + std::to_string(orderId) + " sent to kitchen!");
             workAreaTitle_->setStyleClass("h4 text-success mb-4");
             
-            // Reset the title after 3 seconds
-            Wt::WTimer::singleShot(std::chrono::milliseconds(3000), [this]() {
-                if (!isDestroying_ && workAreaTitle_) {
-                    workAreaTitle_->setText("🍽️ Order Management");
-                    workAreaTitle_->setStyleClass("h4 text-primary mb-4");
+            // Reset the title after 3 seconds using safer approach
+            POSModeContainer* self = this;
+            
+            Wt::WTimer::singleShot(std::chrono::milliseconds(3000), [self]() {
+                if (!self->isDestroying_ && self->workAreaTitle_ && self->parent()) {
+                    self->workAreaTitle_->setText("🍽️ Order Management");
+                    self->workAreaTitle_->setStyleClass("h4 text-primary mb-4");
                 }
             });
             
@@ -812,5 +619,5 @@ void POSModeContainer::showOrderSentFeedback(int orderId) {
         }
     }
     
-    std::cout << "[POSModeContainer] Showing success feedback for order #" << orderId << std::endl;
+    std::cout << "[POSModeContainer] Success feedback displayed for order #" << orderId << std::endl;
 }

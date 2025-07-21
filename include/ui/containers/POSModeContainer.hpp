@@ -20,10 +20,11 @@
 
 /**
  * @class POSModeContainer
- * @brief Container for POS mode layout and components with smart Active Orders toggle
+ * @brief Container for POS mode layout with proper panel management
  * 
- * Enhanced version that intelligently shows/hides the Active Orders display
- * to give more screen real estate when working on an order.
+ * Layout modes:
+ * - Order Entry Mode: Left Panel = Active Orders, Right Panel = Order Entry
+ * - Order Edit Mode: Left Panel = Menu Display, Right Panel = Current Order
  */
 class POSModeContainer : public Wt::WContainerWidget {
 public:
@@ -33,9 +34,10 @@ public:
      */
     enum UIMode {
         UI_MODE_NONE,
-        UI_MODE_ORDER_ENTRY,
-        UI_MODE_ORDER_EDIT
+        UI_MODE_ORDER_ENTRY,    // Active Orders (left) + Order Entry (right)
+        UI_MODE_ORDER_EDIT      // Menu Display (left) + Current Order (right)
     };
+    
     /**
      * @brief Constructs the POS mode container
      * @param posService POS service for business operations
@@ -50,7 +52,7 @@ public:
     virtual ~POSModeContainer();
     
     /**
-     * @brief Refreshes all components
+     * @brief Refreshes all components (smart refresh - only changes mode if needed)
      */
     void refresh();
     
@@ -72,11 +74,6 @@ public:
     void openOrderForEditing(std::shared_ptr<Order> order);
     
     /**
-     * @brief Sends the current order to kitchen and prepares for new order
-     */
-    void sendCurrentOrderToKitchen();
-    
-    /**
      * @brief Checks if an order is currently being edited
      * @return True if an order is being edited
      */
@@ -89,29 +86,19 @@ protected:
     void initializeUI();
     
     /**
-     * @brief Sets up the layout
+     * @brief Sets up the main layout (left and right panels)
      */
     void setupLayout();
     
     /**
-     * @brief Creates the left panel (Active Orders)
+     * @brief Creates the left panel container (will hold Active Orders or Menu Display)
      */
     void createLeftPanel();
     
     /**
-     * @brief Creates the right panel (Order Work Area)
+     * @brief Creates the right panel container (will hold Order Entry or Current Order)
      */
     void createRightPanel();
-    
-    /**
-     * @brief Creates the order entry area (for new orders)
-     */
-    void createOrderEntryArea();
-    
-    /**
-     * @brief Creates the order edit area (for editing existing orders)
-     */
-    void createOrderEditArea();
     
     /**
      * @brief Sets up event listeners
@@ -124,58 +111,58 @@ protected:
     void updateWorkArea();
     
     /**
-     * @brief Shows the order entry interface
+     * @brief Shows the order entry interface (Active Orders + Order Entry Panel)
      */
     void showOrderEntry();
     
     /**
-     * @brief Shows the order edit interface
+     * @brief Shows the order edit interface (Menu Display + Current Order Display)
      */
     void showOrderEdit();
     
     /**
-     * @brief Hides the Active Orders display for more screen space
+     * @brief Shows the Active Orders display (switches back to order entry mode)
+     */
+    void showActiveOrdersDisplay();
+    
+    /**
+     * @brief Hides the Active Orders display (legacy method - kept for compatibility)
+     * @deprecated Use showOrderEdit() instead
      */
     void hideActiveOrdersDisplay();
     
     /**
-     * @brief Shows the Active Orders display
+     * @brief Sends the current order to kitchen and returns to order entry mode
      */
-    void showActiveOrdersDisplay();
+    void sendCurrentOrderToKitchen();
 
 private:
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
     
     // Layout containers
-    Wt::WContainerWidget* leftPanel_;
-    Wt::WContainerWidget* rightPanel_;
-    Wt::WContainerWidget* workArea_;
+    Wt::WContainerWidget* leftPanel_;   // Holds Active Orders OR Menu Display
+    Wt::WContainerWidget* rightPanel_;  // Holds Order Entry OR Current Order
+    Wt::WContainerWidget* workArea_;    // Dynamic content area within right panel
     
-    // Components
-    ActiveOrdersDisplay* activeOrdersDisplay_;
-    OrderEntryPanel* orderEntryPanel_;
-    MenuDisplay* menuDisplay_;
-    CurrentOrderDisplay* currentOrderDisplay_;
+    // Components (only one set active at a time)
+    ActiveOrdersDisplay* activeOrdersDisplay_;      // In Order Entry mode (left panel)
+    OrderEntryPanel* orderEntryPanel_;              // In Order Entry mode (right panel)
+    MenuDisplay* menuDisplay_;                      // In Order Edit mode (left panel)
+    CurrentOrderDisplay* currentOrderDisplay_;     // In Order Edit mode (right panel)
     
-    // UI state management
+    // UI control elements
     Wt::WText* workAreaTitle_;
-    Wt::WPushButton* newOrderButton_;
-    Wt::WPushButton* sendToKitchenButton_;  // CHANGED: From closeOrderButton_
+    Wt::WPushButton* sendToKitchenButton_;      // Send order to kitchen
+    Wt::WPushButton* toggleOrdersButton_;       // Toggle back to Active Orders view
     
-    // FIXED: Added missing member variable for toggle button
-    Wt::WPushButton* toggleOrdersButton_;
-    
-    // Track current UI mode to avoid unnecessary recreation
-    UIMode currentUIMode_;
-    
-    // Destruction safety flag
-    bool isDestroying_;
+    // State management
+    UIMode currentUIMode_;                      // Track current UI mode
+    bool isDestroying_;                         // Destruction safety flag
     
     // Event handlers
     void handleOrderCreated(const std::any& eventData);
     void handleCurrentOrderChanged(const std::any& eventData);
-    void handleOrderSelected(int orderId);
     
     // Helper methods
     bool hasOrderWithItems() const;

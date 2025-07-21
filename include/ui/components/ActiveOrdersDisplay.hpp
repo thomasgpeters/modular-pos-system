@@ -1,5 +1,5 @@
 //============================================================================
-// Enhanced ActiveOrdersDisplay.hpp - API Integration Header
+// Enhanced ActiveOrdersDisplay.hpp - API Integration Header with Crash Protection
 //============================================================================
 
 #ifndef ACTIVEORDERSDISPLAY_H
@@ -18,28 +18,32 @@
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
 #include <Wt/WMessageBox.h>
+#include <Wt/WTimer.h>
 
 #include <memory>
 #include <vector>
 
 /**
  * @file ActiveOrdersDisplay.hpp
- * @brief Enhanced active orders display with API integration
+ * @brief Enhanced active orders display with API integration and crash protection
  * 
  * This component displays and manages active orders, supporting both
  * local data (fallback) and API data fetching for real-time updates.
+ * Enhanced with comprehensive safety checks to prevent crashes during
+ * widget destruction and event handling.
  * 
  * @author Restaurant POS Team
- * @version 3.0.0 - Enhanced with API integration
+ * @version 3.1.0 - Enhanced with crash protection and safety checks
  */
 
 /**
  * @class ActiveOrdersDisplay
- * @brief UI component for displaying and managing active orders with API support
+ * @brief UI component for displaying and managing active orders with API support and crash protection
  * 
  * The ActiveOrdersDisplay shows all currently active orders with
  * functionality to view details, complete orders, and cancel orders.
- * Enhanced with API integration for real-time data from the middleware.
+ * Enhanced with API integration for real-time data from the middleware
+ * and comprehensive safety checks to prevent crashes during widget lifecycle.
  */
 class ActiveOrdersDisplay : public Wt::WContainerWidget {
 public:
@@ -54,9 +58,9 @@ public:
                        bool showHeader = true);
     
     /**
-     * @brief Virtual destructor
+     * @brief Virtual destructor with proper cleanup
      */
-    virtual ~ActiveOrdersDisplay() = default;
+    virtual ~ActiveOrdersDisplay();
     
     /**
      * @brief Refreshes the orders display from API or local service
@@ -115,7 +119,7 @@ protected:
     std::unique_ptr<Wt::WWidget> createDisplayHeader();
     
     /**
-     * @brief Loads orders from API (async)
+     * @brief Loads orders from API (async with safety checks)
      */
     void loadOrdersFromAPI();
     
@@ -192,14 +196,14 @@ private:
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
     
-    // Event handlers (enhanced for API integration)
+    // Event handlers (enhanced for API integration with safety checks)
     void handleOrderCreated(const std::any& eventData);
     void handleOrderModified(const std::any& eventData);
     void handleOrderCompleted(const std::any& eventData);
     void handleOrderCancelled(const std::any& eventData);
     void handleKitchenStatusChanged(const std::any& eventData);
     
-    // UI action handlers (enhanced for API integration)
+    // UI action handlers (enhanced for API integration with safety checks)
     void onViewOrderClicked(int orderId);
     void onCompleteOrderClicked(int orderId);
     void onCancelOrderClicked(int orderId);

@@ -69,16 +69,19 @@ set(THEME_CSS_FILES
 
 # Component CSS Files
 set(COMPONENT_CSS_FILES
-    components/pos-components.css
-    components/menu-components.css
-    components/order-components.css
+    components/button-components.css
+    components/common-components.css
+    components/form-components.css
     components/header-components.css
     components/kitchen-components.css
-    components/payment-components.css
+    components/menu-components.css
     components/modal-components.css
-    components/button-components.css
+    components/order-components.css
+    components/payment-components.css
+    components/pos-components.css
+    components/pos-consistant-styles.css
+    components/pos-dialogs.css
     components/table-components.css
-    components/form-components.css
 )
 
 # Print CSS file summary
