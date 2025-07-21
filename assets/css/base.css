@@ -1,12 +1,11 @@
-/* base.css - Add your styles here */
-/* =============================================================================
-   base.css - Foundation CSS for Restaurant POS System
-   This file provides essential styling to ensure the application is always visible
-   ============================================================================= */
+/* ============================================================================
+   Clean POS Layout CSS - Minimal Borders and Streamlined Design
+   Replace your existing base.css and pos-layout.css with this cleaner version
+   ============================================================================ */
 
-/* CSS Custom Properties for consistent theming */
+/* CSS Custom Properties */
 :root {
-    /* Color palette */
+    /* Color palette - softer, less contrasted */
     --primary-color: #0d6efd;
     --primary-hover: #0b5ed7;
     --secondary-color: #6c757d;
@@ -18,6 +17,12 @@
     --dark-color: #212529;
     --white: #ffffff;
     
+    /* Subtle backgrounds */
+    --bg-subtle: #fbfbfb;
+    --bg-section: #ffffff;
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.02);
+    
     /* Typography */
     --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
                          'Helvetica Neue', Arial, sans-serif;
@@ -26,30 +31,25 @@
     --font-size-lg: 1.125rem;
     --line-height-base: 1.5;
     
-    /* Spacing */
+    /* Spacing - more generous */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     
-    /* Border radius */
-    --border-radius: 0.375rem;
-    --border-radius-lg: 0.5rem;
+    /* Minimal border radius */
+    --border-radius: 0.25rem;
+    --border-radius-lg: 0.375rem;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-    
-    /* Transitions */
-    --transition-base: all 0.2s ease-in-out;
-    --transition-fast: all 0.15s ease-in-out;
+    /* Subtle transitions */
+    --transition-base: all 0.2s ease;
+    --transition-fast: all 0.15s ease;
 }
 
-/* =============================================================================
+/* ============================================================================
    Base Reset and Typography
-   ============================================================================= */
+   ============================================================================ */
 
 * {
     box-sizing: border-box;
@@ -68,93 +68,261 @@ body {
     font-weight: 400;
     line-height: var(--line-height-base);
     color: var(--dark-color);
-    background-color: var(--light-color);
+    background-color: var(--bg-subtle);
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
-/* =============================================================================
-   Application Layout
-   ============================================================================= */
+/* ============================================================================
+   Main Application Layout - Clean and Minimal
+   ============================================================================ */
 
 .pos-app-container {
     min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: var(--light-color);
-    color: var(--dark-color);
-    transition: var(--transition-base);
-}
-
-.mode-container-wrapper {
-    flex: 1;
-    padding: var(--spacing-lg);
-    background: var(--white);
-    margin: var(--spacing-md);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow);
-    transition: var(--transition-base);
     overflow: hidden;
-}
-
-/* =============================================================================
-   Theme Support - Base Themes
-   ============================================================================= */
-
-/* Light Theme (Default) */
-.theme-light {
-    background-color: var(--light-color);
+    background-color: var(--bg-subtle);
     color: var(--dark-color);
 }
 
-.theme-light .mode-container-wrapper {
+/* Header - Clean, no borders */
+.common-header {
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    flex: 0 0 60px !important;
+    flex-shrink: 0 !important;
     background: var(--white);
-    color: var(--dark-color);
-    border: 1px solid #dee2e6;
+    /* No borders, just a subtle shadow */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-/* Dark Theme */
-.theme-dark {
-    background-color: #1a1a1a;
-    color: #e9ecef;
+/* Main Content Area - No borders or excessive padding */
+.mode-container-wrapper {
+    flex: 1 1 auto !important;
+    overflow: auto;
+    background: transparent;
+    /* Remove all borders, shadows, margins, padding */
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
-.theme-dark .mode-container-wrapper {
-    background: #2d3748;
-    color: #e9ecef;
-    border: 1px solid #4a5568;
+/* Footer - Clean, no borders */
+.common-footer {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px !important;
+    flex-shrink: 0 !important;
+    padding: 0.5rem 1rem;
+    background: var(--white);
+    /* Just a subtle top shadow */
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--secondary-color);
 }
 
-/* Colorful Theme */
-.theme-colorful {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: var(--white);
+/* Mode Container - Full height, no styling */
+#main-mode-container {
+    flex: 1 1 auto !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    background: transparent;
 }
 
-.theme-colorful .mode-container-wrapper {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--white);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
+#pos-mode-container,
+#kitchen-mode-container {
+    flex: 1 1 auto !important;
+    overflow: auto;
+    min-height: 0;
+    height: 100%;
+    padding: 0; /* Remove all padding */
+    background: transparent;
 }
 
-/* Restaurant Theme */
-.theme-restaurant {
-    background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
-    color: var(--white);
+/* ============================================================================
+   POS Mode Layout - Clean Two-Panel Design
+   ============================================================================ */
+
+.pos-mode-container,
+.kitchen-mode-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    background: transparent;
 }
 
-.theme-restaurant .mode-container-wrapper {
-    background: rgba(139, 69, 19, 0.8);
-    color: var(--white);
-    border: 1px solid rgba(210, 105, 30, 0.3);
+.pos-left-panel {
+    background-color: var(--bg-section);
+    /* Only a very subtle right border to separate panels */
+    border-right: 1px solid var(--border-subtle);
+    padding: var(--spacing-lg);
+    transition: var(--transition-base);
 }
 
-/* =============================================================================
-   Common UI Components
-   ============================================================================= */
+.pos-right-panel {
+    background-color: transparent;
+    padding: var(--spacing-lg);
+    transition: var(--transition-base);
+}
 
-/* Buttons */
+.kitchen-left-panel {
+    background-color: var(--bg-section);
+    border-right: 1px solid var(--border-subtle);
+    padding: var(--spacing-lg);
+}
+
+.kitchen-right-panel {
+    background-color: transparent;
+    padding: var(--spacing-lg);
+}
+
+/* ============================================================================
+   Component Containers - Minimal Styling
+   ============================================================================ */
+
+/* Active Orders Display - Clean, no excessive borders */
+.pos-active-orders-container {
+    background: transparent;
+    /* Remove all the boxy styling */
+}
+
+.pos-orders-main {
+    background: var(--bg-section);
+    border-radius: var(--border-radius-lg);
+    /* Just a very subtle shadow */
+    box-shadow: var(--shadow-subtle);
+}
+
+/* Current Order Display - Clean */
+.pos-current-order-container {
+    background: transparent;
+}
+
+.pos-current-order-main {
+    background: var(--bg-section);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-subtle);
+}
+
+/* Order Status Panel - Clean */
+.pos-order-status-container {
+    background: transparent;
+}
+
+.pos-status-main {
+    background: var(--bg-section);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-subtle);
+}
+
+/* ============================================================================
+   Headers - Simplified, No Heavy Borders
+   ============================================================================ */
+
+.pos-section-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    /* Remove all borders */
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pos-section-header .h4,
+.pos-section-header .h5 {
+    color: white;
+    margin: 0;
+    font-weight: 600;
+}
+
+/* ============================================================================
+   Tables - Clean, Minimal Borders
+   ============================================================================ */
+
+.pos-orders-table,
+.pos-current-order-table {
+    background: var(--white);
+    /* Remove outer borders */
+    border: none;
+    border-collapse: collapse;
+}
+
+.pos-table-header {
+    background: var(--primary-color);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    text-align: center;
+    font-weight: 600;
+    /* Remove all borders */
+    border: none;
+}
+
+.pos-table-cell {
+    padding: var(--spacing-sm) var(--spacing-md);
+    vertical-align: middle;
+    /* Remove all borders */
+    border: none;
+    /* Just a very subtle bottom line to separate rows */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+/* Alternating row colors - very subtle */
+.pos-table-cell.bg-white {
+    background-color: var(--white);
+}
+
+.pos-table-cell.bg-light {
+    background-color: #fafafa;
+}
+
+/* ============================================================================
+   Table and Content Wrappers - Remove Excessive Padding/Borders
+   ============================================================================ */
+
+.pos-table-wrapper {
+    /* Remove all the boxy styling */
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+}
+
+/* Summary and Info Sections */
+.pos-order-summary,
+.pos-status-summary {
+    background: var(--white);
+    padding: var(--spacing-lg);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+    /* Remove borders, just use background difference */
+    border: none;
+    /* Very subtle top line to separate from table */
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================================
+   Buttons - Clean, Minimal
+   ============================================================================ */
+
 .btn {
     display: inline-block;
     padding: var(--spacing-sm) var(--spacing-md);
@@ -175,7 +343,7 @@ body {
 
 .btn:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn:active {
@@ -193,31 +361,28 @@ body {
     border-color: var(--primary-hover);
 }
 
-.btn-secondary {
-    color: var(--white);
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-}
-
 .btn-success {
     color: var(--white);
     background-color: var(--success-color);
     border-color: var(--success-color);
 }
 
-.btn-warning {
-    color: var(--dark-color);
-    background-color: var(--warning-color);
-    border-color: var(--warning-color);
+.btn-outline-primary {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-color: var(--primary-color);
 }
 
-.btn-danger {
+.btn-outline-primary:hover {
     color: var(--white);
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
-/* Cards */
+/* ============================================================================
+   Cards - Minimal, Clean
+   ============================================================================ */
+
 .card {
     position: relative;
     display: flex;
@@ -226,226 +391,198 @@ body {
     word-wrap: break-word;
     background-color: var(--white);
     background-clip: border-box;
-    border: 1px solid rgba(0, 0, 0, 0.125);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
+    /* Remove heavy borders, use subtle shadow instead */
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-subtle);
     transition: var(--transition-base);
 }
 
 .card:hover {
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.card-header {
-    padding: var(--spacing-md);
-    margin-bottom: 0;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    border-top-left-radius: calc(var(--border-radius) - 1px);
-    border-top-right-radius: calc(var(--border-radius) - 1px);
+/* ============================================================================
+   Work Areas - Clean, Spacious
+   ============================================================================ */
+
+.order-entry-area,
+.order-edit-area {
+    padding: var(--spacing-xl);
+    background: var(--bg-section);
+    border-radius: var(--border-radius-lg);
+    /* Remove the dashed border - just use background difference */
+    border: none;
 }
 
-.card-body {
-    flex: 1 1 auto;
-    padding: var(--spacing-md);
+.order-entry-area:hover {
+    background: #f0f8ff;
 }
 
-.card-footer {
-    padding: var(--spacing-md);
-    background-color: rgba(0, 0, 0, 0.03);
-    border-top: 1px solid rgba(0, 0, 0, 0.125);
-    border-bottom-left-radius: calc(var(--border-radius) - 1px);
-    border-bottom-right-radius: calc(var(--border-radius) - 1px);
+.pos-dynamic-work-area {
+    min-height: 500px;
+    transition: var(--transition-base);
+    background: transparent;
 }
 
-/* =============================================================================
-   Layout Utilities
-   ============================================================================= */
+/* ============================================================================
+   Metric Cards - Clean Design
+   ============================================================================ */
 
-/* Flexbox utilities */
-.d-flex {
-    display: flex !important;
+.pos-metric-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    /* Remove borders, use subtle shadow */
+    border: none;
+    box-shadow: var(--shadow-subtle);
+    transition: var(--transition-base);
 }
 
-.flex-column {
-    flex-direction: column !important;
+.pos-metric-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
 }
 
-.flex-row {
-    flex-direction: row !important;
+/* ============================================================================
+   Form Controls - Clean
+   ============================================================================ */
+
+.form-control,
+.form-select {
+    display: block;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-base);
+    font-weight: 400;
+    line-height: var(--line-height-base);
+    color: var(--dark-color);
+    background-color: var(--white);
+    background-image: none;
+    /* Minimal border */
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius);
+    transition: var(--transition-fast);
 }
 
-.justify-content-center {
-    justify-content: center !important;
+.form-control:focus,
+.form-select:focus {
+    color: var(--dark-color);
+    background-color: var(--white);
+    border-color: var(--primary-color);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-.justify-content-between {
-    justify-content: space-between !important;
+/* ============================================================================
+   Theme Support - Clean Themes
+   ============================================================================ */
+
+/* Light Theme (Default) */
+.theme-light {
+    background-color: var(--bg-subtle);
+    color: var(--dark-color);
 }
 
-.align-items-center {
-    align-items: center !important;
+/* Dark Theme */
+.theme-dark {
+    --bg-subtle: #1a1a1a;
+    --bg-section: #2d3748;
+    --border-subtle: rgba(255, 255, 255, 0.1);
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
+    
+    background-color: var(--bg-subtle);
+    color: #e9ecef;
 }
 
-.flex-grow-1 {
-    flex-grow: 1 !important;
+.theme-dark .pos-orders-main,
+.theme-dark .pos-current-order-main,
+.theme-dark .pos-status-main {
+    background: var(--bg-section);
+    color: #e9ecef;
 }
 
-/* Spacing utilities */
-.m-0 { margin: 0 !important; }
-.m-1 { margin: var(--spacing-xs) !important; }
-.m-2 { margin: var(--spacing-sm) !important; }
-.m-3 { margin: var(--spacing-md) !important; }
-.m-4 { margin: var(--spacing-lg) !important; }
-.m-5 { margin: var(--spacing-xl) !important; }
-
-.p-0 { padding: 0 !important; }
-.p-1 { padding: var(--spacing-xs) !important; }
-.p-2 { padding: var(--spacing-sm) !important; }
-.p-3 { padding: var(--spacing-md) !important; }
-.p-4 { padding: var(--spacing-lg) !important; }
-.p-5 { padding: var(--spacing-xl) !important; }
-
-/* Height utilities */
-.h-100 {
-    height: 100% !important;
-}
-
-/* Text utilities */
-.text-center {
-    text-align: center !important;
-}
-
-.text-left {
-    text-align: left !important;
-}
-
-.text-right {
-    text-align: right !important;
-}
-
-.text-primary {
-    color: var(--primary-color) !important;
-}
-
-.text-success {
-    color: var(--success-color) !important;
-}
-
-.text-warning {
-    color: var(--warning-color) !important;
-}
-
-.text-danger {
-    color: var(--danger-color) !important;
-}
-
-/* =============================================================================
-   Mode-specific Styling
-   ============================================================================= */
-
-.pos-mode {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.kitchen-mode {
-    background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+/* Colorful Theme */
+.theme-colorful {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: var(--white);
 }
 
-.pos-mode-active {
-    border-left: 4px solid var(--primary-color);
+.theme-colorful .pos-orders-main,
+.theme-colorful .pos-current-order-main,
+.theme-colorful .pos-status-main {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--white);
+    backdrop-filter: blur(10px);
 }
 
-.kitchen-mode-active {
-    border-left: 4px solid var(--warning-color);
+/* Restaurant Theme */
+.theme-restaurant {
+    background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
+    color: var(--white);
 }
 
-/* =============================================================================
+.theme-restaurant .pos-orders-main,
+.theme-restaurant .pos-current-order-main,
+.theme-restaurant .pos-status-main {
+    background: rgba(139, 69, 19, 0.8);
+    color: var(--white);
+}
+
+/* ============================================================================
    Responsive Design
-   ============================================================================= */
+   ============================================================================ */
 
 @media (max-width: 768px) {
-    .mode-container-wrapper {
-        margin: var(--spacing-sm);
+    .pos-left-panel,
+    .pos-right-panel,
+    .kitchen-left-panel,
+    .kitchen-right-panel {
         padding: var(--spacing-md);
     }
     
-    .btn {
-        padding: var(--spacing-sm);
-        font-size: var(--font-size-sm);
+    .common-header {
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        flex: 0 0 50px !important;
+    }
+    
+    .common-footer {
+        height: 35px !important;
+        min-height: 35px !important;
+        max-height: 35px !important;
+        flex: 0 0 35px !important;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
     }
 }
 
 @media (max-width: 576px) {
-    .mode-container-wrapper {
-        margin: var(--spacing-xs);
+    .pos-left-panel,
+    .pos-right-panel,
+    .kitchen-left-panel,
+    .kitchen-right-panel {
         padding: var(--spacing-sm);
     }
 }
 
-/* =============================================================================
-   Loading and Transition States
-   ============================================================================= */
+/* ============================================================================
+   Utility Classes - Clean Helpers
+   ============================================================================ */
 
-.theme-initialized {
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
+.bg-subtle { background-color: var(--bg-subtle) !important; }
+.bg-section { background-color: var(--bg-section) !important; }
+.border-subtle { border: 1px solid var(--border-subtle) !important; }
+.shadow-subtle { box-shadow: var(--shadow-subtle) !important; }
 
-.loading {
-    opacity: 0.7;
-    pointer-events: none;
-}
+/* Remove common boxy utilities */
+.no-border { border: none !important; }
+.no-shadow { box-shadow: none !important; }
+.no-radius { border-radius: 0 !important; }
 
-.fade-in {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* =============================================================================
-   Debug and Development Helpers
-   ============================================================================= */
-
-.debug-outline {
-    outline: 2px solid red !important;
-}
-
-.debug-container {
-    background: rgba(255, 0, 0, 0.1) !important;
-    border: 1px dashed red !important;
-}
-
-/* Development info display */
-.dev-info {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius);
-    font-size: var(--font-size-sm);
-    z-index: 9999;
-    display: none;
-}
-
-body.dev-mode .dev-info {
-    display: block;
-}
-
-/* =============================================================================
+/* ============================================================================
    Print Styles
-   ============================================================================= */
+   ============================================================================ */
 
 @media print {
     .pos-app-container {
@@ -453,7 +590,9 @@ body.dev-mode .dev-info {
         color: black !important;
     }
     
-    .mode-container-wrapper {
+    .pos-orders-main,
+    .pos-current-order-main,
+    .pos-status-main {
         box-shadow: none !important;
         border: 1px solid #ccc !important;
     }
@@ -462,56 +601,4 @@ body.dev-mode .dev-info {
         border: 1px solid #ccc !important;
         box-shadow: none !important;
     }
-}
-
-/* =============================================================================
-   QUICK FIX: Add this CSS to the end of your base.css file for immediate relief
-   ============================================================================= */
-
-/* EMERGENCY HEADER SIZE FIX */
-.common-header,
-.navbar {
-    height: 60px !important;
-    min-height: 60px !important;
-    max-height: 60px !important;
-    flex: 0 0 60px !important;
-    overflow: hidden !important;
-}
-
-/* ENSURE MAIN CONTENT GETS REMAINING SPACE */
-.pos-app-container {
-    height: 100vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-.mode-container-wrapper {
-    flex: 1 1 auto !important;
-    overflow: auto !important;
-    min-height: 0 !important;
-}
-
-/* COMPACT HEADER ELEMENTS */
-.navbar-brand {
-    font-size: 1.1rem !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.nav-link {
-    padding: 0.25rem 0.5rem !important;
-    font-size: 0.9rem !important;
-}
-
-.btn {
-    padding: 0.25rem 0.75rem !important;
-    font-size: 0.875rem !important;
-}
-
-/* FOOTER SIZE FIX */
-.common-footer {
-    height: 40px !important;
-    min-height: 40px !important;
-    max-height: 40px !important;
-    flex: 0 0 40px !important;
 }

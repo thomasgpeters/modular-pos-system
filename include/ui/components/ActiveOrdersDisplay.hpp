@@ -160,7 +160,7 @@ protected:
     /**
      * @brief Updates the orders table with current data (legacy method)
      */
-    void updateOrdersTable() { refresh(); }
+    void updateOrdersTable();
     
     /**
      * @brief Adds a row for an order to the table

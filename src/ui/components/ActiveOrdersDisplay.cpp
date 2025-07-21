@@ -1,6 +1,7 @@
-//============================================================================
-// Enhanced ActiveOrdersDisplay.cpp - Clean Fix Without Manual Timers
-//============================================================================
+// ============================================================================
+// Complete ActiveOrdersDisplay.cpp - All Methods Implemented
+// This should resolve the vtable error by implementing every method
+// ============================================================================
 
 #include "../../../include/ui/components/ActiveOrdersDisplay.hpp"
 
@@ -18,7 +19,8 @@
 ActiveOrdersDisplay::ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
                                         std::shared_ptr<EventManager> eventManager,
                                          bool showHeader)
-    : posService_(posService)
+    : Wt::WContainerWidget()  
+    , posService_(posService)
     , eventManager_(eventManager)
     , maxOrdersToDisplay_(DEFAULT_MAX_ORDERS)
     , showCompletedOrders_(false)
@@ -27,370 +29,208 @@ ActiveOrdersDisplay::ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
     , ordersTable_(nullptr) 
     , showHeader_(showHeader)
 {
-    
     if (!posService_) {
         throw std::invalid_argument("ActiveOrdersDisplay requires valid POSService");
     }
     
     addStyleClass("pos-active-orders-container h-100");
-    setStyleClass("pos-active-orders-container h-100");
     
     initializeUI();
     setupEventListeners();
-    
-    // Load initial data from API
     loadOrdersFromAPI();
     
-    std::cout << "✓ ActiveOrdersDisplay initialized with clean timer management" << std::endl;
+    std::cout << "✓ ActiveOrdersDisplay initialized with clean design" << std::endl;
 }
 
+// REQUIRED: Virtual destructor implementation (declared in header)
 ActiveOrdersDisplay::~ActiveOrdersDisplay() {
-    std::cout << "[ActiveOrdersDisplay] Destructor called - cleaning up event subscriptions" << std::endl;
+    std::cout << "[ActiveOrdersDisplay] Destructor called - cleaning up" << std::endl;
     
     try {
-        // Unsubscribe from all events to prevent callbacks after destruction
+        // Cleanup event subscriptions
         if (eventManager_) {
             for (auto handle : eventSubscriptions_) {
                 eventManager_->unsubscribe(handle);
             }
             eventSubscriptions_.clear();
-            std::cout << "[ActiveOrdersDisplay] Event subscriptions cleared" << std::endl;
         }
         
-        // Clear service references to help prevent crashes
-        posService_.reset();
-        eventManager_.reset();
-        
-        std::cout << "[ActiveOrdersDisplay] Cleanup completed successfully" << std::endl;
+        // Clear UI component pointers (Wt will handle actual widget destruction)
+        headerText_ = nullptr;
+        orderCountText_ = nullptr;
+        ordersTable_ = nullptr;
         
     } catch (const std::exception& e) {
         std::cerr << "[ActiveOrdersDisplay] Error during destruction: " << e.what() << std::endl;
     }
 }
 
+// ============================================================================
+// UI INITIALIZATION METHODS
+// ============================================================================
+
 void ActiveOrdersDisplay::initializeUI() {
-    // Create main container without excessive padding/borders
     auto mainContainer = addNew<Wt::WContainerWidget>();
-    mainContainer->addStyleClass("pos-orders-main h-100 bg-light");
+    mainContainer->addStyleClass("pos-orders-main h-100");
     
-    // Only create header if showHeader_ is true
     if (showHeader_) {
         auto header = createDisplayHeader();
         mainContainer->addWidget(std::move(header));
     }
     
-    // Create table container with minimal spacing
-    auto tableContainer = mainContainer->addNew<Wt::WContainerWidget>();
-    tableContainer->addStyleClass("pos-table-wrapper px-3 pb-3");
-    
-    // Create table without borders and excessive spacing
-    ordersTable_ = tableContainer->addNew<Wt::WTable>();
-    ordersTable_->addStyleClass("table pos-orders-table w-100 mb-0");
+    ordersTable_ = mainContainer->addNew<Wt::WTable>();
+    ordersTable_->addStyleClass("table pos-orders-table w-100");
     ordersTable_->setWidth(Wt::WLength("100%"));
 
-    // Initialize table headers
     initializeTableHeaders();
-    
-    // Show loading state initially
     showLoadingState();
     
-    std::cout << "✓ ActiveOrdersDisplay UI initialized" << std::endl;
+    std::cout << "✓ ActiveOrdersDisplay UI initialized with clean layout" << std::endl;
 }
 
-void ActiveOrdersDisplay::loadOrdersFromAPI() {
-    // CRITICAL: Add safety checks before any dynamic_cast operations
-    if (!posService_) {
-        std::cout << "[ActiveOrdersDisplay] ERROR: posService_ is null - cannot load orders" << std::endl;
-        displayLocalOrders();
+std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
+    auto header = std::make_unique<Wt::WContainerWidget>();
+    header->addStyleClass("pos-section-header d-flex justify-content-between align-items-center");
+    
+    headerText_ = header->addNew<Wt::WText>("📋 Active Orders");
+    headerText_->addStyleClass("h4 mb-0 fw-bold");
+    
+    orderCountText_ = header->addNew<Wt::WText>("Loading...");
+    orderCountText_->addStyleClass("badge bg-info px-3 py-2 rounded-pill");
+    
+    return std::move(header);
+}
+
+void ActiveOrdersDisplay::initializeTableHeaders() {
+    if (!ordersTable_) {
         return;
     }
     
-    // CRITICAL: Check if the widget is still valid
-    if (!parent()) {
-        std::cout << "[ActiveOrdersDisplay] WARNING: Widget has no parent - likely being destroyed, skipping API load" << std::endl;
-        return;
-    }
+    ordersTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
+    ordersTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table/Location"));
+    ordersTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
+    ordersTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Items"));
+    ordersTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Total"));
+    ordersTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Time"));
+    ordersTable_->elementAt(0, 6)->addWidget(std::make_unique<Wt::WText>("Actions"));
     
-    try {
-        // Try to cast to EnhancedPOSService for API access - with safety
-        auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
+    for (int col = 0; col < ordersTable_->columnCount(); ++col) {
+        auto headerCell = ordersTable_->elementAt(0, col);
+        headerCell->addStyleClass("pos-table-header");
         
-        if (enhancedService && enhancedService->isConnected()) {
-            std::cout << "[ActiveOrdersDisplay] Loading orders from API..." << std::endl;
-            
-            // Use async API call with safety checks (no manual timers!)
-            enhancedService->getActiveOrdersAsync([this](std::vector<std::shared_ptr<Order>> orders, bool success) {
-                // CRITICAL: Check if widget is still valid before doing anything
-                if (!parent()) {
-                    std::cout << "[ActiveOrdersDisplay] Async callback: Widget destroyed, ignoring result" << std::endl;
-                    return;
-                }
-                
-                if (!posService_) {
-                    std::cout << "[ActiveOrdersDisplay] Async callback: Service destroyed, ignoring result" << std::endl;
-                    return;
-                }
-                
-                if (success) {
-                    std::cout << "[ActiveOrdersDisplay] Loaded " << orders.size() << " orders from API" << std::endl;
-                    displayAPIOrders(orders);
-                } else {
-                    std::cout << "[ActiveOrdersDisplay] Failed to load from API, falling back to local data" << std::endl;
-                    displayLocalOrders();
-                }
-            });
-        } else {
-            std::cout << "[ActiveOrdersDisplay] Enhanced service not available, using local data" << std::endl;
-            displayLocalOrders();
+        auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
+        if (headerText) {
+            headerText->addStyleClass("fw-bold");
         }
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception during API load: " << e.what() << std::endl;
+    }
+}
+
+void ActiveOrdersDisplay::setupEventListeners() {
+    if (!eventManager_) return;
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CREATED, 
+            [this](const std::any& data) { handleOrderCreated(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
+            [this](const std::any& data) { handleOrderModified(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_COMPLETED,
+            [this](const std::any& data) { handleOrderCompleted(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::ORDER_CANCELLED,
+            [this](const std::any& data) { handleOrderCancelled(data); })
+    );
+    
+    eventSubscriptions_.push_back(
+        eventManager_->subscribe(POSEvents::KITCHEN_STATUS_CHANGED,
+            [this](const std::any& data) { handleKitchenStatusChanged(data); })
+    );
+}
+
+// ============================================================================
+// API INTEGRATION METHODS
+// ============================================================================
+
+void ActiveOrdersDisplay::loadOrdersFromAPI() {
+    auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
+    
+    if (enhancedService && enhancedService->isConnected()) {
+        std::cout << "[ActiveOrdersDisplay] Loading orders from API..." << std::endl;
+        
+        enhancedService->getActiveOrdersAsync([this](std::vector<std::shared_ptr<Order>> orders, bool success) {
+            if (success) {
+                std::cout << "[ActiveOrdersDisplay] Loaded " << orders.size() << " orders from API" << std::endl;
+                displayAPIOrders(orders);
+            } else {
+                std::cout << "[ActiveOrdersDisplay] Failed to load from API, falling back to local data" << std::endl;
+                displayLocalOrders();
+            }
+        });
+    } else {
+        std::cout << "[ActiveOrdersDisplay] Enhanced service not available, using local data" << std::endl;
         displayLocalOrders();
     }
 }
 
 void ActiveOrdersDisplay::displayAPIOrders(const std::vector<std::shared_ptr<Order>>& orders) {
-    // CRITICAL: Safety check before modifying UI
-    if (!ordersTable_ || !parent()) {
-        std::cout << "[ActiveOrdersDisplay] displayAPIOrders: Widget invalid, skipping" << std::endl;
-        return;
+    clearLoadingState();
+    
+    while (ordersTable_->rowCount() > 1) {
+        ordersTable_->removeRow(1);
     }
     
-    try {
-        clearLoadingState();
-        
-        // Clear existing rows (except header)
-        while (ordersTable_->rowCount() > 1) {
-            ordersTable_->removeRow(1);
-        }
-        
-        if (orders.empty()) {
-            showEmptyOrdersMessage();
-            updateOrderCountDirect(0);
-            return;
-        }
-        
-        auto filteredOrders = filterOrders(orders);
-        
-        // Add order rows
-        for (size_t i = 0; i < filteredOrders.size(); ++i) {
-            if (maxOrdersToDisplay_ > 0 && i >= static_cast<size_t>(maxOrdersToDisplay_)) {
-                break;
-            }
-            addOrderRow(filteredOrders[i], static_cast<int>(i + 1));
-        }
-        
-        updateOrderCountDirect(static_cast<int>(filteredOrders.size()));
-        std::cout << "[ActiveOrdersDisplay] Displayed " << filteredOrders.size() << " orders from API" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception in displayAPIOrders: " << e.what() << std::endl;
-    }
-}
-
-void ActiveOrdersDisplay::displayLocalOrders() {
-    // CRITICAL: Safety check before accessing posService_
-    if (!posService_ || !ordersTable_ || !parent()) {
-        std::cout << "[ActiveOrdersDisplay] displayLocalOrders: Service or widget invalid, showing empty" << std::endl;
-        clearLoadingState();
-        if (ordersTable_ && ordersTable_->rowCount() <= 1) {
-            showEmptyOrdersMessage();
-        }
-        updateOrderCountDirect(0);
-        return;
-    }
-    
-    try {
-        auto orders = getDisplayOrders();
-        
-        clearLoadingState();
-        
-        // Clear existing rows (except header)
-        while (ordersTable_->rowCount() > 1) {
-            ordersTable_->removeRow(1);
-        }
-        
-        if (orders.empty()) {
-            showEmptyOrdersMessage();
-            updateOrderCountDirect(0);
-            return;
-        }
-        
-        // Add order rows
-        for (size_t i = 0; i < orders.size(); ++i) {
-            if (maxOrdersToDisplay_ > 0 && i >= static_cast<size_t>(maxOrdersToDisplay_)) {
-                break;
-            }
-            addOrderRow(orders[i], static_cast<int>(i + 1));
-        }
-        
-        updateOrderCountDirect(static_cast<int>(orders.size()));
-        std::cout << "[ActiveOrdersDisplay] Displayed " << orders.size() << " orders from local data" << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception in displayLocalOrders: " << e.what() << std::endl;
-        clearLoadingState();
-        updateOrderCountDirect(0);
-    }
-}
-
-void ActiveOrdersDisplay::refresh() {
-    std::cout << "[ActiveOrdersDisplay] Refreshing data..." << std::endl;
-    
-    // CRITICAL: Add safety checks before refreshing
-    if (!parent()) {
-        std::cout << "[ActiveOrdersDisplay] WARNING: Refresh called on destroyed widget - ignoring" << std::endl;
-        return;
-    }
-    
-    if (!posService_) {
-        std::cout << "[ActiveOrdersDisplay] WARNING: No POS service available - showing empty" << std::endl;
-        clearLoadingState();
+    if (orders.empty()) {
         showEmptyOrdersMessage();
         updateOrderCountDirect(0);
         return;
     }
     
-    loadOrdersFromAPI();
-}
-
-// Event handlers - SIMPLIFIED WITHOUT TIMERS
-void ActiveOrdersDisplay::handleOrderCreated(const std::any& eventData) {
-    std::cout << "[ActiveOrdersDisplay] Order created event received" << std::endl;
+    auto filteredOrders = filterOrders(orders);
     
-    // Safety checks
-    if (!parent() || !posService_) {
-        std::cout << "[ActiveOrdersDisplay] Widget/service invalid - ignoring order created event" << std::endl;
-        return;
-    }
-    
-    // Directly refresh - no timer needed
-    try {
-        loadOrdersFromAPI();
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception during refresh: " << e.what() << std::endl;
-    }
-}
-
-void ActiveOrdersDisplay::handleOrderModified(const std::any& eventData) {
-    std::cout << "[ActiveOrdersDisplay] Order modified event received" << std::endl;
-    
-    if (!parent() || !posService_) {
-        std::cout << "[ActiveOrdersDisplay] Widget/service invalid - ignoring order modified event" << std::endl;
-        return;
-    }
-    
-    loadOrdersFromAPI();
-}
-
-void ActiveOrdersDisplay::handleOrderCompleted(const std::any& eventData) {
-    std::cout << "[ActiveOrdersDisplay] Order completed event received" << std::endl;
-    
-    if (!parent() || !posService_) {
-        std::cout << "[ActiveOrdersDisplay] Widget/service invalid - ignoring order completed event" << std::endl;
-        return;
-    }
-    
-    loadOrdersFromAPI();
-}
-
-void ActiveOrdersDisplay::handleOrderCancelled(const std::any& eventData) {
-    std::cout << "[ActiveOrdersDisplay] Order cancelled event received" << std::endl;
-    
-    if (!parent() || !posService_) {
-        std::cout << "[ActiveOrdersDisplay] Widget/service invalid - ignoring order cancelled event" << std::endl;
-        return;
-    }
-    
-    loadOrdersFromAPI();
-}
-
-void ActiveOrdersDisplay::handleKitchenStatusChanged(const std::any& eventData) {
-    std::cout << "[ActiveOrdersDisplay] Kitchen status changed" << std::endl;
-    
-    if (!parent() || !posService_) {
-        std::cout << "[ActiveOrdersDisplay] Widget/service invalid - ignoring kitchen status event" << std::endl;
-        return;
-    }
-    
-    loadOrdersFromAPI();
-}
-
-// Action handlers - CLEAN API INTEGRATION
-void ActiveOrdersDisplay::onCompleteOrderClicked(int orderId) {
-    if (!posService_ || !parent()) {
-        std::cout << "[ActiveOrdersDisplay] No service available or widget invalid for completing order #" << orderId << std::endl;
-        return;
-    }
-    
-    try {
-        auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
-        
-        if (enhancedService && enhancedService->isConnected()) {
-            std::cout << "[ActiveOrdersDisplay] Completing order #" << orderId << " via API..." << std::endl;
-            
-            enhancedService->updateOrderStatusAsync(orderId, Order::SERVED, [this, orderId](bool success) {
-                // Check if widget is still valid
-                if (!parent() || !posService_) {
-                    std::cout << "[ActiveOrdersDisplay] Widget destroyed during async operation" << std::endl;
-                    return;
-                }
-                
-                if (success) {
-                    std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " completed successfully" << std::endl;
-                    loadOrdersFromAPI();
-                } else {
-                    std::cout << "[ActiveOrdersDisplay] Failed to complete order #" << orderId << std::endl;
-                }
-            });
-        } else {
-            std::cout << "[ActiveOrdersDisplay] Complete order #" << orderId << " (API not available)" << std::endl;
+    for (size_t i = 0; i < filteredOrders.size(); ++i) {
+        if (maxOrdersToDisplay_ > 0 && i >= static_cast<size_t>(maxOrdersToDisplay_)) {
+            break;
         }
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception completing order #" << orderId << ": " << e.what() << std::endl;
+        addOrderRow(filteredOrders[i], static_cast<int>(i + 1));
     }
+    
+    updateOrderCountDirect(static_cast<int>(filteredOrders.size()));
+    std::cout << "[ActiveOrdersDisplay] Displayed " << filteredOrders.size() << " orders from API" << std::endl;
 }
 
-void ActiveOrdersDisplay::onCancelOrderClicked(int orderId) {
-    if (!posService_ || !parent()) {
-        std::cout << "[ActiveOrdersDisplay] No service available or widget invalid for cancelling order #" << orderId << std::endl;
+void ActiveOrdersDisplay::displayLocalOrders() {
+    auto orders = getDisplayOrders();
+    
+    clearLoadingState();
+    
+    while (ordersTable_->rowCount() > 1) {
+        ordersTable_->removeRow(1);
+    }
+    
+    if (orders.empty()) {
+        showEmptyOrdersMessage();
+        updateOrderCountDirect(0);
         return;
     }
     
-    try {
-        auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
-        
-        if (enhancedService && enhancedService->isConnected()) {
-            std::cout << "[ActiveOrdersDisplay] Cancelling order #" << orderId << " via API..." << std::endl;
-            
-            enhancedService->cancelOrderAsync(orderId, [this, orderId](bool success) {
-                // Check if widget is still valid
-                if (!parent() || !posService_) {
-                    std::cout << "[ActiveOrdersDisplay] Widget destroyed during async operation" << std::endl;
-                    return;
-                }
-                
-                if (success) {
-                    std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " cancelled successfully" << std::endl;
-                    loadOrdersFromAPI();
-                } else {
-                    std::cout << "[ActiveOrdersDisplay] Failed to cancel order #" << orderId << std::endl;
-                }
-            });
-        } else {
-            // Fall back to local service
-            bool success = posService_->cancelOrder(orderId);
-            if (success) {
-                std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " cancelled locally" << std::endl;
-                refresh();
-            } else {
-                std::cout << "[ActiveOrdersDisplay] Failed to cancel order #" << orderId << std::endl;
-            }
+    for (size_t i = 0; i < orders.size(); ++i) {
+        if (maxOrdersToDisplay_ > 0 && i >= static_cast<size_t>(maxOrdersToDisplay_)) {
+            break;
         }
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception cancelling order #" << orderId << ": " << e.what() << std::endl;
+        addOrderRow(orders[i], static_cast<int>(i + 1));
     }
+    
+    updateOrderCountDirect(static_cast<int>(orders.size()));
+    std::cout << "[ActiveOrdersDisplay] Displayed " << orders.size() << " orders from local data" << std::endl;
 }
 
-// All other helper methods remain the same...
 std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::filterOrders(const std::vector<std::shared_ptr<Order>>& orders) const {
     std::vector<std::shared_ptr<Order>> filteredOrders;
     
@@ -414,61 +254,12 @@ std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::filterOrders(const std:
     return filteredOrders;
 }
 
-void ActiveOrdersDisplay::showLoadingState() {
-    if (!ordersTable_) return;
-    
-    int row = ordersTable_->rowCount();
-    auto loadingContainer = std::make_unique<Wt::WContainerWidget>();
-    loadingContainer->addStyleClass("text-center py-4 bg-white");
-    
-    auto loadingText = loadingContainer->addNew<Wt::WText>("🔄 Loading orders from API...");
-    loadingText->addStyleClass("h5 mb-2 text-primary");
-    
-    auto cell = ordersTable_->elementAt(row, 0);
-    cell->setColumnSpan(7);
-    cell->addWidget(std::move(loadingContainer));
-    cell->addStyleClass("border-0");
-}
-
-void ActiveOrdersDisplay::clearLoadingState() {
-    if (!ordersTable_) return;
-    
-    while (ordersTable_->rowCount() > 1) {
-        ordersTable_->removeRow(1);
-    }
-}
-
-void ActiveOrdersDisplay::updateOrderCountDirect(int count) {
-    if (!orderCountText_ || !orderCountText_->parent()) {
-        return;
-    }
-    
-    try {
-        std::string countText = std::to_string(count) + " orders";
-        orderCountText_->setText(countText);
-        
-        orderCountText_->removeStyleClass("bg-secondary");
-        orderCountText_->removeStyleClass("bg-warning");
-        orderCountText_->removeStyleClass("bg-danger");
-        orderCountText_->removeStyleClass("bg-info");
-        
-        if (count == 0) {
-            UIStyleHelper::styleBadge(orderCountText_, "secondary");
-        } else if (count > 10) {
-            UIStyleHelper::styleBadge(orderCountText_, "danger");
-        } else if (count > 5) {
-            UIStyleHelper::styleBadge(orderCountText_, "warning");
-        } else {
-            UIStyleHelper::styleBadge(orderCountText_, "info");
-        }
-        
-    } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Error updating order count: " << e.what() << std::endl;
-    }
-}
+// ============================================================================
+// DISPLAY METHODS
+// ============================================================================
 
 void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
-    if (!order || !ordersTable_ || !parent()) {
+    if (!order || !ordersTable_) {
         return;
     }
     
@@ -559,80 +350,15 @@ void ActiveOrdersDisplay::addOrderRow(std::shared_ptr<Order> order, int row) {
     }
 }
 
-// All remaining helper methods stay exactly the same...
-
-void ActiveOrdersDisplay::initializeTableHeaders() {
-    if (!ordersTable_) return;
-    
-    ordersTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
-    ordersTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table/Location"));
-    ordersTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
-    ordersTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Items"));
-    ordersTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Total"));
-    ordersTable_->elementAt(0, 5)->addWidget(std::make_unique<Wt::WText>("Time"));
-    ordersTable_->elementAt(0, 6)->addWidget(std::make_unique<Wt::WText>("Actions"));
-    
-    for (int col = 0; col < ordersTable_->columnCount(); ++col) {
-        auto headerCell = ordersTable_->elementAt(0, col);
-        headerCell->addStyleClass("pos-table-header bg-primary text-white text-center p-2 fw-bold border-0");
-        
-        auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
-        if (headerText) {
-            headerText->addStyleClass("text-white fw-bold");
-        }
-    }
-}
-
-std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
-    auto header = std::make_unique<Wt::WContainerWidget>();
-    header->addStyleClass("pos-section-header bg-primary text-white p-3 mx-3 mt-3 mb-0 rounded-top d-flex justify-content-between align-items-center");
-    
-    headerText_ = header->addNew<Wt::WText>("📋 Active Orders");
-    headerText_->addStyleClass("h4 mb-0 fw-bold text-white");
-    
-    orderCountText_ = header->addNew<Wt::WText>("Loading...");
-    orderCountText_->addStyleClass("badge bg-info text-dark px-3 py-2 rounded-pill");
-    
-    return std::move(header);
-}
-
-void ActiveOrdersDisplay::setupEventListeners() {
-    if (!eventManager_) return;
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_CREATED, 
-            [this](const std::any& data) { handleOrderCreated(data); })
-    );
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_MODIFIED,
-            [this](const std::any& data) { handleOrderModified(data); })
-    );
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_COMPLETED,
-            [this](const std::any& data) { handleOrderCompleted(data); })
-    );
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::ORDER_CANCELLED,
-            [this](const std::any& data) { handleOrderCancelled(data); })
-    );
-    
-    eventSubscriptions_.push_back(
-        eventManager_->subscribe(POSEvents::KITCHEN_STATUS_CHANGED,
-            [this](const std::any& data) { handleKitchenStatusChanged(data); })
-    );
-}
-
-// All remaining helper methods (formatting, styling, etc.)
-
 void ActiveOrdersDisplay::applyRowStyling(int row, bool isEven) {
-    if (!ordersTable_ || row == 0) return;
+    if (!ordersTable_ || row == 0) { 
+        return;
+    }
     
     for (int col = 0; col < ordersTable_->columnCount(); ++col) {
         auto cell = ordersTable_->elementAt(row, col);
-        cell->addStyleClass("pos-table-cell p-2 align-middle border-0");
+        
+        cell->addStyleClass("pos-table-cell");
         
         if (isEven) {
             cell->addStyleClass("bg-white");
@@ -649,11 +375,14 @@ void ActiveOrdersDisplay::applyRowStyling(int row, bool isEven) {
 }
 
 void ActiveOrdersDisplay::showEmptyOrdersMessage() {
-    if (!ordersTable_) return;
+    if (!ordersTable_) {
+        return;
+    }
     
     int row = ordersTable_->rowCount();
     auto messageContainer = std::make_unique<Wt::WContainerWidget>();
-    messageContainer->addStyleClass("text-center py-5 bg-white");
+    
+    messageContainer->addStyleClass("text-center py-5");
     
     auto messageText = messageContainer->addNew<Wt::WText>("📝 No active orders");
     messageText->addStyleClass("h5 mb-2 text-muted");
@@ -664,19 +393,46 @@ void ActiveOrdersDisplay::showEmptyOrdersMessage() {
     auto cell = ordersTable_->elementAt(row, 0);
     cell->setColumnSpan(7);
     cell->addWidget(std::move(messageContainer));
-    cell->addStyleClass("border-0");
 }
 
-std::string ActiveOrdersDisplay::getStatusBadgeVariant(Order::Status status) const {
-    switch (status) {
-        case Order::PENDING:         return "secondary";
-        case Order::SENT_TO_KITCHEN: return "primary";
-        case Order::PREPARING:       return "warning";
-        case Order::READY:           return "info";
-        case Order::SERVED:          return "success";
-        case Order::CANCELLED:       return "danger";
-        default:                     return "secondary";
+void ActiveOrdersDisplay::hideEmptyOrdersMessage() {
+    // Handled by refresh() and updateOrdersTable()
+}
+
+void ActiveOrdersDisplay::showLoadingState() {
+    if (!ordersTable_) return;
+    
+    int row = ordersTable_->rowCount();
+    auto loadingContainer = std::make_unique<Wt::WContainerWidget>();
+    loadingContainer->addStyleClass("text-center py-4");
+    
+    auto loadingText = loadingContainer->addNew<Wt::WText>("🔄 Loading orders from API...");
+    loadingText->addStyleClass("h5 mb-2 text-primary");
+    
+    auto cell = ordersTable_->elementAt(row, 0);
+    cell->setColumnSpan(7);
+    cell->addWidget(std::move(loadingContainer));
+}
+
+void ActiveOrdersDisplay::clearLoadingState() {
+    if (!ordersTable_) return;
+    
+    while (ordersTable_->rowCount() > 1) {
+        ordersTable_->removeRow(1);
     }
+}
+
+// ============================================================================
+// PUBLIC INTERFACE METHODS
+// ============================================================================
+
+void ActiveOrdersDisplay::refresh() {
+    std::cout << "[ActiveOrdersDisplay] Refreshing data..." << std::endl;
+    loadOrdersFromAPI();
+}
+
+void ActiveOrdersDisplay::updateOrdersTable() {
+    refresh();
 }
 
 void ActiveOrdersDisplay::setMaxOrdersToDisplay(int maxOrders) {
@@ -697,37 +453,167 @@ bool ActiveOrdersDisplay::getShowCompletedOrders() const {
     return showCompletedOrders_;
 }
 
-std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::getDisplayOrders() const {
-    if (!posService_) return {};
+void ActiveOrdersDisplay::applyCurrentTheme() {
+    refresh();
+}
+
+void ActiveOrdersDisplay::updateOrderCount() {
+    auto orders = getDisplayOrders();
+    updateOrderCountDirect(static_cast<int>(orders.size()));
+}
+
+void ActiveOrdersDisplay::updateOrderCountDirect(int count) {
+    if (!orderCountText_ || !orderCountText_->parent()) {
+        return;
+    }
     
     try {
-        auto orders = posService_->getActiveOrders();
+        std::string countText = std::to_string(count) + " orders";
+        orderCountText_->setText(countText);
         
-        if (!showCompletedOrders_) {
-            orders.erase(
-                std::remove_if(orders.begin(), orders.end(),
-                    [](const std::shared_ptr<Order>& order) {
-                        return order->getStatus() == Order::SERVED ||
-                               order->getStatus() == Order::CANCELLED;
-                    }),
-                orders.end()
-            );
+        orderCountText_->removeStyleClass("bg-secondary bg-warning bg-danger bg-info");
+        
+        if (count == 0) {
+            UIStyleHelper::styleBadge(orderCountText_, "secondary");
+        } else if (count > 10) {
+            UIStyleHelper::styleBadge(orderCountText_, "danger");
+        } else if (count > 5) {
+            UIStyleHelper::styleBadge(orderCountText_, "warning");
+        } else {
+            UIStyleHelper::styleBadge(orderCountText_, "info");
         }
         
-        std::sort(orders.begin(), orders.end(),
-            [](const std::shared_ptr<Order>& a, const std::shared_ptr<Order>& b) {
-                return a->getTimestamp() > b->getTimestamp();
-            });
-        
-        return orders;
     } catch (const std::exception& e) {
-        std::cerr << "[ActiveOrdersDisplay] Exception getting display orders: " << e.what() << std::endl;
-        return {};
+        std::cerr << "[ActiveOrdersDisplay] Error updating order count: " << e.what() << std::endl;
     }
 }
 
+// ============================================================================
+// COMPATIBILITY METHODS
+// ============================================================================
+
+void ActiveOrdersDisplay::createHeader() {
+    if (showHeader_) {
+        auto header = createDisplayHeader();
+        // Header creation is handled in initializeUI()
+    }
+}
+
+void ActiveOrdersDisplay::applyTableStyling() {
+    if (ordersTable_) {
+        ordersTable_->addStyleClass("table w-100 mb-0");
+    }
+}
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
+
+void ActiveOrdersDisplay::handleOrderCreated(const std::any& eventData) {
+    std::cout << "[ActiveOrdersDisplay] Order created event received, refreshing from API..." << std::endl;
+    loadOrdersFromAPI();
+}
+
+void ActiveOrdersDisplay::handleOrderModified(const std::any& eventData) {
+    std::cout << "[ActiveOrdersDisplay] Order modified event received, refreshing from API..." << std::endl;
+    loadOrdersFromAPI();
+}
+
+void ActiveOrdersDisplay::handleOrderCompleted(const std::any& eventData) {
+    std::cout << "[ActiveOrdersDisplay] Order completed event received, refreshing from API..." << std::endl;
+    loadOrdersFromAPI();
+}
+
+void ActiveOrdersDisplay::handleOrderCancelled(const std::any& eventData) {
+    std::cout << "[ActiveOrdersDisplay] Order cancelled event received, refreshing from API..." << std::endl;
+    loadOrdersFromAPI();
+}
+
+void ActiveOrdersDisplay::handleKitchenStatusChanged(const std::any& eventData) {
+    std::cout << "[ActiveOrdersDisplay] Kitchen status changed, refreshing from API..." << std::endl;
+    loadOrdersFromAPI();
+}
+
+// ============================================================================
+// ACTION HANDLERS
+// ============================================================================
+
 void ActiveOrdersDisplay::onViewOrderClicked(int orderId) {
     std::cout << "[ActiveOrdersDisplay] View order #" << orderId << " (not implemented)" << std::endl;
+}
+
+void ActiveOrdersDisplay::onCompleteOrderClicked(int orderId) {
+    auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
+    
+    if (enhancedService && enhancedService->isConnected()) {
+        std::cout << "[ActiveOrdersDisplay] Completing order #" << orderId << " via API..." << std::endl;
+        
+        enhancedService->updateOrderStatusAsync(orderId, Order::SERVED, [this, orderId](bool success) {
+            if (success) {
+                std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " completed successfully" << std::endl;
+                loadOrdersFromAPI();
+            } else {
+                std::cout << "[ActiveOrdersDisplay] Failed to complete order #" << orderId << std::endl;
+            }
+        });
+    } else {
+        std::cout << "[ActiveOrdersDisplay] Complete order #" << orderId << " (API not available)" << std::endl;
+    }
+}
+
+void ActiveOrdersDisplay::onCancelOrderClicked(int orderId) {
+    auto enhancedService = std::dynamic_pointer_cast<EnhancedPOSService>(posService_);
+    
+    if (enhancedService && enhancedService->isConnected()) {
+        std::cout << "[ActiveOrdersDisplay] Cancelling order #" << orderId << " via API..." << std::endl;
+        
+        enhancedService->cancelOrderAsync(orderId, [this, orderId](bool success) {
+            if (success) {
+                std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " cancelled successfully" << std::endl;
+                loadOrdersFromAPI();
+            } else {
+                std::cout << "[ActiveOrdersDisplay] Failed to cancel order #" << orderId << std::endl;
+            }
+        });
+    } else {
+        if (posService_) {
+            bool success = posService_->cancelOrder(orderId);
+            if (success) {
+                std::cout << "[ActiveOrdersDisplay] Order #" << orderId << " cancelled locally" << std::endl;
+                refresh();
+            } else {
+                std::cout << "[ActiveOrdersDisplay] Failed to cancel order #" << orderId << std::endl;
+            }
+        }
+    }
+}
+
+// ============================================================================
+// HELPER METHODS
+// ============================================================================
+
+std::vector<std::shared_ptr<Order>> ActiveOrdersDisplay::getDisplayOrders() const {
+    if (!posService_) return {};
+    
+    auto orders = posService_->getActiveOrders();
+    
+    if (!showCompletedOrders_) {
+        orders.erase(
+            std::remove_if(orders.begin(), orders.end(),
+                [](const std::shared_ptr<Order>& order) {
+                    return order->getStatus() == Order::SERVED ||
+                           order->getStatus() == Order::CANCELLED;
+                }),
+            orders.end()
+        );
+    }
+    
+    std::sort(orders.begin(), orders.end(),
+        [](const std::shared_ptr<Order>& a, const std::shared_ptr<Order>& b) {
+            return a->getTimestamp() > b->getTimestamp();
+        });
+    
+    return orders;
 }
 
 std::string ActiveOrdersDisplay::formatOrderId(int orderId) const {
@@ -762,21 +648,14 @@ std::string ActiveOrdersDisplay::formatCurrency(double amount) const {
     return oss.str();
 }
 
-void ActiveOrdersDisplay::hideEmptyOrdersMessage() {
-    // Handled by refresh() and updateOrdersTable()
-}
-
-void ActiveOrdersDisplay::applyTableStyling() {
-    if (ordersTable_) {
-        ordersTable_->addStyleClass("table w-100 mb-0");
+std::string ActiveOrdersDisplay::getStatusBadgeVariant(Order::Status status) const {
+    switch (status) {
+        case Order::PENDING:         return "secondary";
+        case Order::SENT_TO_KITCHEN: return "primary";
+        case Order::PREPARING:       return "warning";
+        case Order::READY:           return "info";
+        case Order::SERVED:          return "success";
+        case Order::CANCELLED:       return "danger";
+        default:                     return "secondary";
     }
-}
-
-void ActiveOrdersDisplay::applyCurrentTheme() {
-    refresh();
-}
-
-void ActiveOrdersDisplay::updateOrderCount() {
-    auto orders = getDisplayOrders();
-    updateOrderCountDirect(static_cast<int>(orders.size()));
 }

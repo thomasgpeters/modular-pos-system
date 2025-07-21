@@ -1,3 +1,8 @@
+// ============================================================================
+// Clean KitchenModeContainer.cpp - Minimal Borders, Streamlined Layout
+// Replace your existing KitchenModeContainer.cpp with this cleaner version
+// ============================================================================
+
 #include "../../../include/ui/containers/KitchenModeContainer.hpp"
 #include <Wt/WVBoxLayout.h>
 #include <Wt/WHBoxLayout.h>
@@ -17,15 +22,15 @@ KitchenModeContainer::KitchenModeContainer(std::shared_ptr<POSService> posServic
         throw std::invalid_argument("KitchenModeContainer requires valid POSService and EventManager");
     }
     
-    // Apply kitchen mode specific styling
+    // CLEAN: Simple container class - no excessive styling
     setStyleClass("kitchen-mode-container h-100");
     
-    std::cout << "[KitchenModeContainer] Initializing..." << std::endl;
+    std::cout << "[KitchenModeContainer] Initializing with clean design..." << std::endl;
     
     initializeUI();
     setupEventListeners();
     
-    std::cout << "[KitchenModeContainer] Initialized successfully" << std::endl;
+    std::cout << "[KitchenModeContainer] Initialized successfully with clean layout" << std::endl;
 }
 
 void KitchenModeContainer::initializeUI() {
@@ -37,22 +42,23 @@ void KitchenModeContainer::initializeUI() {
 void KitchenModeContainer::setupLayout() {
     // Create main horizontal layout
     auto layout = setLayout(std::make_unique<Wt::WHBoxLayout>());
-    layout->setContentsMargins(10, 10, 10, 10);
-    layout->setSpacing(15);
+    layout->setContentsMargins(0, 0, 0, 0); // CLEAN: No margins
+    layout->setSpacing(0); // CLEAN: No spacing between panels
     
     // Create panels first, then set stretch factors
     leftPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     rightPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     
-    // FIXED: Set layout proportions to match POSModeContainer: 
+    // CLEAN: Set layout proportions to match POSModeContainer: 
     // Left panel (ActiveOrdersDisplay) 30%, Right panel (Kitchen Status) 70%
     layout->setStretchFactor(leftPanel_, 3);  // 30% - same as POS mode
     layout->setStretchFactor(rightPanel_, 7); // 70% - gives more space to kitchen status
     
+    // CLEAN: Simple panel classes
     leftPanel_->setStyleClass("kitchen-left-panel");
     rightPanel_->setStyleClass("kitchen-right-panel");
     
-    std::cout << "[KitchenModeContainer] Layout setup complete" << std::endl;
+    std::cout << "[KitchenModeContainer] Layout setup complete with clean proportions" << std::endl;
 }
 
 void KitchenModeContainer::createLeftPanel() {
@@ -61,25 +67,19 @@ void KitchenModeContainer::createLeftPanel() {
         return;
     }
     
-    // FIXED: Use identical styling to POSModeContainer - square corners with right border
-    leftPanel_->setStyleClass("border-end bg-light p-3");
-    
+    // CLEAN: Simple layout without excessive margins/padding
     auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(0);
     
-    // FIXED: Remove custom header - let ActiveOrdersDisplay create its own header
-    // This ensures identical styling between POSModeContainer and KitchenModeContainer
-    
-    // CRITICAL FIX: Create ActiveOrdersDisplay with showHeader=true (default) 
-    // to match POSModeContainer behavior and ensure consistent styling
+    // CLEAN: Create ActiveOrdersDisplay directly with showHeader=true for consistency
     try {
         activeOrdersDisplay_ = leftLayout->addWidget(
             std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_, true) // showHeader=true for consistency
         );
         activeOrdersDisplay_->setStyleClass("kitchen-active-orders flex-fill");
         
-        std::cout << "[KitchenModeContainer] ✓ ActiveOrdersDisplay created with native header (consistent styling)" << std::endl;
+        std::cout << "[KitchenModeContainer] ✓ ActiveOrdersDisplay created with clean styling" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "[KitchenModeContainer] ✗ Error creating ActiveOrdersDisplay: " << e.what() << std::endl;
@@ -93,21 +93,19 @@ void KitchenModeContainer::createRightPanel() {
         return;
     }
     
-    // Right panel contains Kitchen Status Display
-    rightPanel_->setStyleClass("bg-white p-3 rounded");
-    
+    // CLEAN: Simple layout without excessive styling
     auto rightLayout = rightPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     rightLayout->setContentsMargins(0, 0, 0, 0);
-    rightLayout->setSpacing(10);
+    rightLayout->setSpacing(0);
     
-    // Create Kitchen Status Display
+    // Create Kitchen Status Display directly
     try {
         kitchenStatusDisplay_ = rightLayout->addWidget(
             std::make_unique<KitchenStatusDisplay>(posService_, eventManager_)
         );
         kitchenStatusDisplay_->setStyleClass("kitchen-status-display");
         
-        std::cout << "[KitchenModeContainer] ✓ KitchenStatusDisplay created successfully" << std::endl;
+        std::cout << "[KitchenModeContainer] ✓ KitchenStatusDisplay created with clean styling" << std::endl;
         
     } catch (const std::exception& e) {
         std::cerr << "[KitchenModeContainer] ✗ Error creating KitchenStatusDisplay: " << e.what() << std::endl;

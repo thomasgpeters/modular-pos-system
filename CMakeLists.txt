@@ -49,7 +49,6 @@ set(WT_DOCROOT "${CMAKE_BINARY_DIR}")
 set(FRAMEWORK_CSS_FILES
     base.css
     bootstrap-custom.css
-    pos-layout.css
     typography.css
     utilities.css
     theme-framework.css    # ADD THIS - matches 404 error

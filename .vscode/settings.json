@@ -79,6 +79,9 @@
         "type_traits": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "codecvt": "cpp",
+        "csignal": "cpp",
+        "future": "cpp"
     }
 }
