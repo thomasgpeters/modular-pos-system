@@ -602,3 +602,57 @@ body {
         box-shadow: none !important;
     }
 }
+
+/* ============================================================================
+   CSS OVERRIDE FIX - Add this to your CSS to force panel visibility
+   ============================================================================ */
+
+/* Force main container to be visible and use flex layout */
+.pos-mode-container {
+    display: flex !important;
+    visibility: visible !important;
+    height: calc(100vh - 120px) !important;
+    width: 100% !important;
+    background-color: #fafafa !important;
+    gap: 15px !important;
+}
+
+/* Force left panel to be visible */
+.pos-left-panel {
+    display: block !important;
+    visibility: visible !important;
+    flex: 0 0 30% !important;
+    min-width: 300px !important;
+    max-width: 400px !important;
+    height: 100% !important;
+    background-color: #f0f0f0 !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+}
+
+/* Force right panel to be visible */
+.pos-right-panel {
+    display: block !important;
+    visibility: visible !important;
+    flex: 1 1 70% !important;
+    height: 100% !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+}
+
+/* Override any Wt hiding */
+.pos-mode-container * {
+    visibility: visible !important;
+}
+
+/* Make sure the layout works */
+.pos-mode-container > .Wt-hboxlayout {
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+}

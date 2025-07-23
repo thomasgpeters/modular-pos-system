@@ -179,6 +179,7 @@ void RestaurantPOSApp::applyCurrentTheme() {
 // C++ Layout Fix - Replace these methods in RestaurantPOSApp.cpp
 // ============================================================================
 
+// 2. REPLACE the setupMainLayout method in RestaurantPOSApp.cpp:
 void RestaurantPOSApp::setupMainLayout() {
     setTitle("Restaurant POS System - Point of Sale");
     
@@ -190,16 +191,22 @@ void RestaurantPOSApp::setupMainLayout() {
     mainContainer_->setStyleClass("h-100 pos-app-container");
     mainContainer_->setId("main-app-container");
     
-    // CRITICAL: Force height and layout properties
+    // FORCE MAIN CONTAINER VISIBILITY
+    mainContainer_->show();
+    mainContainer_->setHidden(false);
     mainContainer_->setHeight(Wt::WLength(100, Wt::LengthUnit::ViewportHeight));
     mainContainer_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(100, Wt::LengthUnit::ViewportHeight));
+    mainContainer_->setAttributeValue("style", 
+        "display: block !important; visibility: visible !important; "
+        "height: 100vh !important; width: 100% !important; "
+        "background-color: #ffffff !important;");
     
     // Create main layout with explicit spacing and margins
     mainLayout_ = mainContainer_->setLayout(std::make_unique<Wt::WVBoxLayout>());
     mainLayout_->setContentsMargins(0, 0, 0, 0);
     mainLayout_->setSpacing(0);
     
-    logger_.info("✓ Main layout initialized with height constraints");
+    logger_.info("✓ Main layout initialized with forced visibility and height constraints");
 }
 
 void RestaurantPOSApp::onThemeChanged(ThemeService::Theme oldTheme, ThemeService::Theme newTheme) {
@@ -294,8 +301,9 @@ void RestaurantPOSApp::initializeComponentFactory() {
     logger_.info("✓ Component factory initialized");
 }
 
+// 3. REPLACE the createCommonComponents method in RestaurantPOSApp.cpp:
 void RestaurantPOSApp::createCommonComponents() {
-    logger_.info("[RestaurantPOSApp] Creating common components with layout constraints...");
+    logger_.info("[RestaurantPOSApp] Creating common components with forced visibility...");
     
     // Create header with mode switching capability
     auto modeChangeCallback = [this](ModeSelector::Mode mode) {
@@ -307,45 +315,70 @@ void RestaurantPOSApp::createCommonComponents() {
     commonHeader_ = mainLayout_->addWidget(
         std::make_unique<CommonHeader>(themeService_, eventManager_, modeChangeCallback));
     
-    // FORCE header size constraints
+    // FORCE header size constraints and visibility
     commonHeader_->setHeight(Wt::WLength(60, Wt::LengthUnit::Pixel));
     commonHeader_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(60, Wt::LengthUnit::Pixel));
     commonHeader_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(60, Wt::LengthUnit::Pixel));
+    commonHeader_->show();
+    commonHeader_->setHidden(false);
     
     // CRITICAL: Set layout stretch factor to 0 (don't expand)
     mainLayout_->setStretchFactor(commonHeader_, 0);
     
-    // Create mode container with flex properties
+    // Create mode container with explicit sizing and visibility
     modeContainer_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     modeContainer_->setStyleClass("flex-grow-1 mode-container-wrapper");
     modeContainer_->setId("main-mode-container");
     
+    // FORCE MODE CONTAINER VISIBILITY AND SIZE
+    modeContainer_->show();
+    modeContainer_->setHidden(false);
+    modeContainer_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(400, Wt::LengthUnit::Pixel));
+    modeContainer_->setAttributeValue("style", 
+        "display: block !important; visibility: visible !important; "
+        "height: calc(100vh - 100px) !important; width: 100% !important; "
+        "background-color: #e9ecef !important; padding: 10px; "
+        "border: 2px solid #007bff !important;"); // Temp blue border to see it
+    
     // CRITICAL: Set mode container to expand and fill remaining space
     mainLayout_->setStretchFactor(modeContainer_, 1);
-    
-    // Force minimum height for content area
-    modeContainer_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(200, Wt::LengthUnit::Pixel));
     
     // Create footer with size constraints
     commonFooter_ = mainLayout_->addWidget(
         std::make_unique<CommonFooter>(posService_, eventManager_));
     
-    // FORCE footer size constraints
+    // FORCE footer size constraints and visibility
     commonFooter_->setHeight(Wt::WLength(40, Wt::LengthUnit::Pixel));
     commonFooter_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(40, Wt::LengthUnit::Pixel));
     commonFooter_->setMaximumSize(Wt::WLength::Auto, Wt::WLength(40, Wt::LengthUnit::Pixel));
+    commonFooter_->show();
+    commonFooter_->setHidden(false);
     
     // CRITICAL: Set layout stretch factor to 0 (don't expand)
     mainLayout_->setStretchFactor(commonFooter_, 0);
     
-    logger_.info("✓ Common components created with explicit size constraints");
-    logger_.info("  - Header: 60px fixed height, stretch factor 0");
-    logger_.info("  - Content: flexible height, stretch factor 1");
-    logger_.info("  - Footer: 40px fixed height, stretch factor 0");
+    // Debug: Check all container visibility
+    logger_.info("[DEBUG] Container visibility after creation:");
+    logger_.info(std::string("[DEBUG]   mainContainer_ visible: ") + 
+                (mainContainer_->isVisible() ? "YES" : "NO"));
+    logger_.info(std::string("[DEBUG]   commonHeader_ visible: ") + 
+                (commonHeader_->isVisible() ? "YES" : "NO"));
+    logger_.info(std::string("[DEBUG]   modeContainer_ visible: ") + 
+                (modeContainer_->isVisible() ? "YES" : "NO"));
+    logger_.info(std::string("[DEBUG]   commonFooter_ visible: ") + 
+                (commonFooter_->isVisible() ? "YES" : "NO"));
+    
+    logger_.info("✓ Common components created with forced visibility and explicit size constraints");
 }
 
+// ============================================================================
+// PARENT CONTAINER FIX - Update RestaurantPOSApp.cpp methods
+// The issue is that the parent modeContainer_ is not visible/sized properly
+// ============================================================================
+
+// 1. REPLACE the createModeContainers method in RestaurantPOSApp.cpp:
 void RestaurantPOSApp::createModeContainers() {
-    logger_.info("[RestaurantPOSApp] Creating mode containers...");
+    logger_.info("[RestaurantPOSApp] Creating mode containers with forced visibility...");
     
     try {
         // Ensure services exist
@@ -353,10 +386,20 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Services not initialized before creating mode containers");
         }
         
-        // Ensure mode container exists
+        // Ensure mode container exists and is properly sized
         if (!modeContainer_) {
             throw std::runtime_error("Mode container not initialized");
         }
+        
+        // FORCE MODE CONTAINER VISIBILITY
+        modeContainer_->show();
+        modeContainer_->setHidden(false);
+        modeContainer_->setAttributeValue("style", 
+            "display: block !important; visibility: visible !important; "
+            "height: calc(100vh - 120px) !important; width: 100% !important; "
+            "background-color: #e9ecef !important; padding: 10px;");
+        
+        logger_.info("[RestaurantPOSApp] Mode container forced visible");
         
         logger_.info("[RestaurantPOSApp] Creating POS mode container...");
         
@@ -366,9 +409,15 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Failed to create POS mode container");
         }
         
-        // Add identification and styling for debugging
+        // FORCE POS CONTAINER VISIBILITY
         posModeContainer_->setId("pos-mode-container");
         posModeContainer_->addStyleClass("mode-container pos-mode-active");
+        posModeContainer_->show();
+        posModeContainer_->setHidden(false);
+        posModeContainer_->setAttributeValue("style", 
+            "display: block !important; visibility: visible !important; "
+            "height: 100% !important; width: 100% !important; "
+            "background-color: #f8f9fa !important;");
         
         logger_.info("[RestaurantPOSApp] Creating Kitchen mode container...");
         
@@ -377,16 +426,24 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Failed to create Kitchen mode container");
         }
         
-        // Add identification and styling for debugging
+        // Kitchen container - hidden initially
         kitchenModeContainer_->setId("kitchen-mode-container");
         kitchenModeContainer_->addStyleClass("mode-container kitchen-mode-inactive");
+        kitchenModeContainer_->hide(); // Hide kitchen mode initially
         
         // Set initial visibility state clearly
-        posModeContainer_->show();  // Make POS visible from start
-        kitchenModeContainer_->hide();  // Hide kitchen mode
+        logger_.info("[RestaurantPOSApp] Setting initial visibility states...");
         
-        logger_.info("[RestaurantPOSApp] ✓ Mode containers created successfully with styling");
-        logger_.info("[RestaurantPOSApp] ✓ POS mode container is visible by default");
+        // Debug: Check hierarchy visibility
+        logger_.info("[DEBUG] Visibility check:");
+        logger_.info(std::string("[DEBUG]   modeContainer_ visible: ") + 
+                    (modeContainer_->isVisible() ? "YES" : "NO"));
+        logger_.info(std::string("[DEBUG]   posModeContainer_ visible: ") + 
+                    (posModeContainer_->isVisible() ? "YES" : "NO"));
+        logger_.info(std::string("[DEBUG]   kitchenModeContainer_ visible: ") + 
+                    (kitchenModeContainer_->isVisible() ? "YES" : "NO"));
+        
+        logger_.info("[RestaurantPOSApp] ✓ Mode containers created successfully with forced visibility");
         
     } catch (const std::exception& e) {
         logger_.error(std::string("[RestaurantPOSApp] CRITICAL ERROR creating mode containers: ") + e.what());

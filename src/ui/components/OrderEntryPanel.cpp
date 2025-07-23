@@ -159,7 +159,11 @@ void OrderEntryPanel::setupEventListeners() {
     );
 }
 
-// ACTUAL WORKING BUTTON HANDLERS
+// ============================================================================
+// Enhanced OrderEntryPanel::onNewOrderClicked - Better Mode Switch Integration
+// Replace the existing onNewOrderClicked method with this enhanced version
+// ============================================================================
+
 void OrderEntryPanel::onNewOrderClicked() {
     if (isDestroying_) return;
     
@@ -177,18 +181,37 @@ void OrderEntryPanel::onNewOrderClicked() {
     
     std::cout << "[OrderEntryPanel] Creating new order for: " << identifier << std::endl;
     
-    // ACTUALLY CREATE THE ORDER
-    auto order = posService_->createOrder(identifier);
-    if (order) {
+    try {
+        // STEP 1: Create the order
+        auto order = posService_->createOrder(identifier);
+        if (!order) {
+            showOrderValidationMessage("Failed to create order", "error");
+            std::cout << "[OrderEntryPanel] ❌ Failed to create order" << std::endl;
+            return;
+        }
+        
+        std::cout << "[OrderEntryPanel] ✓ Order #" << order->getOrderId() << " created" << std::endl;
+        
+        // STEP 2: Set as current order (this triggers CURRENT_ORDER_CHANGED event)
         posService_->setCurrentOrder(order);
-        showOrderValidationMessage("New order #" + std::to_string(order->getOrderId()) + " created", "success");
-        std::cout << "[OrderEntryPanel] Order created successfully: #" << order->getOrderId() << std::endl;
-    } else {
-        showOrderValidationMessage("Failed to create order", "error");
-        std::cout << "[OrderEntryPanel] Failed to create order" << std::endl;
+        
+        // STEP 3: Show success message
+        showOrderValidationMessage(
+            "Order #" + std::to_string(order->getOrderId()) + " created - switching to edit mode...", 
+            "success"
+        );
+        
+        // STEP 4: Update button state immediately
+        updateOrderActionButtons();
+        
+        std::cout << "[OrderEntryPanel] ✓ Order created and set as current - mode switch should trigger" << std::endl;
+        
+        // The POSModeContainer will automatically switch to edit mode via the event system
+        
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderEntryPanel] Exception creating order: " << e.what() << std::endl;
+        showOrderValidationMessage("Error creating order: " + std::string(e.what()), "error");
     }
-    
-    updateOrderActionButtons();
 }
 
 void OrderEntryPanel::onTableIdentifierChanged() {
@@ -199,19 +222,36 @@ void OrderEntryPanel::onTableIdentifierChanged() {
     updateOrderActionButtons();
 }
 
-// EVENT HANDLERS THAT ACTUALLY UPDATE THE UI
 void OrderEntryPanel::handleOrderCreated(const std::any& eventData) {
     if (isDestroying_) return;
     
-    std::cout << "[OrderEntryPanel] Handling order created event" << std::endl;
+    std::cout << "[OrderEntryPanel] Order created event received" << std::endl;
     updateOrderActionButtons();
     updateTableStatus();
 }
 
+// ============================================================================
+// Enhanced event handlers for better integration
+// ============================================================================
+
 void OrderEntryPanel::handleCurrentOrderChanged(const std::any& eventData) {
     if (isDestroying_) return;
     
-    std::cout << "[OrderEntryPanel] Handling current order changed event" << std::endl;
+    std::cout << "[OrderEntryPanel] Current order changed event received" << std::endl;
+    
+    bool hasOrder = hasCurrentOrder();
+    std::cout << "[OrderEntryPanel] hasCurrentOrder: " << hasOrder << std::endl;
+    
+    if (hasOrder) {
+        auto order = posService_->getCurrentOrder();
+        if (order) {
+            std::cout << "[OrderEntryPanel] Order #" << order->getOrderId() 
+                      << " is now current - UI will switch to edit mode" << std::endl;
+        }
+    } else {
+        std::cout << "[OrderEntryPanel] No current order - remaining in entry mode" << std::endl;
+    }
+    
     updateOrderActionButtons();
     updateTableStatus();
 }
@@ -223,7 +263,10 @@ void OrderEntryPanel::handleOrderModified(const std::any& eventData) {
     updateOrderActionButtons();
 }
 
-/// Update updateOrderActionButtons() method to only handle the new order button:
+// ============================================================================
+// Enhanced updateOrderActionButtons method
+// ============================================================================
+
 void OrderEntryPanel::updateOrderActionButtons() {
     if (isDestroying_) return;
     
@@ -235,19 +278,28 @@ void OrderEntryPanel::updateOrderActionButtons() {
     std::cout << "[OrderEntryPanel] State: hasCurrentOrder=" << hasCurrentOrder 
               << ", validTableSelection=" << validTableSelection << std::endl;
     
-    // FIXED: Only update the new order button
     if (newOrderButton_) {
-        newOrderButton_->setEnabled(validTableSelection && !hasCurrentOrder);
         if (hasCurrentOrder) {
-            newOrderButton_->setText("🆕 Order In Progress");
-            newOrderButton_->setStyleClass("btn btn-outline-success btn-lg px-4 py-2");
+            // Order exists - button shows status
+            auto order = posService_->getCurrentOrder();
+            if (order) {
+                newOrderButton_->setText("✅ Order #" + std::to_string(order->getOrderId()) + " Active");
+                newOrderButton_->setStyleClass("btn btn-success btn-lg px-4 py-2");
+                newOrderButton_->setEnabled(false);
+                
+                // Add a subtitle showing table
+                if (tableStatusText_) {
+                    tableStatusText_->setText("📝 Switch to Edit Mode to add items");
+                    tableStatusText_->setStyleClass("text-success fw-bold small mt-2");
+                }
+            }
         } else {
+            // No order - button allows creation
             newOrderButton_->setText("🆕 Start New Order");
             newOrderButton_->setStyleClass("btn btn-success btn-lg px-4 py-2");
+            newOrderButton_->setEnabled(validTableSelection);
         }
     }
-    
-    // REMOVED: Logic for sendToKitchenButton_ and processPaymentButton_
 }
 
 void OrderEntryPanel::showOrderValidationMessage(const std::string& message, const std::string& type) {
@@ -319,6 +371,10 @@ void OrderEntryPanel::populateTableIdentifierCombo() {
     tableIdentifierCombo_->setCurrentIndex(0);
 }
 
+// ============================================================================
+// Enhanced table status method
+// ============================================================================
+
 void OrderEntryPanel::updateTableStatus() {
     if (isDestroying_) return;
     
@@ -330,25 +386,40 @@ void OrderEntryPanel::updateTableStatus() {
     
     if (hasCurrentOrder()) {
         auto currentOrder = posService_->getCurrentOrder();
-        int itemCount = currentOrder->getItems().size();
-        showOrderValidationMessage(
-            "Order #" + std::to_string(currentOrder->getOrderId()) + 
-            " active (" + std::to_string(itemCount) + " items)", 
-            "success"
-        );
+        if (currentOrder) {
+            int itemCount = currentOrder->getItems().size();
+            showOrderValidationMessage(
+                "Order #" + std::to_string(currentOrder->getOrderId()) + 
+                " active (" + std::to_string(itemCount) + " items) - Edit Mode Available", 
+                "success"
+            );
+        }
     } else {
         showOrderValidationMessage(
-            formatTableIdentifier(identifier) + " selected", 
+            formatTableIdentifier(identifier) + " selected - ready to create order", 
             "success"
         );
     }
 }
 
+// ============================================================================
+// Additional helper for smooth integration
+// ============================================================================
+
 void OrderEntryPanel::refresh() {
     if (isDestroying_) return;
     
-    updateOrderActionButtons();
-    updateTableStatus();
+    // Only refresh if we're still in order entry mode
+    // (i.e., no current order exists)
+    if (!hasCurrentOrder()) {
+        std::cout << "[OrderEntryPanel] Refreshing in entry mode" << std::endl;
+        updateOrderActionButtons();
+        updateTableStatus();
+    } else {
+        std::cout << "[OrderEntryPanel] Has current order - likely switching modes" << std::endl;
+        // Just update the button to show the current state
+        updateOrderActionButtons();
+    }
 }
 
 // REMAINING HELPER METHODS

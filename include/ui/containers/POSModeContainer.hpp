@@ -111,6 +111,16 @@ protected:
     void updateWorkArea();
     
     /**
+     * @brief Switches to order entry mode (Active Orders + Order Entry Panel)
+     */
+    void showOrderEntryMode();
+    
+    /**
+     * @brief Switches to order edit mode (Menu Display + Current Order Display)
+     */
+    void showOrderEditMode();
+    
+    /**
      * @brief Shows the order entry interface (Active Orders + Order Entry Panel)
      */
     void showOrderEntry();
@@ -135,6 +145,16 @@ protected:
      * @brief Sends the current order to kitchen and returns to order entry mode
      */
     void sendCurrentOrderToKitchen();
+    
+    /**
+     * @brief Clears the left panel safely
+     */
+    void clearLeftPanel();
+    
+    /**
+     * @brief Clears the work area safely
+     */
+    void clearWorkArea();
 
 private:
     std::shared_ptr<POSService> posService_;

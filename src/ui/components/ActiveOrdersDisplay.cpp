@@ -40,6 +40,18 @@ ActiveOrdersDisplay::ActiveOrdersDisplay(std::shared_ptr<POSService> posService,
     loadOrdersFromAPI();
     
     std::cout << "✓ ActiveOrdersDisplay initialized with clean design" << std::endl;
+
+    // Force visibility and proper sizing
+    show();
+    setHidden(false);
+    
+    // Add some debug styling to make it visible
+    addStyleClass("border border-primary"); // Temporary - to see if it's there
+    
+    // Force minimum height so it's visible even when empty
+    setMinimumSize(300, 200);
+    
+    std::cout << "✓ ActiveOrdersDisplay initialized with forced visibility" << std::endl;
 }
 
 // REQUIRED: Virtual destructor implementation (declared in header)
@@ -69,9 +81,17 @@ ActiveOrdersDisplay::~ActiveOrdersDisplay() {
 // UI INITIALIZATION METHODS
 // ============================================================================
 
+// ============================================================================
+// And in your initializeUI() method, make sure the main container is visible:
+// ============================================================================
+
 void ActiveOrdersDisplay::initializeUI() {
     auto mainContainer = addNew<Wt::WContainerWidget>();
     mainContainer->addStyleClass("pos-orders-main h-100");
+    
+    // FORCE VISIBILITY
+    mainContainer->show();
+    mainContainer->setHidden(false);
     
     if (showHeader_) {
         auto header = createDisplayHeader();
@@ -81,11 +101,15 @@ void ActiveOrdersDisplay::initializeUI() {
     ordersTable_ = mainContainer->addNew<Wt::WTable>();
     ordersTable_->addStyleClass("table pos-orders-table w-100");
     ordersTable_->setWidth(Wt::WLength("100%"));
+    
+    // FORCE TABLE VISIBILITY
+    ordersTable_->show();
+    ordersTable_->setHidden(false);
 
     initializeTableHeaders();
     showLoadingState();
     
-    std::cout << "✓ ActiveOrdersDisplay UI initialized with clean layout" << std::endl;
+    std::cout << "✓ ActiveOrdersDisplay UI initialized with forced visibility" << std::endl;
 }
 
 std::unique_ptr<Wt::WWidget> ActiveOrdersDisplay::createDisplayHeader() {
