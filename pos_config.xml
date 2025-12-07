@@ -222,8 +222,39 @@
         <auth-token>your_auth_token</auth-token>
         <from-number>+1234567890</from-number>
       </sms>
+
+      <!-- LLM Integration for Business Demographics -->
+      <llm>
+        <enabled>false</enabled>
+        <!-- Provider: anthropic, openai, google, local -->
+        <provider>anthropic</provider>
+        <!-- API key (use environment variable LLM_API_KEY in production) -->
+        <api-key>${LLM_API_KEY}</api-key>
+        <!-- Custom base URL (optional, uses default if empty) -->
+        <base-url></base-url>
+        <!-- Model to use -->
+        <model>claude-3-sonnet-20240229</model>
+        <!-- Request timeout in seconds -->
+        <timeout>60</timeout>
+        <!-- Maximum tokens per request -->
+        <max-tokens>4096</max-tokens>
+        <!-- Enable debug logging -->
+        <debug-mode>false</debug-mode>
+        <!-- Cache settings -->
+        <cache>
+          <enabled>true</enabled>
+          <ttl-minutes>30</ttl-minutes>
+        </cache>
+        <!-- Default geolocation settings -->
+        <geolocation>
+          <!-- Default search radius in kilometers -->
+          <default-radius-km>5.0</default-radius-km>
+          <!-- Maximum search radius allowed -->
+          <max-radius-km>50.0</max-radius-km>
+        </geolocation>
+      </llm>
     </integrations>
-    
+
   </application>
   
 </configuration>
