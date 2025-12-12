@@ -25,15 +25,24 @@ if(APPLE)
     # Enable RPATH support on macOS
     set(CMAKE_MACOSX_RPATH ON)
 
+    # Don't skip the build RPATH - we need it for running from build directory
+    set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
     # Use the install RPATH at build time (so the binary works immediately after build)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-    # Set the install RPATH to include common library locations
-    set(CMAKE_INSTALL_RPATH
-        "@executable_path/../lib"
+    # Common library locations for Homebrew/MacPorts
+    set(WT_LIB_PATHS
         "/opt/homebrew/lib"      # Apple Silicon Homebrew
         "/usr/local/lib"          # Intel Homebrew / MacPorts
         "/opt/local/lib"          # MacPorts alternative
+    )
+
+    # Set both build and install RPATH
+    set(CMAKE_BUILD_RPATH ${WT_LIB_PATHS})
+    set(CMAKE_INSTALL_RPATH
+        "@executable_path/../lib"
+        ${WT_LIB_PATHS}
     )
 
     # Add the automatically determined parts of the RPATH
@@ -41,7 +50,8 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
     message(STATUS "macOS RPATH configuration enabled")
-    message(STATUS "  RPATH: ${CMAKE_INSTALL_RPATH}")
+    message(STATUS "  BUILD_RPATH: ${CMAKE_BUILD_RPATH}")
+    message(STATUS "  INSTALL_RPATH: ${CMAKE_INSTALL_RPATH}")
 endif()
 
 # Find Wt
