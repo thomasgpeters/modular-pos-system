@@ -15,6 +15,35 @@ project(restaurant_pos)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ============================================================================
+# RPATH CONFIGURATION FOR MACOS
+# ============================================================================
+# This fixes "Library not loaded: @rpath/libwthttp.x.x.x.dylib" errors on macOS
+# by properly configuring the runtime library search path
+
+if(APPLE)
+    # Enable RPATH support on macOS
+    set(CMAKE_MACOSX_RPATH ON)
+
+    # Use the install RPATH at build time (so the binary works immediately after build)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+    # Set the install RPATH to include common library locations
+    set(CMAKE_INSTALL_RPATH
+        "@executable_path/../lib"
+        "/opt/homebrew/lib"      # Apple Silicon Homebrew
+        "/usr/local/lib"          # Intel Homebrew / MacPorts
+        "/opt/local/lib"          # MacPorts alternative
+    )
+
+    # Add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+    message(STATUS "macOS RPATH configuration enabled")
+    message(STATUS "  RPATH: ${CMAKE_INSTALL_RPATH}")
+endif()
+
 # Find Wt
 find_package(Wt REQUIRED COMPONENTS wthttp)
 if(Wt_FOUND)
