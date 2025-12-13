@@ -77,19 +77,18 @@ void RestaurantPOSApp::setupBootstrapTheme() {
 
 void RestaurantPOSApp::loadFrameworkCSS() {
     logger_.info("[RestaurantPOSApp] Loading framework CSS files...");
-    
-    // FIXED: Use correct paths that match CMakeLists.txt and wt_config.xml
-    
-    // 1. Bootstrap from CDN (fallback in case local doesn't work)
+
+    // Bootstrap from CDN
     useStyleSheet("https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css");
-    
-    // 2. Framework CSS files (matching CMakeLists.txt)
+
+    // Framework CSS files (matching actual files in assets/css/)
     useStyleSheet("/assets/css/base.css");
     useStyleSheet("/assets/css/bootstrap-custom.css");
-    useStyleSheet("/assets/css/pos-layout.css");
+    useStyleSheet("/assets/css/main.css");
     useStyleSheet("/assets/css/typography.css");
     useStyleSheet("/assets/css/utilities.css");
-    
+    useStyleSheet("/assets/css/responsive.css");
+
     logger_.info("✓ Framework CSS loaded");
 }
 
@@ -112,14 +111,18 @@ void RestaurantPOSApp::loadComponentCSS() {
 
 void RestaurantPOSApp::loadThemeCSS() {
     logger_.info("[RestaurantPOSApp] Loading theme CSS files...");
-    
-    // Theme CSS files (matching CMakeLists.txt structure)
+
+    // Theme CSS files (matching actual files in assets/css/themes/)
     useStyleSheet("/assets/css/themes/light-theme.css");
     useStyleSheet("/assets/css/themes/dark-theme.css");
     useStyleSheet("/assets/css/themes/colorful-theme.css");
     useStyleSheet("/assets/css/themes/restaurant-theme.css");
     useStyleSheet("/assets/css/themes/high-contrast.css");
-    
+    useStyleSheet("/assets/css/themes/theme-light.css");
+    useStyleSheet("/assets/css/themes/theme-dark.css");
+    useStyleSheet("/assets/css/themes/theme-warm.css");
+    useStyleSheet("/assets/css/themes/theme-cool.css");
+
     logger_.info("✓ Theme CSS loaded");
 }
 
@@ -334,11 +337,10 @@ void RestaurantPOSApp::createCommonComponents() {
     modeContainer_->show();
     modeContainer_->setHidden(false);
     modeContainer_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(400, Wt::LengthUnit::Pixel));
-    modeContainer_->setAttributeValue("style", 
+    modeContainer_->setAttributeValue("style",
         "display: block !important; visibility: visible !important; "
         "height: calc(100vh - 100px) !important; width: 100% !important; "
-        "background-color: #e9ecef !important; padding: 10px; "
-        "border: 2px solid #007bff !important;"); // Temp blue border to see it
+        "background-color: #f8f9fa !important; padding: 10px;");
     
     // CRITICAL: Set mode container to expand and fill remaining space
     mainLayout_->setStretchFactor(modeContainer_, 1);
@@ -394,10 +396,10 @@ void RestaurantPOSApp::createModeContainers() {
         // FORCE MODE CONTAINER VISIBILITY
         modeContainer_->show();
         modeContainer_->setHidden(false);
-        modeContainer_->setAttributeValue("style", 
+        modeContainer_->setAttributeValue("style",
             "display: block !important; visibility: visible !important; "
             "height: calc(100vh - 120px) !important; width: 100% !important; "
-            "background-color: #e9ecef !important; padding: 10px;");
+            "background-color: #f8f9fa !important; padding: 10px;");
         
         logger_.info("[RestaurantPOSApp] Mode container forced visible");
         

@@ -1,5 +1,5 @@
 <!-- ============================================================================
-     Wt Configuration Template for Theme System
+     Wt Configuration Template for Restaurant POS System
      File: config/wt_config.xml.in
      ============================================================================ -->
 
@@ -9,537 +9,90 @@
         <log-file>wt.log</log-file>
         <log-config>* -debug -info:WebRequest</log-config>
         <debug>false</debug>
-        
+
         <!-- Session and request settings -->
         <max-request-size>128</max-request-size>
         <session-timeout>60</session-timeout>
         <idle-timeout>30</idle-timeout>
         <max-sessions>100</max-sessions>
         <session-id-length>16</session-id-length>
-        
+
         <!-- Application settings -->
         <server-name>Restaurant POS System</server-name>
         <favicon>favicon.ico</favicon>
-        
+
         <!-- Security settings -->
         <behind-reverse-proxy>false</behind-reverse-proxy>
         <redirect-message>Load in progress</redirect-message>
-        
-        <!-- Resource settings -->
-        <!-- <progressive-bootstrap>true</progressive-bootstrap> -->
-        <split-script>false</split-script>
-        <send-xhtml-mime-type>false</send-xhtml-mime-type>
-        
-        <!-- Ajax/WebSocket settings -->
-        <ajax-puzzle>true</ajax-puzzle>
-        <session-id-cookie>false</session-id-cookie>
-        
-        <!-- Bootstrap and theming -->
-        <theme>bootstrap5</theme>
-        <loading-indication>WtLoadingIndicator</loading-indication>
-        
-        <!-- Static resources -->
-     <header-matter>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;&lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;</header-matter>
-        
-        <!-- Enable progressive bootstrap for faster loading -->
-        <progressive-bootstrap>true</progressive-bootstrap>
-        
-        <!-- Enable AJAX by default -->
-        <ajax-intrapage-navigation>true</ajax-intrapage-navigation>
-        
-        <!-- Theme System Configuration -->
-        <properties>
-            <!-- Theme CSS paths -->
-            <property name="theme-css-path">@THEME_CSS_PATH@</property>
-            <property name="theme-resources-path">@THEME_RESOURCES_PATH@</property>
-            <property name="theme-internal-path">@THEME_INTERNAL_PATH@</property>
-            
-            <!-- Default theme settings -->
-            <property name="default-theme">base</property>
-            <property name="enable-theme-switching">true</property>
-            <property name="enable-theme-persistence">true</property>
-            
-            <!-- Theme performance settings -->
-            <property name="preload-themes">false</property>
-            <property name="minify-css">@CMAKE_BUILD_TYPE@ STREQUAL "Release"</property>
-            <property name="cache-css">true</property>
-        </properties>
-        
-        <!-- Static Resources Configuration -->
-        <static-resources>
-            <!-- Serve CSS files from docroot -->
-            <resource-mapping>
-                <pattern>/css/(.*)$</pattern>
-                <path>${docroot}/css/$1</path>
-            </resource-mapping>
-            
-            <!-- Serve theme resources -->
-            <resource-mapping>
-                <pattern>/themes/(.*)$</pattern>
-                <path>${docroot}/css/$1</path>
-            </resource-mapping>
-            
-            <!-- Serve assets -->
-            <resource-mapping>
-                <pattern>/assets/(.*)$</pattern>
-                <path>${docroot}/assets/$1</path>
-            </resource-mapping>
-        </static-resources>
-        
-        <!-- Head matter for CSS framework -->
-        <head-matter>
-            <!-- Bootstrap CSS (CDN fallback) -->
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
-                  rel="stylesheet" 
-                  integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg==" 
-                  crossorigin="anonymous" />
-            
-            <!-- Theme Framework CSS -->
-            <link href="/assets/css/base.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/bootstrap-custom.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/main.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/mod-styles.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/pos-consistant-styles.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/pos-dialogs.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/pos-enhances.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/pos-layput.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/pos-system.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/responsive.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/coloful-theme.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/dark-theme.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/high-contrast.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/light-theme.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/theme-cool.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/theme-dark.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/theme-light.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/theme-warm.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme/restaurant-theme.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme-cool.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme-dark.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme-light.css" rel="stylesheet" type="text/css" />
-            <link href="/assets/css/theme-warm.css" rel="stylesheet" type="text/css" />
-            
-            <!-- Theme Support JavaScript -->
-            <script type="text/javascript">
-            // Theme detection and management
-            (function() {
-                'use strict';
-                
-                // Detect system theme preference
-                function detectSystemTheme() {
-                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        return 'dark';
-                    }
-                    return 'light';
-                }
-                
-                // Load saved theme or detect system theme
-                function loadInitialTheme() {
-                    var savedTheme = localStorage.getItem('pos_theme_preference');
-                    if (savedTheme && savedTheme !== 'auto') {
-                        return savedTheme;
-                    }
-                    return detectSystemTheme();
-                }
-                
-                // Apply theme class to body
-                function applyTheme(theme) {
-                    document.body.className = document.body.className.replace(/theme-\w+/g, '');
-                    document.body.classList.add('theme-' + theme);
-                }
-                
-                // Initialize theme on page load
-                document.addEventListener('DOMContentLoaded', function() {
-                    var initialTheme = loadInitialTheme();
-                    applyTheme(initialTheme);
-                });
-                
-                // Listen for system theme changes
-                if (window.matchMedia) {
-                    window.matchMedia('(prefers-color-scheme: dark)').addListener(function(e) {
-                        var savedTheme = localStorage.getItem('pos_theme_preference');
-                        if (!savedTheme || savedTheme === 'auto') {
-                            applyTheme(e.matches ? 'dark' : 'light');
-                        }
-                    });
-                }
-                
-                // Export theme functions for use by the application
-                window.POS_ThemeManager = {
-                    setTheme: function(theme) {
-                        applyTheme(theme);
-                        localStorage.setItem('pos_theme_preference', theme);
-                    },
-                    getTheme: function() {
-                        return localStorage.getItem('pos_theme_preference') || 'auto';
-                    },
-                    detectSystemTheme: detectSystemTheme
-                };
-            })();
-            </script>
-        </head-matter>
-        
-        <!-- Security Settings -->
-        <security>
-            <!-- Enable CSRF protection -->
-            <csrf-protection>true</csrf-protection>
-            
-            <!-- Content Security Policy for CSS -->
-            <content-security-policy>
-                default-src 'self';
-                style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
-                font-src 'self' https://cdnjs.cloudflare.com;
-                script-src 'self' 'unsafe-inline';
-                img-src 'self' data:;
-            </content-security-policy>
-        </security>
 
-    </application-settings>
-    
-    <!-- HTTP Server Configuration -->
-    <http-server>
-        <!-- Listen on all interfaces -->
-        <bind>0.0.0.0</bind>
-        <port>8082</port>
-        
-        <!-- Static file serving -->
-        <docroot>@CMAKE_CURRENT_BINARY_DIR@/docroot</docroot>
-        
-        <!-- Enable compression for CSS files -->
-        <compression>
-            <gzip>true</gzip>
-            <types>text/css,application/javascript,text/html</types>
-        </compression>
-        
-        <!-- Cache settings for static resources -->
-        <static-cache>
-            <max-age>3600</max-age> <!-- 1 hour for development, increase for production -->
-        </static-cache>
-    </http-server>
-</server>
-<!-- ============================================================================
-     Wt Configuration Template for Theme System - FIXED Asset Serving
-     File: config/wt_config.xml.in
-     ============================================================================ -->
-
-<server>
-    <application-settings location="*">
-        <!-- Basic server settings -->
-        <log-file>wt.log</log-file>
-        <log-config>* -debug -info:WebRequest</log-config>
-        <debug>false</debug>
-        
-        <!-- Session and request settings -->
-        <max-request-size>128</max-request-size>
-        <session-timeout>60</session-timeout>
-        <idle-timeout>30</idle-timeout>
-        <max-sessions>100</max-sessions>
-        <session-id-length>16</session-id-length>
-        
-        <!-- Application settings -->
-        <server-name>Restaurant POS System</server-name>
-        <favicon>favicon.ico</favicon>
-        
-        <!-- Security settings -->
-        <behind-reverse-proxy>false</behind-reverse-proxy>
-        <redirect-message>Load in progress</redirect-message>
-        
         <!-- Resource settings -->
         <split-script>false</split-script>
         <send-xhtml-mime-type>false</send-xhtml-mime-type>
-        
+
         <!-- Ajax/WebSocket settings -->
         <ajax-puzzle>true</ajax-puzzle>
         <session-id-cookie>false</session-id-cookie>
-        
+
         <!-- Bootstrap and theming -->
         <theme>bootstrap5</theme>
         <loading-indication>WtLoadingIndicator</loading-indication>
-        
+
         <!-- Enable progressive bootstrap for faster loading -->
         <progressive-bootstrap>true</progressive-bootstrap>
-        
+
         <!-- Enable AJAX by default -->
         <ajax-intrapage-navigation>true</ajax-intrapage-navigation>
-        
+
         <!-- Theme System Configuration -->
         <properties>
             <!-- Theme CSS paths -->
             <property name="theme-css-path">assets/css</property>
             <property name="theme-resources-path">assets</property>
             <property name="theme-internal-path">/assets</property>
-            
+
             <!-- Default theme settings -->
             <property name="default-theme">base</property>
             <property name="enable-theme-switching">true</property>
             <property name="enable-theme-persistence">true</property>
-            
+
             <!-- Theme performance settings -->
             <property name="preload-themes">false</property>
-            <property name="minify-css">@CMAKE_BUILD_TYPE@ STREQUAL "Release"</property>
             <property name="cache-css">true</property>
         </properties>
-        
-        <!-- FIXED: Static Resources Configuration for proper CSS serving -->
+
+        <!-- Static Resources Configuration -->
         <static-resources>
             <!-- Serve CSS and assets from the build directory structure -->
             <resource-mapping>
                 <pattern>/assets/css/(.*)$</pattern>
                 <path>${docroot}/assets/css/$1</path>
             </resource-mapping>
-            
-            <!-- Alternative CSS serving path for compatibility -->
-            <resource-mapping>
-                <pattern>/assets//css/(.*)$</pattern>
-                <path>${docroot}/assets/css/$1</path>
-            </resource-mapping>
-            
-            <!-- Serve individual theme files -->
+
+            <!-- Serve theme resources -->
             <resource-mapping>
                 <pattern>/themes/(.*)$</pattern>
                 <path>${docroot}/assets/css/themes/$1</path>
             </resource-mapping>
-            
-            <!-- Serve individual component files -->
+
+            <!-- Serve component CSS -->
             <resource-mapping>
                 <pattern>/components/(.*)$</pattern>
                 <path>${docroot}/assets/css/components/$1</path>
             </resource-mapping>
-            
+
             <!-- Generic static files -->
             <resource-mapping>
                 <pattern>/static/(.*)$</pattern>
                 <path>${docroot}/$1</path>
             </resource-mapping>
         </static-resources>
-        
-        <!-- Head matter for CSS framework with enhanced loading -->
-        <head-matter>
-            <!-- Meta tags for proper rendering -->
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <meta charset="utf-8" />
-            
-            <!-- Bootstrap CSS (CDN with local fallback) -->
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" 
-                  rel="stylesheet" 
-                  integrity="sha512-t4GWSVZO1eC8BM339Xd7Uphw5s17a86tIZIj8qRxhnKub6WoyhnrxeCIMeAqBPgdZGlCcG2PrZjMc+Wr78+5Xg==" 
-                  crossorigin="anonymous" />
-            
-            <!-- Preload critical CSS files for faster loading -->
-            <link rel="preload" href="/assets/css/base.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-            <noscript><link rel="stylesheet" href="/assets/css/base.css" /></noscript>
-            
-            <!-- Theme Support JavaScript with debugging -->
-            <script type="text/javascript">
-            // Enhanced Theme detection and management with debugging
-            (function() {
-                'use strict';
-                
-                // Debug logging
-                function debugLog(message) {
-                    if (window.console && window.console.log) {
-                        console.log('[ThemeManager] ' + message);
-                    }
-                }
-                
-                debugLog('Initializing theme management system...');
-                
-                // Detect system theme preference
-                function detectSystemTheme() {
-                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        debugLog('System theme detected: dark');
-                        return 'dark';
-                    }
-                    debugLog('System theme detected: light');
-                    return 'light';
-                }
-                
-                // Load saved theme or detect system theme
-                function loadInitialTheme() {
-                    var savedTheme = localStorage.getItem('pos_theme_preference');
-                    debugLog('Saved theme preference: ' + (savedTheme || 'none'));
-                    
-                    if (savedTheme && savedTheme !== 'auto') {
-                        debugLog('Using saved theme: ' + savedTheme);
-                        return savedTheme;
-                    }
-                    
-                    var systemTheme = detectSystemTheme();
-                    debugLog('Using system theme: ' + systemTheme);
-                    return systemTheme;
-                }
-                
-                // Apply theme class to body with visual feedback
-                function applyTheme(theme) {
-                    debugLog('Applying theme: ' + theme);
-                    
-                    // Remove all existing theme classes
-                    document.body.className = document.body.className.replace(/theme-\w+/g, '');
-                    
-                    // Add the new theme class
-                    var themeClass = 'theme-' + theme;
-                    document.body.classList.add(themeClass);
-                    
-                    // Add visual feedback that theme is applied
-                    document.body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
-                    
-                    debugLog('Theme applied: ' + themeClass);
-                    
-                    // Dispatch a custom event to notify the application
-                    if (window.CustomEvent) {
-                        var event = new CustomEvent('themeApplied', { 
-                            detail: { theme: theme, themeClass: themeClass } 
-                        });
-                        document.dispatchEvent(event);
-                    }
-                }
-                
-                // Preload theme CSS files
-                function preloadThemeCSS() {
-                    var themes = ['light', 'dark', 'colorful', 'restaurant'];
-                    themes.forEach(function(theme) {
-                        var link = document.createElement('link');
-                        link.rel = 'preload';
-                        link.href = '/assets/css/themes/' + theme + '-theme.css';
-                        link.as = 'style';
-                        document.head.appendChild(link);
-                    });
-                    debugLog('Theme CSS files preloaded');
-                }
-                
-                // Initialize theme on page load
-                function initializeTheme() {
-                    debugLog('DOM content loaded - initializing theme...');
-                    var initialTheme = loadInitialTheme();
-                    applyTheme(initialTheme);
-                    
-                    // Add a small delay to ensure CSS is loaded
-                    setTimeout(function() {
-                        debugLog('Theme initialization complete');
-                        document.body.classList.add('theme-initialized');
-                    }, 100);
-                }
-                
-                // Enhanced document ready handling
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', initializeTheme);
-                } else {
-                    // DOM is already loaded
-                    initializeTheme();
-                }
-                
-                // Preload theme CSS files
-                preloadThemeCSS();
-                
-                // Listen for system theme changes
-                if (window.matchMedia) {
-                    window.matchMedia('(prefers-color-scheme: dark)').addListener(function(e) {
-                        var savedTheme = localStorage.getItem('pos_theme_preference');
-                        if (!savedTheme || savedTheme === 'auto') {
-                            var newTheme = e.matches ? 'dark' : 'light';
-                            debugLog('System theme changed to: ' + newTheme);
-                            applyTheme(newTheme);
-                        }
-                    });
-                }
-                
-                // Export theme functions for use by the application
-                window.POS_ThemeManager = {
-                    setTheme: function(theme) {
-                        debugLog('Setting theme via API: ' + theme);
-                        applyTheme(theme);
-                        localStorage.setItem('pos_theme_preference', theme);
-                    },
-                    getTheme: function() {
-                        var theme = localStorage.getItem('pos_theme_preference') || 'auto';
-                        debugLog('Getting current theme: ' + theme);
-                        return theme;
-                    },
-                    detectSystemTheme: detectSystemTheme,
-                    getCurrentThemeClass: function() {
-                        var classes = document.body.className.match(/theme-\w+/);
-                        return classes ? classes[0] : 'theme-light';
-                    }
-                };
-                
-                debugLog('Theme management system initialized');
-                
-                // Add debug info to console
-                setTimeout(function() {
-                    debugLog('Current body classes: ' + document.body.className);
-                    debugLog('Available theme manager functions: setTheme, getTheme, detectSystemTheme, getCurrentThemeClass');
-                }, 500);
-                
-            })();
-            </script>
-            
-            <!-- Add basic fallback styling in case CSS files don't load -->
-            <style type="text/css">
-            /* Fallback styling to ensure visibility */
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                background-color: #f8f9fa;
-                color: #212529;
-                margin: 0;
-                padding: 0;
-                min-height: 100vh;
-            }
-            
-            .pos-app-container {
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            /* Theme base styles */
-            .theme-light {
-                background-color: #ffffff;
-                color: #212529;
-            }
-            
-            .theme-dark {
-                background-color: #212529;
-                color: #ffffff;
-            }
-            
-            .theme-colorful {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: #ffffff;
-            }
-            
-            .theme-restaurant {
-                background-color: #8b4513;
-                color: #ffffff;
-            }
-            
-            /* Loading indicator */
-            .theme-initialized {
-                transition: background-color 0.3s ease, color 0.3s ease;
-            }
-            
-            /* Basic responsive layout */
-            .mode-container-wrapper {
-                flex: 1;
-                padding: 20px;
-                background: rgba(255, 255, 255, 0.1);
-                margin: 15px;
-                border-radius: 8px;
-                backdrop-filter: blur(10px);
-            }
-            
-            /* Dark theme overrides */
-            .theme-dark .mode-container-wrapper {
-                background: rgba(255, 255, 255, 0.05);
-            }
-            </style>
-        </head-matter>
-        
+
         <!-- Security Settings -->
         <security>
             <!-- Enable CSRF protection -->
             <csrf-protection>true</csrf-protection>
-            
-            <!-- Content Security Policy for CSS with CDN support -->
+
+            <!-- Content Security Policy -->
             <content-security-policy>
                 default-src 'self';
                 style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
@@ -551,28 +104,28 @@
         </security>
 
     </application-settings>
-    
+
     <!-- HTTP Server Configuration -->
     <http-server>
         <!-- Listen on all interfaces -->
         <bind>0.0.0.0</bind>
-        <port>8082</port>
-        
+        <port>8080</port>
+
         <!-- Document root pointing to build directory -->
         <docroot>@CMAKE_BINARY_DIR@</docroot>
-        
+
         <!-- Enable compression for CSS files -->
         <compression>
             <gzip>true</gzip>
             <types>text/css,application/javascript,text/html,application/json</types>
         </compression>
-        
+
         <!-- Cache settings for static resources -->
         <static-cache>
-            <max-age>3600</max-age> <!-- 1 hour for development, increase for production -->
+            <max-age>3600</max-age>
         </static-cache>
-        
-        <!-- MIME type mappings for proper CSS serving -->
+
+        <!-- MIME type mappings -->
         <mime-types>
             <mime-type extension=".css" type="text/css" />
             <mime-type extension=".js" type="application/javascript" />

@@ -36,32 +36,21 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     if (!posService_ || !eventManager_) {
         throw std::invalid_argument("POSModeContainer requires valid POSService and EventManager");
     }
-    
-    setStyleClass("pos-mode-container h-100");
-    
-    initializeUI();
-    setupEventListeners();
-    
-    // CRITICAL FIX: Start in order entry mode
-    showOrderEntryMode();
-    
-    std::cout << "[POSModeContainer] Initialized in ORDER_ENTRY mode" << std::endl;
-
-    // At the very end of your constructor, replace the existing initialization with:
 
     setStyleClass("pos-mode-container h-100");
-    
-    // FORCE MAIN CONTAINER VISIBILITY
+
+    // Force container visibility
     show();
     setHidden(false);
-    setAttributeValue("style", 
+    setAttributeValue("style",
         "display: flex !important; height: calc(100vh - 120px) !important; "
         "width: 100% !important; background-color: #fafafa;");
-    
+
+    // Initialize UI components
     initializeUI();
     setupEventListeners();
-    
-    // FORCE PANEL VISIBILITY AFTER CREATION
+
+    // Force panel visibility after creation
     if (leftPanel_) {
         leftPanel_->show();
         leftPanel_->setHidden(false);
@@ -72,12 +61,11 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
         rightPanel_->setHidden(false);
         std::cout << "[DEBUG] Constructor - rightPanel_ forced visible: " << rightPanel_->isVisible() << std::endl;
     }
-    
+
     // Start in order entry mode
     showOrderEntryMode();
-    
+
     std::cout << "[POSModeContainer] Constructor completed with FORCED visibility" << std::endl;
-    
 }
 
 POSModeContainer::~POSModeContainer() {
