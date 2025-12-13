@@ -48,40 +48,40 @@ set(WT_DOCROOT "${CMAKE_BINARY_DIR}")
 
 set(FRAMEWORK_CSS_FILES
     base.css
-    bootstrap-custom.css
-    main.css              # ADD THIS - matches 404 error  
-    pos-layout.css        # ADD THIS - matches 404 error
+    # bootstrap-custom.css
+    # main.css              # ADD THIS - matches 404 error  
+    # pos-layout.css        # ADD THIS - matches 404 error
     theme-reactive.css    # ADD THIS - matches 404 error
     theme-framework.css   # ADD THIS - matches 404 error
-    typography.css
-    utilities.css
+    # typography.css
+    # utilities.css
     webkit-transitions.css # ADD THIS - matches 404 error
 )
 
 # Theme CSS Files  
 set(THEME_CSS_FILES
-    themes/dark-theme.css
-    themes/light-theme.css
-    themes/colorful-theme.css
-    themes/restaurant-theme.css
-    themes/high-contrast.css
+    # themes/dark-theme.css
+    # themes/light-theme.css
+    # themes/colorful-theme.css
+    # themes/restaurant-theme.css
+    # themes/high-contrast.css
 )
 
 # Component CSS Files
 set(COMPONENT_CSS_FILES
-    components/button-components.css
-    components/common-components.css
-    components/form-components.css
-    components/header-components.css
-    components/kitchen-components.css
-    components/menu-components.css
-    components/modal-components.css
-    components/order-components.css
-    components/payment-components.css
-    components/pos-components.css
-    components/pos-consistant-styles.css
-    components/pos-dialogs.css
-    components/table-components.css
+    # components/button-components.css
+    # components/common-components.css
+    # components/form-components.css
+    # components/header-components.css
+    # components/kitchen-components.css
+    # components/menu-components.css
+    # components/modal-components.css
+    # components/order-components.css
+    # components/payment-components.css
+    # components/pos-components.css
+    # components/pos-consistant-styles.css
+    # components/pos-dialogs.css
+    # components/table-components.css
 )
 
 # Print CSS file summary
@@ -159,128 +159,7 @@ copy_framework_css_files()
 copy_theme_css_files()
 copy_component_css_files()
 
-# ============================================================================
-# CREATE DEFAULT CSS FILES IF MISSING
-# ============================================================================
 
-# Function to create a default CSS file with basic styling
-function(create_default_css_file filepath content_type)
-    if(NOT EXISTS ${filepath})
-        if(${content_type} STREQUAL "base")
-            file(WRITE ${filepath} "/* Base CSS for Restaurant POS System */
-
-/* Root variables for consistent theming */
-:root {
-    --primary-color: #0d6efd;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
-    --info-color: #0dcaf0;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --light-color: #f8f9fa;
-    --dark-color: #212529;
-}
-
-/* Base application styling */
-.pos-app-container {
-    min-height: 100vh;
-    background-color: var(--light-color);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* Common component styling */
-.mode-container-wrapper {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin: 15px;
-    padding: 20px;
-}
-
-/* Theme support */
-.theme-light {
-    background-color: #ffffff;
-    color: #212529;
-}
-
-.theme-dark {
-    background-color: #212529;
-    color: #ffffff;
-}
-
-.theme-colorful {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #ffffff;
-}
-
-.theme-restaurant {
-    background-color: #8b4513;
-    color: #ffffff;
-}
-")
-        elseif(${content_type} STREQUAL "theme-light")
-            file(WRITE ${filepath} "/* Light Theme for Restaurant POS */
-.theme-light {
-    background-color: #ffffff;
-    color: #212529;
-}
-
-.theme-light .mode-container-wrapper {
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-}
-
-.theme-light .btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-")
-        elseif(${content_type} STREQUAL "theme-dark")
-            file(WRITE ${filepath} "/* Dark Theme for Restaurant POS */
-.theme-dark {
-    background-color: #212529;
-    color: #ffffff;
-}
-
-.theme-dark .mode-container-wrapper {
-    background: #343a40;
-    border: 1px solid #495057;
-    color: #ffffff;
-}
-
-.theme-dark .btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-")
-        else()
-            file(WRITE ${filepath} "/* ${content_type} CSS for Restaurant POS System */
-
-/* Add your ${content_type} styles here */
-.${content_type} {
-    /* Default styling */
-}
-")
-        endif()
-        message(STATUS "📝 Created default CSS: ${filepath}")
-    endif()
-endfunction()
-
-# Create default CSS files
-create_default_css_file("${CSS_BUILD_DIR}/base.css" "base")
-create_default_css_file("${CSS_BUILD_DIR}/themes/light-theme.css" "theme-light")
-create_default_css_file("${CSS_BUILD_DIR}/themes/dark-theme.css" "theme-dark")
-
-# Create basic component CSS files
-foreach(css_file ${COMPONENT_CSS_FILES})
-    get_filename_component(filename ${css_file} NAME_WE)
-    create_default_css_file("${CSS_BUILD_DIR}/${css_file}" "${filename}")
-endforeach()
-
-foreach(css_file ${FRAMEWORK_CSS_FILES})
-    get_filename_component(filename ${css_file} NAME_WE)
-    create_default_css_file("${CSS_BUILD_DIR}/${css_file}" "${filename}")
-endforeach()
 
 # ============================================================================
 # CUSTOM TARGETS FOR CSS MANAGEMENT
@@ -353,12 +232,24 @@ add_custom_target(copy_css_assets
     COMMENT "Copying all CSS assets"
 )
 
-# Process the wt_config template file
-configure_file(
-  ${CMAKE_SOURCE_DIR}/config/wt_config.xml.in   # Input template
-  ${CMAKE_BINARY_DIR}/config/wt_config.xml      # Output file
-  @ONLY                                         # Replace only @VARIABLE@ placeholders
-)
+# ============================================================================
+# CONFIGURATION FILE PROCESSING - Add this section
+# ============================================================================
+
+# configure_file(
+#    "${CMAKE_SOURCE_DIR}/config/wt_config.xml.in"
+#    "${CMAKE_BINARY_DIR}/wt_config.xml"
+#    @ONLY
+# )
+
+# Make sure config processing happens before build
+# add_custom_target(process_config
+#    DEPENDS "${CMAKE_BINARY_DIR}/wt_config.xml"
+#    COMMENT "Processing Wt configuration template"
+# )
+
+# Make the main executable depend on config processing
+# add_dependencies(${PROJECT_NAME} process_config)
 
 # ============================================================================
 # SOURCE FILES
@@ -560,11 +451,11 @@ add_custom_target(clean-css
 # ============================================================================
 
 # Create configuration header for docroot path
-configure_file(
-    "${CMAKE_SOURCE_DIR}/include/config/DocRootConfig.hpp.in"
-    "${CMAKE_BINARY_DIR}/include/config/DocRootConfig.hpp"
-    @ONLY
-)
+# configure_file(
+#    "${CMAKE_SOURCE_DIR}/include/config/DocRootConfig.hpp.in"
+#    "${CMAKE_BINARY_DIR}/include/config/DocRootConfig.hpp"
+#    @ONLY
+# )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${CMAKE_BINARY_DIR}/include

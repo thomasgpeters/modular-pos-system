@@ -58,6 +58,8 @@ RestaurantPOSApp::RestaurantPOSApp(const Wt::WEnvironment& env)
     ensurePOSModeDefault();
     
     logger_.info("✓ RestaurantPOSApp initialized successfully in POS mode with styling");
+    doJavaScript("setTimeout(function(){var s=document.createElement('style');s.innerHTML='body>*:not(.Wt-domRoot):not(.pos-app-container){display:none!important;position:absolute!important;left:-9999px!important;}';document.head.appendChild(s);Array.from(document.body.childNodes).forEach(function(n){if(n.nodeType===3&&n.textContent.trim().length>100&&(n.textContent.includes('CDATA')||n.textContent.includes('window.')||n.textContent.includes('function')))n.remove();});},50);");
+    useStyleSheet(Wt::WLink("/assets/css/hide-cdata.css"));
 }
 
 void RestaurantPOSApp::setupBootstrapTheme() {

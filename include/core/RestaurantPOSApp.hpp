@@ -14,7 +14,7 @@
 #include "../services/NotificationService.hpp"
 #include "../events/EventManager.hpp"
 #include "../events/POSEvents.hpp"
-#include "../core/ConfigurationManager.hpp"
+#include "ConfigurationManager.hpp"
 #include "../api/APIServiceFactory.hpp"
 #include "../utils/Logging.hpp"
 #include "../utils/LoggingUtils.hpp"
@@ -347,6 +347,7 @@ private:
     
     // Real-time Updates
     std::unique_ptr<Wt::WTimer> updateTimer_;                 ///< Timer for periodic updates
+
 };
 
 // =================================================================

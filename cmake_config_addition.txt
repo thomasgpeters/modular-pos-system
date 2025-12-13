@@ -1,0 +1,23 @@
+# Add this to your CMakeLists.txt in the configuration section:
+
+# ============================================================================
+# CONFIGURATION FILE PROCESSING - Add this section
+# ============================================================================
+
+# Process the configuration template
+configure_file(
+    "${CMAKE_SOURCE_DIR}/config/wt_config.xml.in"
+    "${CMAKE_BINARY_DIR}/wt_config.xml"
+    @ONLY
+)
+
+# Make sure config processing happens before build
+add_custom_target(process_config
+    DEPENDS "${CMAKE_BINARY_DIR}/wt_config.xml"
+    COMMENT "Processing Wt configuration template"
+)
+
+# Make the main executable depend on config processing
+add_dependencies(${PROJECT_NAME} process_config)
+
+# ============================================================================

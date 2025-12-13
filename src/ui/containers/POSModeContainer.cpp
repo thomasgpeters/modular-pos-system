@@ -116,85 +116,75 @@ void POSModeContainer::initializeUI() {
 // STARTUP LAYOUT FIX - Replace these methods in POSModeContainer.cpp
 // ============================================================================
 
-// 1. REPLACE your setupLayout method with this fixed version:
+// 1. REPLACE only your setupLayout() method with this:
 void POSModeContainer::setupLayout() {
-    std::cout << "[POSModeContainer] Setting up layout with forced visibility..." << std::endl;
+    std::cout << "[POSModeContainer] Setting up clean layout..." << std::endl;
     
-    // Create main horizontal layout
+    // Apply CSS classes that match our fixed CSS
+    setStyleClass("pos-mode-container");
+    setId("pos-mode-container");
+    
+    // Create simple horizontal layout
     auto layout = setLayout(std::make_unique<Wt::WHBoxLayout>());
-    layout->setContentsMargins(10, 10, 10, 10);
-    layout->setSpacing(15);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
     
-    // Create left panel first
+    // Create panels
     leftPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    
-    // CRITICAL: Set explicit size for left panel
-    leftPanel_->setWidth(Wt::WLength(30, Wt::LengthUnit::Percentage));
-    leftPanel_->setMinimumSize(Wt::WLength(300, Wt::LengthUnit::Pixel), Wt::WLength::Auto);
-    
-    // Create right panel
     rightPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
     
-    // CRITICAL: Set explicit size for right panel  
-    rightPanel_->setWidth(Wt::WLength(70, Wt::LengthUnit::Percentage));
-    
-    // Set stretch factors (this should work now with explicit widths)
-    layout->setStretchFactor(leftPanel_, 3);   // 30%
-    layout->setStretchFactor(rightPanel_, 7);  // 70%
-    
-    // Apply styling with visibility enforcement
-    leftPanel_->setStyleClass("pos-left-panel border border-info"); // Temp border to see it
+    // Apply CSS classes for styling
+    leftPanel_->setStyleClass("pos-left-panel");
     rightPanel_->setStyleClass("pos-right-panel");
     
-    // FORCE VISIBILITY AND LAYOUT PROPERTIES
-    leftPanel_->show();
-    leftPanel_->setHidden(false);
-    leftPanel_->setInline(false);
+    // Set layout proportions (35% / 65%)
+    layout->setStretchFactor(leftPanel_, 35);
+    layout->setStretchFactor(rightPanel_, 65);
     
-    rightPanel_->show();
-    rightPanel_->setHidden(false);
-    rightPanel_->setInline(false);
-    
-    // Debug output
-    std::cout << "[DEBUG] Layout created with explicit sizing:" << std::endl;
-    std::cout << "[DEBUG]   leftPanel_ width: 30%" << std::endl;
-    std::cout << "[DEBUG]   rightPanel_ width: 70%" << std::endl;
-    std::cout << "[DEBUG]   leftPanel_ visible: " << leftPanel_->isVisible() << std::endl;
-    std::cout << "[DEBUG]   rightPanel_ visible: " << rightPanel_->isVisible() << std::endl;
-    
-    std::cout << "[POSModeContainer] ✓ Layout setup complete with forced panel visibility" << std::endl;
+    std::cout << "[POSModeContainer] ✓ Layout created" << std::endl;
 }
 
-// 2. REPLACE your createLeftPanel method:
+// 2. REPLACE your createLeftPanel method to ensure proper layout:
 void POSModeContainer::createLeftPanel() {
     if (!leftPanel_) {
-        std::cerr << "[POSModeContainer] ERROR: leftPanel_ is null in createLeftPanel!" << std::endl;
+        std::cerr << "[POSModeContainer] ERROR: leftPanel_ is null!" << std::endl;
         return;
     }
     
-    std::cout << "[POSModeContainer] Creating left panel layout..." << std::endl;
+    std::cout << "[POSModeContainer] Creating clean left panel layout..." << std::endl;
     
-    // Create layout for left panel
+    // Create simple vertical layout for left panel
     auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(0);
+    leftLayout->setContentsMargins(0, 0, 0, 0);  // Let CSS handle padding
+    leftLayout->setSpacing(0);                    // Let CSS handle spacing
     
-    // Force panel properties
+    // Ensure the panel maintains visibility
     leftPanel_->show();
     leftPanel_->setHidden(false);
     
-    std::cout << "[POSModeContainer] ✓ Left panel layout created" << std::endl;
+    std::cout << "[POSModeContainer] ✓ Clean left panel layout created" << std::endl;
 }
 
+// 3. REPLACE your createRightPanel method for clean right panel:
 void POSModeContainer::createRightPanel() {
+    if (!rightPanel_) {
+        std::cerr << "[POSModeContainer] ERROR: rightPanel_ is null!" << std::endl;
+        return;
+    }
+    
+    std::cout << "[POSModeContainer] Creating clean right panel layout..." << std::endl;
+    
+    // Create simple vertical layout for right panel
     auto rightLayout = rightPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-    rightLayout->setContentsMargins(0, 0, 0, 0);
-    rightLayout->setSpacing(15);
+    rightLayout->setContentsMargins(15, 15, 15, 15);  // Some internal padding
+    rightLayout->setSpacing(15);                       // Space between header and work area
     
-    // Header container
+    // Header container for title and controls
     auto headerContainer = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-    headerContainer->setStyleClass("d-flex justify-content-between align-items-center p-3");
+    headerContainer->setStyleClass("d-flex justify-content-between align-items-center");
+    headerContainer->setHeight(Wt::WLength(50, Wt::LengthUnit::Pixel)); // Fixed header height
     
+    // Work area title
     workAreaTitle_ = headerContainer->addNew<Wt::WText>("🍽️ Order Management");
     workAreaTitle_->setStyleClass("h4 text-primary mb-0");
     
@@ -220,53 +210,63 @@ void POSModeContainer::createRightPanel() {
     });
     sendToKitchenButton_->hide(); // Hidden initially
     
-    // Work area (changes based on state)
+    // Work area - this will contain the dynamic content (Order Entry or Current Order)
     workArea_ = rightLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     workArea_->setStyleClass("pos-dynamic-work-area");
+    
+    // CRITICAL: Ensure work area is visible and flexible
+    workArea_->show();
+    workArea_->setHidden(false);
+    workArea_->setAttributeValue("style", 
+        "display: block !important; visibility: visible !important; "
+        "width: 100% !important; flex: 1 1 auto !important; "
+        "overflow-y: auto !important;");
+    
+    // Ensure the right panel maintains visibility
+    rightPanel_->show();
+    rightPanel_->setHidden(false);
+    
+    std::cout << "[POSModeContainer] ✓ Clean right panel layout created with header and work area" << std::endl;
 }
 
 // ============================================================================
 // FIXED UI MODE SWITCHING METHODS
 // ============================================================================
 
-// 4. ENHANCE your clearLeftPanel method to preserve layout:
+// 5. ENHANCE your clearLeftPanel method to preserve visibility:
 void POSModeContainer::clearLeftPanel() {
     if (!leftPanel_) {
         std::cout << "[POSModeContainer] leftPanel_ is null - cannot clear" << std::endl;
         return;
     }
     
-    std::cout << "[POSModeContainer] Clearing left panel (preserving visibility)..." << std::endl;
+    std::cout << "[POSModeContainer] Clearing left panel (preserving layout and visibility)..." << std::endl;
     
-    // Clear component pointers
+    // Clear component pointers first
     activeOrdersDisplay_ = nullptr;
     menuDisplay_ = nullptr;
     
-    // Clear children if any exist
-    if (leftPanel_->children().size() > 0) {
-        try {
-            leftPanel_->clear();
-        } catch (const std::exception& e) {
-            std::cerr << "[POSModeContainer] Error clearing left panel: " << e.what() << std::endl;
-        }
-    }
-    
-    // ALWAYS recreate layout and preserve visibility
+    // Clear children safely
     try {
+        leftPanel_->clear();
+        
+        // Recreate the layout immediately
         auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
         leftLayout->setContentsMargins(0, 0, 0, 0);
         leftLayout->setSpacing(0);
         
-        // CRITICAL: Restore visibility and size
+        // CRITICAL: Restore visibility
         leftPanel_->show();
         leftPanel_->setHidden(false);
-        leftPanel_->setWidth(Wt::WLength(30, Wt::LengthUnit::Percentage));
-        leftPanel_->setMinimumSize(Wt::WLength(280, Wt::LengthUnit::Pixel), Wt::WLength::Auto);
+        leftPanel_->setAttributeValue("style", 
+            "display: flex !important; flex-direction: column !important; "
+            "visibility: visible !important; opacity: 1 !important; "
+            "width: 100% !important; height: 100% !important;");
         
         std::cout << "[POSModeContainer] ✓ Left panel cleared and visibility restored" << std::endl;
         
     } catch (const std::exception& e) {
-        std::cerr << "[POSModeContainer] Error recreating left panel layout: " << e.what() << std::endl;
+        std::cerr << "[POSModeContainer] Error clearing left panel: " << e.what() << std::endl;
     }
 }
 
@@ -441,72 +441,51 @@ void POSModeContainer::showOrderEditMode() {
 // This will help us confirm the layout works before dealing with ActiveOrdersDisplay
 // ============================================================================
 
-void POSModeContainer::showOrderEntryMode() {
+// 4. ENHANCE your showOrderEntryMode method with better component creation:
+/* void POSModeContainer::showOrderEntryMode() {
     if (isDestroying_) return;
     
-    std::cout << "[POSModeContainer] ==> SIMPLE TEST VERSION - ORDER_ENTRY MODE" << std::endl;
+    std::cout << "[POSModeContainer] ==> SWITCHING TO ORDER_ENTRY MODE (Clean Version)" << std::endl;
     
-    // Clear component pointers
-    orderEntryPanel_ = nullptr;
-    menuDisplay_ = nullptr;
-    currentOrderDisplay_ = nullptr;
-    activeOrdersDisplay_ = nullptr;
+    // Clear existing components
+    clearLeftPanel();
+    clearWorkArea();
     
     try {
-        // Clear panels
-        if (leftPanel_ && leftPanel_->children().size() > 0) {
-            leftPanel_->clear();
-            auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-            leftLayout->setContentsMargins(10, 10, 10, 10);
-            leftLayout->setSpacing(10);
-        }
-        
-        if (workArea_ && workArea_->children().size() > 0) {
-            workArea_->clear();
-        }
-        
-        // LEFT PANEL: Simple test content first
-        std::cout << "[POSModeContainer] Creating simple test content for left panel..." << std::endl;
+        // LEFT PANEL: Create ActiveOrdersDisplay
+        std::cout << "[POSModeContainer] Creating ActiveOrdersDisplay in left panel..." << std::endl;
         
         if (leftPanel_) {
-            // Header
-            auto headerText = leftPanel_->addNew<Wt::WText>("📋 Active Orders");
-            headerText->setStyleClass("h4 text-primary mb-3");
+            // Ensure left panel has proper layout
+            if (!leftPanel_->layout()) {
+                auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
+                leftLayout->setContentsMargins(0, 0, 0, 0);
+                leftLayout->setSpacing(0);
+            }
             
-            // Status text
-            auto statusText = leftPanel_->addNew<Wt::WText>("Status: No active orders");
-            statusText->setStyleClass("text-muted mb-3");
+            // Create ActiveOrdersDisplay
+            activeOrdersDisplay_ = leftPanel_->addWidget(
+                std::make_unique<ActiveOrdersDisplay>(posService_, eventManager_, true));
             
-            // Sample table
-            auto testTable = leftPanel_->addNew<Wt::WTable>();
-            testTable->setStyleClass("table table-striped");
+            activeOrdersDisplay_->setStyleClass("active-orders-display");
+            activeOrdersDisplay_->show();
+            activeOrdersDisplay_->setHidden(false);
             
-            // Table headers
-            testTable->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
-            testTable->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
-            testTable->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
-            
-            // Sample row
-            testTable->elementAt(1, 0)->addWidget(std::make_unique<Wt::WText>("No orders"));
-            testTable->elementAt(1, 1)->addWidget(std::make_unique<Wt::WText>("--"));
-            testTable->elementAt(1, 2)->addWidget(std::make_unique<Wt::WText>("Ready"));
-            
-            // Instructions
-            auto instructionText = leftPanel_->addNew<Wt::WText>("💡 Orders will appear here when created");
-            instructionText->setStyleClass("text-info small mt-3");
-            
-            std::cout << "[POSModeContainer] ✓ Simple test content created for left panel" << std::endl;
+            std::cout << "[POSModeContainer] ✓ ActiveOrdersDisplay created and visible" << std::endl;
         }
         
-        // RIGHT PANEL: Order Entry Panel (unchanged)
-        std::cout << "[POSModeContainer] Creating OrderEntryPanel..." << std::endl;
+        // RIGHT PANEL: Create OrderEntryPanel in work area
+        std::cout << "[POSModeContainer] Creating OrderEntryPanel in work area..." << std::endl;
+        
         if (workArea_) {
             orderEntryPanel_ = workArea_->addWidget(
                 std::make_unique<OrderEntryPanel>(posService_, eventManager_));
             
-            if (orderEntryPanel_) {
-                std::cout << "[POSModeContainer] ✓ OrderEntryPanel created" << std::endl;
-            }
+            orderEntryPanel_->setStyleClass("order-entry-panel");
+            orderEntryPanel_->show();
+            orderEntryPanel_->setHidden(false);
+            
+            std::cout << "[POSModeContainer] ✓ OrderEntryPanel created and visible" << std::endl;
         }
         
         // Update UI state
@@ -526,11 +505,61 @@ void POSModeContainer::showOrderEntryMode() {
             sendToKitchenButton_->hide();
         }
         
-        std::cout << "[POSModeContainer] ✅ SIMPLE TEST VERSION - Both panels should now be visible" << std::endl;
+        // Force a refresh of both components
+        if (activeOrdersDisplay_) {
+            activeOrdersDisplay_->refresh();
+        }
+        if (orderEntryPanel_) {
+            orderEntryPanel_->refresh();
+        }
+        
+        // Force panel visibility one more time
+        if (leftPanel_) {
+            leftPanel_->show();
+            leftPanel_->setHidden(false);
+        }
+        if (rightPanel_) {
+            rightPanel_->show();
+            rightPanel_->setHidden(false);
+        }
+        
+        std::cout << "[POSModeContainer] ✅ ORDER_ENTRY mode activated successfully" << std::endl;
+        std::cout << "[POSModeContainer]   - ActiveOrdersDisplay in left panel: " 
+                  << (activeOrdersDisplay_ ? "CREATED" : "FAILED") << std::endl;
+        std::cout << "[POSModeContainer]   - OrderEntryPanel in work area: " 
+                  << (orderEntryPanel_ ? "CREATED" : "FAILED") << std::endl;
         
     } catch (const std::exception& e) {
-        std::cerr << "[POSModeContainer] ERROR in simple test version: " << e.what() << std::endl;
+        std::cerr << "[POSModeContainer] ERROR in showOrderEntryMode: " << e.what() << std::endl;
     }
+}
+ */
+
+ void POSModeContainer::showOrderEntryMode() {
+    if (isDestroying_) return;
+    
+    std::cout << "[POSModeContainer] ==> SIMPLE TEST" << std::endl;
+    
+    // Clear left panel
+    if (leftPanel_) {
+        leftPanel_->clear();
+        auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
+        leftLayout->setContentsMargins(10, 10, 10, 10);
+        leftLayout->setSpacing(10);
+        
+        // Add simple test content
+        auto testText = leftPanel_->addNew<Wt::WText>("TEST: Active Orders Should Appear Here");
+        testText->setStyleClass("h4 text-danger");
+        testText->setAttributeValue("style", "background: yellow; padding: 10px; border: 2px solid black;");
+        
+        auto instructionText = leftPanel_->addNew<Wt::WText>(
+            "If you can see this yellow text, the left panel is working. "
+            "The ActiveOrdersDisplay component creation might be failing.");
+        instructionText->setAttributeValue("style", "background: lightblue; padding: 10px; margin-top: 10px;");
+    }
+    
+    currentUIMode_ = UI_MODE_ORDER_ENTRY;
+    std::cout << "[TEST] Simple test content added" << std::endl;
 }
 
 void POSModeContainer::handleOrderCreated(const std::any& eventData) {

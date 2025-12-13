@@ -1,658 +1,423 @@
 /* ============================================================================
-   Clean POS Layout CSS - Minimal Borders and Streamlined Design
-   Replace your existing base.css and pos-layout.css with this cleaner version
+   CLEAN PROFESSIONAL CSS - Same Visibility Force, Professional Appearance
+   This keeps all the working visibility rules but removes debug colors
    ============================================================================ */
 
-/* CSS Custom Properties */
-:root {
-    /* Color palette - softer, less contrasted */
-    --primary-color: #0d6efd;
-    --primary-hover: #0b5ed7;
-    --secondary-color: #6c757d;
-    --success-color: #198754;
-    --info-color: #0dcaf0;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --light-color: #f8f9fa;
-    --dark-color: #212529;
-    --white: #ffffff;
-    
-    /* Subtle backgrounds */
-    --bg-subtle: #fbfbfb;
-    --bg-section: #ffffff;
-    --border-subtle: rgba(0, 0, 0, 0.06);
-    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.02);
-    
-    /* Typography */
-    --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
-                         'Helvetica Neue', Arial, sans-serif;
-    --font-size-base: 1rem;
-    --font-size-sm: 0.875rem;
-    --font-size-lg: 1.125rem;
-    --line-height-base: 1.5;
-    
-    /* Spacing - more generous */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-    
-    /* Minimal border radius */
-    --border-radius: 0.25rem;
-    --border-radius-lg: 0.375rem;
-    
-    /* Subtle transitions */
-    --transition-base: all 0.2s ease;
-    --transition-fast: all 0.15s ease;
-}
-
-/* ============================================================================
-   Base Reset and Typography
-   ============================================================================ */
-
+/* CRITICAL: Force ALL elements to be visible by default */
 * {
     box-sizing: border-box;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
-html {
-    font-size: 16px;
-    line-height: var(--line-height-base);
+/* Override specific element types that should be inline */
+span, a, button, input, select {
+    display: inline-block !important;
 }
 
-body {
+/* Basic reset */
+html, body {
     margin: 0;
     padding: 0;
-    font-family: var(--font-family-sans);
-    font-size: var(--font-size-base);
-    font-weight: 400;
-    line-height: var(--line-height-base);
-    color: var(--dark-color);
-    background-color: var(--bg-subtle);
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-}
-
-/* ============================================================================
-   Main Application Layout - Clean and Minimal
-   ============================================================================ */
-
-.pos-app-container {
-    min-height: 100vh;
-    height: 100vh;
-    max-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background-color: var(--bg-subtle);
-    color: var(--dark-color);
-}
-
-/* Header - Clean, no borders */
-.common-header {
-    height: 60px !important;
-    min-height: 60px !important;
-    max-height: 60px !important;
-    flex: 0 0 60px !important;
-    flex-shrink: 0 !important;
-    background: var(--white);
-    /* No borders, just a subtle shadow */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-/* Main Content Area - No borders or excessive padding */
-.mode-container-wrapper {
-    flex: 1 1 auto !important;
-    overflow: auto;
-    background: transparent;
-    /* Remove all borders, shadows, margins, padding */
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-/* Footer - Clean, no borders */
-.common-footer {
-    height: 40px !important;
-    min-height: 40px !important;
-    max-height: 40px !important;
-    flex: 0 0 40px !important;
-    flex-shrink: 0 !important;
-    padding: 0.5rem 1rem;
-    background: var(--white);
-    /* Just a subtle top shadow */
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.04);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.875rem;
-    color: var(--secondary-color);
-}
-
-/* Mode Container - Full height, no styling */
-#main-mode-container {
-    flex: 1 1 auto !important;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-height: 0;
-    background: transparent;
-}
-
-#pos-mode-container,
-#kitchen-mode-container {
-    flex: 1 1 auto !important;
-    overflow: auto;
-    min-height: 0;
     height: 100%;
-    padding: 0; /* Remove all padding */
-    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    background: #f8f9fa;
+    color: #212529;
 }
 
-/* ============================================================================
-   POS Mode Layout - Clean Two-Panel Design
-   ============================================================================ */
+/* CRITICAL: Force ALL Wt widgets to be visible */
+.Wt-widget,
+.Wt-composite,
+.Wt-domRoot {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+}
 
+/* CRITICAL: Force layout containers to be visible */
+.Wt-hboxlayout,
+.Wt-vboxlayout {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Main application container */
+.pos-app-container {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    width: 100% !important;
+    background: #f8f9fa !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Header */
+.common-header {
+    display: flex !important;
+    height: 60px !important;
+    flex: 0 0 60px !important;
+    background: white !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Main content area */
+.mode-container-wrapper,
+#main-mode-container {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: transparent !important;
+}
+
+/* Footer */
+.common-footer {
+    display: flex !important;
+    height: 40px !important;
+    flex: 0 0 40px !important;
+    background: white !important;
+    border-top: 1px solid #dee2e6 !important;
+    align-items: center !important;
+    padding: 0 1rem !important;
+    font-size: 14px !important;
+    color: #6c757d !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* POS Mode Container - Professional styling */
 .pos-mode-container,
-.kitchen-mode-container {
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: 100%;
-    background: transparent;
+#pos-mode-container {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+    background: #f8f9fa !important;
+    box-sizing: border-box !important;
 }
 
+/* Left Panel - Clean professional styling */
 .pos-left-panel {
-    background-color: var(--bg-section);
-    /* Only a very subtle right border to separate panels */
-    border-right: 1px solid var(--border-subtle);
-    padding: var(--spacing-lg);
-    transition: var(--transition-base);
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 0 35% !important;
+    min-width: 320px !important;
+    max-width: 500px !important;
+    background: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    overflow-y: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
+/* Right Panel - Clean professional styling */
 .pos-right-panel {
-    background-color: transparent;
-    padding: var(--spacing-lg);
-    transition: var(--transition-base);
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 65% !important;
+    background: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    overflow-y: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
-.kitchen-left-panel {
-    background-color: var(--bg-section);
-    border-right: 1px solid var(--border-subtle);
-    padding: var(--spacing-lg);
+/* FORCE ALL CONTENT TO BE VISIBLE */
+.pos-left-panel *,
+.pos-right-panel * {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
 }
 
-.kitchen-right-panel {
-    background-color: transparent;
-    padding: var(--spacing-lg);
+/* Components - Professional visibility */
+.active-orders-display,
+.menu-display,
+.current-order-display,
+.order-entry-panel {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: white !important;
+    padding: 1rem !important;
 }
 
-/* ============================================================================
-   Component Containers - Minimal Styling
-   ============================================================================ */
-
-/* Active Orders Display - Clean, no excessive borders */
-.pos-active-orders-container {
-    background: transparent;
-    /* Remove all the boxy styling */
+/* Text elements - Clean styling */
+h1, h2, h3, h4, h5, h6 {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 0 1rem 0 !important;
+    color: #212529 !important;
+    font-weight: 600 !important;
 }
 
-.pos-orders-main {
-    background: var(--bg-section);
-    border-radius: var(--border-radius-lg);
-    /* Just a very subtle shadow */
-    box-shadow: var(--shadow-subtle);
+.h4 {
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
 }
 
-/* Current Order Display - Clean */
-.pos-current-order-container {
-    background: transparent;
+.text-primary { color: #0d6efd !important; }
+.text-success { color: #198754 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-muted { color: #6c757d !important; }
+
+p, div, span {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: #212529 !important;
 }
 
-.pos-current-order-main {
-    background: var(--bg-section);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-subtle);
+/* Tables - Professional styling */
+table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: white !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 1rem 0 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
 }
 
-/* Order Status Panel - Clean */
-.pos-order-status-container {
-    background: transparent;
+.table {
+    background: white !important;
+    border-collapse: collapse !important;
 }
 
-.pos-status-main {
-    background: var(--bg-section);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-subtle);
+th {
+    display: table-cell !important;
+    background: #0d6efd !important;
+    color: white !important;
+    padding: 0.75rem !important;
+    text-align: left !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-weight: 600 !important;
+    border: none !important;
 }
 
-/* ============================================================================
-   Headers - Simplified, No Heavy Borders
-   ============================================================================ */
-
-.pos-section-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-    color: white;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-    /* Remove all borders */
-    border: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+td {
+    display: table-cell !important;
+    padding: 0.75rem !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: white !important;
+    color: #212529 !important;
+    vertical-align: middle !important;
 }
 
-.pos-section-header .h4,
-.pos-section-header .h5 {
-    color: white;
-    margin: 0;
-    font-weight: 600;
+/* Alternating row colors */
+tr:nth-child(even) td {
+    background-color: #f8f9fa !important;
 }
 
-/* ============================================================================
-   Tables - Clean, Minimal Borders
-   ============================================================================ */
-
-.pos-orders-table,
-.pos-current-order-table {
-    background: var(--white);
-    /* Remove outer borders */
-    border: none;
-    border-collapse: collapse;
+tr:hover td {
+    background-color: #e3f2fd !important;
 }
 
-.pos-table-header {
-    background: var(--primary-color);
-    color: white;
-    padding: var(--spacing-sm) var(--spacing-md);
-    text-align: center;
-    font-weight: 600;
-    /* Remove all borders */
-    border: none;
-}
-
-.pos-table-cell {
-    padding: var(--spacing-sm) var(--spacing-md);
-    vertical-align: middle;
-    /* Remove all borders */
-    border: none;
-    /* Just a very subtle bottom line to separate rows */
-    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-}
-
-/* Alternating row colors - very subtle */
-.pos-table-cell.bg-white {
-    background-color: var(--white);
-}
-
-.pos-table-cell.bg-light {
-    background-color: #fafafa;
-}
-
-/* ============================================================================
-   Table and Content Wrappers - Remove Excessive Padding/Borders
-   ============================================================================ */
-
-.pos-table-wrapper {
-    /* Remove all the boxy styling */
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    margin: 0;
-}
-
-/* Summary and Info Sections */
-.pos-order-summary,
-.pos-status-summary {
-    background: var(--white);
-    padding: var(--spacing-lg);
-    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
-    /* Remove borders, just use background difference */
-    border: none;
-    /* Very subtle top line to separate from table */
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* ============================================================================
-   Buttons - Clean, Minimal
-   ============================================================================ */
-
-.btn {
-    display: inline-block;
-    padding: var(--spacing-sm) var(--spacing-md);
-    margin-bottom: 0;
-    font-size: var(--font-size-base);
-    font-weight: 500;
-    line-height: var(--line-height-base);
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: middle;
-    cursor: pointer;
-    border: 1px solid transparent;
-    border-radius: var(--border-radius);
-    user-select: none;
-    transition: var(--transition-fast);
-    text-decoration: none;
-}
-
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.btn:active {
-    transform: translateY(0);
+/* Buttons - Professional styling */
+button, .btn {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0.5rem 1rem !important;
+    margin: 0.25rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    text-align: center !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
 }
 
 .btn-primary {
-    color: var(--white);
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background: #0d6efd !important;
+    color: white !important;
+    border-color: #0d6efd !important;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
-    border-color: var(--primary-hover);
+    background: #0b5ed7 !important;
+    border-color: #0a58ca !important;
+    transform: translateY(-1px) !important;
 }
 
 .btn-success {
-    color: var(--white);
-    background-color: var(--success-color);
-    border-color: var(--success-color);
+    background: #198754 !important;
+    color: white !important;
+    border-color: #198754 !important;
 }
 
 .btn-outline-primary {
-    color: var(--primary-color);
-    background-color: transparent;
-    border-color: var(--primary-color);
+    background: transparent !important;
+    color: #0d6efd !important;
+    border-color: #0d6efd !important;
 }
 
-.btn-outline-primary:hover {
-    color: var(--white);
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+.btn-outline-info {
+    background: transparent !important;
+    color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
 }
 
-/* ============================================================================
-   Cards - Minimal, Clean
-   ============================================================================ */
-
-.card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    word-wrap: break-word;
-    background-color: var(--white);
-    background-clip: border-box;
-    /* Remove heavy borders, use subtle shadow instead */
-    border: none;
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-subtle);
-    transition: var(--transition-base);
+.btn-sm {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
 }
 
-.card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+/* Forms - Professional styling */
+.form-control,
+input, select, textarea {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.5rem !important;
+    font-size: 1rem !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 6px !important;
+    background: white !important;
+    color: #212529 !important;
 }
 
-/* ============================================================================
-   Work Areas - Clean, Spacious
-   ============================================================================ */
+/* Utility classes */
+.d-flex { display: flex !important; }
+.justify-content-between { justify-content: space-between !important; }
+.align-items-center { align-items: center !important; }
+.gap-2 > * + * { margin-left: 0.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-3 { margin-bottom: 1rem !important; }
 
-.order-entry-area,
-.order-edit-area {
-    padding: var(--spacing-xl);
-    background: var(--bg-section);
-    border-radius: var(--border-radius-lg);
-    /* Remove the dashed border - just use background difference */
-    border: none;
+/* Order Entry Area */
+.order-entry-area {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 400px !important;
+    padding: 2rem !important;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border: 2px dashed #6c757d !important;
+    border-radius: 10px !important;
+    text-align: center !important;
+    margin: 1rem !important;
 }
 
 .order-entry-area:hover {
-    background: #f0f8ff;
+    border-color: #0d6efd !important;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
 }
 
-.pos-dynamic-work-area {
-    min-height: 500px;
-    transition: var(--transition-base);
-    background: transparent;
+/* Kitchen mode styling */
+.kitchen-mode-container {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 100% !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+    background: #f8f9fa !important;
 }
 
-/* ============================================================================
-   Metric Cards - Clean Design
-   ============================================================================ */
-
-.pos-metric-card {
-    background: var(--white);
-    border-radius: var(--border-radius);
-    /* Remove borders, use subtle shadow */
-    border: none;
-    box-shadow: var(--shadow-subtle);
-    transition: var(--transition-base);
+.kitchen-left-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 0 35% !important;
+    min-width: 320px !important;
+    background: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    overflow-y: auto !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
-.pos-metric-card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
+.kitchen-right-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 65% !important;
+    background: #ffffff !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    overflow-y: auto !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
-/* ============================================================================
-   Form Controls - Clean
-   ============================================================================ */
-
-.form-control,
-.form-select {
-    display: block;
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--font-size-base);
-    font-weight: 400;
-    line-height: var(--line-height-base);
-    color: var(--dark-color);
-    background-color: var(--white);
-    background-image: none;
-    /* Minimal border */
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--border-radius);
-    transition: var(--transition-fast);
+/* Success indicator */
+body::after {
+    content: "✓ Professional POS Layout Active" !important;
+    position: fixed !important;
+    bottom: 10px !important;
+    right: 10px !important;
+    background: #198754 !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    z-index: 9999 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 0.9 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
 }
 
-.form-control:focus,
-.form-select:focus {
-    color: var(--dark-color);
-    background-color: var(--white);
-    border-color: var(--primary-color);
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-/* ============================================================================
-   Theme Support - Clean Themes
-   ============================================================================ */
-
-/* Light Theme (Default) */
-.theme-light {
-    background-color: var(--bg-subtle);
-    color: var(--dark-color);
-}
-
-/* Dark Theme */
-.theme-dark {
-    --bg-subtle: #1a1a1a;
-    --bg-section: #2d3748;
-    --border-subtle: rgba(255, 255, 255, 0.1);
-    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
-    
-    background-color: var(--bg-subtle);
-    color: #e9ecef;
-}
-
-.theme-dark .pos-orders-main,
-.theme-dark .pos-current-order-main,
-.theme-dark .pos-status-main {
-    background: var(--bg-section);
-    color: #e9ecef;
-}
-
-/* Colorful Theme */
-.theme-colorful {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: var(--white);
-}
-
-.theme-colorful .pos-orders-main,
-.theme-colorful .pos-current-order-main,
-.theme-colorful .pos-status-main {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--white);
-    backdrop-filter: blur(10px);
-}
-
-/* Restaurant Theme */
-.theme-restaurant {
-    background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);
-    color: var(--white);
-}
-
-.theme-restaurant .pos-orders-main,
-.theme-restaurant .pos-current-order-main,
-.theme-restaurant .pos-status-main {
-    background: rgba(139, 69, 19, 0.8);
-    color: var(--white);
-}
-
-/* ============================================================================
-   Responsive Design
-   ============================================================================ */
-
+/* Responsive design */
 @media (max-width: 768px) {
+    .pos-mode-container,
+    #pos-mode-container,
+    .kitchen-mode-container {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+        padding: 0.5rem !important;
+    }
+    
     .pos-left-panel,
     .pos-right-panel,
     .kitchen-left-panel,
     .kitchen-right-panel {
-        padding: var(--spacing-md);
+        flex: none !important;
+        width: 100% !important;
+        min-width: unset !important;
+        max-width: unset !important;
+        height: 300px !important;
     }
-    
-    .common-header {
-        height: 50px !important;
-        min-height: 50px !important;
-        max-height: 50px !important;
-        flex: 0 0 50px !important;
-    }
-    
-    .common-footer {
-        height: 35px !important;
-        min-height: 35px !important;
-        max-height: 35px !important;
-        flex: 0 0 35px !important;
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .pos-left-panel,
-    .pos-right-panel,
-    .kitchen-left-panel,
-    .kitchen-right-panel {
-        padding: var(--spacing-sm);
-    }
-}
-
-/* ============================================================================
-   Utility Classes - Clean Helpers
-   ============================================================================ */
-
-.bg-subtle { background-color: var(--bg-subtle) !important; }
-.bg-section { background-color: var(--bg-section) !important; }
-.border-subtle { border: 1px solid var(--border-subtle) !important; }
-.shadow-subtle { box-shadow: var(--shadow-subtle) !important; }
-
-/* Remove common boxy utilities */
-.no-border { border: none !important; }
-.no-shadow { box-shadow: none !important; }
-.no-radius { border-radius: 0 !important; }
-
-/* ============================================================================
-   Print Styles
-   ============================================================================ */
-
-@media print {
-    .pos-app-container {
-        background: white !important;
-        color: black !important;
-    }
-    
-    .pos-orders-main,
-    .pos-current-order-main,
-    .pos-status-main {
-        box-shadow: none !important;
-        border: 1px solid #ccc !important;
-    }
-    
-    .btn {
-        border: 1px solid #ccc !important;
-        box-shadow: none !important;
-    }
-}
-
-/* ============================================================================
-   CSS OVERRIDE FIX - Add this to your CSS to force panel visibility
-   ============================================================================ */
-
-/* Force main container to be visible and use flex layout */
-.pos-mode-container {
-    display: flex !important;
-    visibility: visible !important;
-    height: calc(100vh - 120px) !important;
-    width: 100% !important;
-    background-color: #fafafa !important;
-    gap: 15px !important;
-}
-
-/* Force left panel to be visible */
-.pos-left-panel {
-    display: block !important;
-    visibility: visible !important;
-    flex: 0 0 30% !important;
-    min-width: 300px !important;
-    max-width: 400px !important;
-    height: 100% !important;
-    background-color: #f0f0f0 !important;
-    border: 1px solid #ccc !important;
-    border-radius: 8px !important;
-    padding: 10px !important;
-    overflow-y: auto !important;
-}
-
-/* Force right panel to be visible */
-.pos-right-panel {
-    display: block !important;
-    visibility: visible !important;
-    flex: 1 1 70% !important;
-    height: 100% !important;
-    background-color: #ffffff !important;
-    border: 1px solid #ccc !important;
-    border-radius: 8px !important;
-    padding: 10px !important;
-    overflow-y: auto !important;
-}
-
-/* Override any Wt hiding */
-.pos-mode-container * {
-    visibility: visible !important;
-}
-
-/* Make sure the layout works */
-.pos-mode-container > .Wt-hboxlayout {
-    display: flex !important;
-    width: 100% !important;
-    height: 100% !important;
 }
