@@ -1,0 +1,36 @@
+<!-- Wt Configuration for Restaurant POS System -->
+<server>
+    <application-settings location="*">
+        <log-file>wt.log</log-file>
+        <log-config>* -debug -info:WebRequest</log-config>
+        <debug>false</debug>
+
+        <max-request-size>128</max-request-size>
+        <session-timeout>60</session-timeout>
+        <idle-timeout>30</idle-timeout>
+        <max-sessions>100</max-sessions>
+
+        <server-name>Restaurant POS System</server-name>
+        <behind-reverse-proxy>false</behind-reverse-proxy>
+
+        <theme>bootstrap5</theme>
+        <progressive-bootstrap>true</progressive-bootstrap>
+        <ajax-intrapage-navigation>true</ajax-intrapage-navigation>
+
+        <properties>
+            <property name="theme-css-path">assets/css</property>
+            <property name="default-theme">base</property>
+        </properties>
+    </application-settings>
+
+    <http-server>
+        <bind>0.0.0.0</bind>
+        <port>8080</port>
+        <docroot>.</docroot>
+
+        <compression>
+            <gzip>true</gzip>
+            <types>text/css,application/javascript,text/html</types>
+        </compression>
+    </http-server>
+</server>
