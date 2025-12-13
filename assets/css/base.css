@@ -645,14 +645,17 @@ body {
     overflow-y: auto !important;
 }
 
-/* Override any Wt hiding */
-.pos-mode-container * {
-    visibility: visible !important;
-}
-
-/* Make sure the layout works */
+/* Make sure the layout works - but DO NOT force all children visible */
 .pos-mode-container > .Wt-hboxlayout {
     display: flex !important;
     width: 100% !important;
     height: 100% !important;
+}
+
+/* Hide script and style elements that Wt may inject */
+.pos-mode-container script,
+.pos-mode-container style,
+.pos-mode-container noscript {
+    display: none !important;
+    visibility: hidden !important;
 }
