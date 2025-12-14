@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server>
+    <application-settings location="*">
+        <log-file>wt.log</log-file>
+        <log-config>*</log-config>
+
+        <session-timeout>600</session-timeout>
+        <max-request-size>128</max-request-size>
+
+        <!-- CRITICAL: Disable progressive bootstrap to fix rendering -->
+        <progressive-bootstrap>false</progressive-bootstrap>
+
+        <!-- Use Bootstrap 5 theme -->
+        <theme>bootstrap5</theme>
+    </application-settings>
+</server>

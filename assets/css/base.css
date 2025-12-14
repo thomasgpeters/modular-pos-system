@@ -421,3 +421,109 @@ body::after {
         height: 300px !important;
     }
 }
+<<<<<<< HEAD
+=======
+
+@media (max-width: 576px) {
+    .pos-left-panel,
+    .pos-right-panel,
+    .kitchen-left-panel,
+    .kitchen-right-panel {
+        padding: var(--spacing-sm);
+    }
+}
+
+/* ============================================================================
+   Utility Classes - Clean Helpers
+   ============================================================================ */
+
+.bg-subtle { background-color: var(--bg-subtle) !important; }
+.bg-section { background-color: var(--bg-section) !important; }
+.border-subtle { border: 1px solid var(--border-subtle) !important; }
+.shadow-subtle { box-shadow: var(--shadow-subtle) !important; }
+
+/* Remove common boxy utilities */
+.no-border { border: none !important; }
+.no-shadow { box-shadow: none !important; }
+.no-radius { border-radius: 0 !important; }
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+    .pos-app-container {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .pos-orders-main,
+    .pos-current-order-main,
+    .pos-status-main {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+    
+    .btn {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ============================================================================
+   CSS OVERRIDE FIX - Add this to your CSS to force panel visibility
+   ============================================================================ */
+
+/* Force main container to be visible and use flex layout */
+.pos-mode-container {
+    display: flex !important;
+    visibility: visible !important;
+    height: calc(100vh - 120px) !important;
+    width: 100% !important;
+    background-color: #fafafa !important;
+    gap: 15px !important;
+}
+
+/* Force left panel to be visible */
+.pos-left-panel {
+    display: block !important;
+    visibility: visible !important;
+    flex: 0 0 30% !important;
+    min-width: 300px !important;
+    max-width: 400px !important;
+    height: 100% !important;
+    background-color: #f0f0f0 !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+}
+
+/* Force right panel to be visible */
+.pos-right-panel {
+    display: block !important;
+    visibility: visible !important;
+    flex: 1 1 70% !important;
+    height: 100% !important;
+    background-color: #ffffff !important;
+    border: 1px solid #ccc !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+}
+
+/* Make sure the layout works - but DO NOT force all children visible */
+.pos-mode-container > .Wt-hboxlayout {
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Hide script and style elements that Wt may inject */
+.pos-mode-container script,
+.pos-mode-container style,
+.pos-mode-container noscript {
+    display: none !important;
+    visibility: hidden !important;
+}
+>>>>>>> origin/claude/evaluate-pos-system-01

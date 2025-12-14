@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Restaurant POS System - Wt Framework Configuration
   Theme-aware configuration with Bootstrap integration
 -->
+=======
+<!-- ============================================================================
+     Wt Configuration Template for Restaurant POS System
+     File: config/wt_config.xml.in
+     ============================================================================ -->
+
+>>>>>>> origin/claude/evaluate-pos-system-01
 <server>
     <!-- Application Settings -->
     <application-settings location="*">
@@ -13,6 +21,7 @@
         <reload-is-new-session>true</reload-is-new-session>
         <use-slide-effects>true</use-slide-effects>
         <debug>false</debug>
+<<<<<<< HEAD
         <send-xhtml-mime-type>false</send-xhtml-mime-type>
         <strict-event-serialization>false</strict-event-serialization>
         <web-sockets>false</web-sockets>
@@ -160,4 +169,132 @@
         <gzip-level>6</gzip-level>
         <compression-threshold>1024</compression-threshold>
     </compression>
+=======
+
+        <!-- Session and request settings -->
+        <max-request-size>128</max-request-size>
+        <session-timeout>60</session-timeout>
+        <idle-timeout>30</idle-timeout>
+        <max-sessions>100</max-sessions>
+        <session-id-length>16</session-id-length>
+
+        <!-- Application settings -->
+        <server-name>Restaurant POS System</server-name>
+        <favicon>favicon.ico</favicon>
+
+        <!-- Security settings -->
+        <behind-reverse-proxy>false</behind-reverse-proxy>
+        <redirect-message>Load in progress</redirect-message>
+
+        <!-- Resource settings -->
+        <split-script>false</split-script>
+        <send-xhtml-mime-type>false</send-xhtml-mime-type>
+
+        <!-- Ajax/WebSocket settings -->
+        <ajax-puzzle>true</ajax-puzzle>
+        <session-id-cookie>false</session-id-cookie>
+
+        <!-- Bootstrap and theming -->
+        <theme>bootstrap5</theme>
+        <loading-indication>WtLoadingIndicator</loading-indication>
+
+        <!-- Enable progressive bootstrap for faster loading -->
+        <progressive-bootstrap>true</progressive-bootstrap>
+
+        <!-- Enable AJAX by default -->
+        <ajax-intrapage-navigation>true</ajax-intrapage-navigation>
+
+        <!-- Theme System Configuration -->
+        <properties>
+            <!-- Theme CSS paths -->
+            <property name="theme-css-path">assets/css</property>
+            <property name="theme-resources-path">assets</property>
+            <property name="theme-internal-path">/assets</property>
+
+            <!-- Default theme settings -->
+            <property name="default-theme">base</property>
+            <property name="enable-theme-switching">true</property>
+            <property name="enable-theme-persistence">true</property>
+
+            <!-- Theme performance settings -->
+            <property name="preload-themes">false</property>
+            <property name="cache-css">true</property>
+        </properties>
+
+        <!-- Static Resources Configuration -->
+        <static-resources>
+            <!-- Serve CSS and assets from the build directory structure -->
+            <resource-mapping>
+                <pattern>/assets/css/(.*)$</pattern>
+                <path>${docroot}/assets/css/$1</path>
+            </resource-mapping>
+
+            <!-- Serve theme resources -->
+            <resource-mapping>
+                <pattern>/themes/(.*)$</pattern>
+                <path>${docroot}/assets/css/themes/$1</path>
+            </resource-mapping>
+
+            <!-- Serve component CSS -->
+            <resource-mapping>
+                <pattern>/components/(.*)$</pattern>
+                <path>${docroot}/assets/css/components/$1</path>
+            </resource-mapping>
+
+            <!-- Generic static files -->
+            <resource-mapping>
+                <pattern>/static/(.*)$</pattern>
+                <path>${docroot}/$1</path>
+            </resource-mapping>
+        </static-resources>
+
+        <!-- Security Settings -->
+        <security>
+            <!-- Enable CSRF protection -->
+            <csrf-protection>true</csrf-protection>
+
+            <!-- Content Security Policy -->
+            <content-security-policy>
+                default-src 'self';
+                style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                script-src 'self' 'unsafe-inline' 'unsafe-eval';
+                img-src 'self' data: https:;
+                connect-src 'self';
+            </content-security-policy>
+        </security>
+
+    </application-settings>
+
+    <!-- HTTP Server Configuration -->
+    <http-server>
+        <!-- Listen on all interfaces -->
+        <bind>0.0.0.0</bind>
+        <port>8080</port>
+
+        <!-- Document root pointing to build directory -->
+        <docroot>@CMAKE_BINARY_DIR@</docroot>
+
+        <!-- Enable compression for CSS files -->
+        <compression>
+            <gzip>true</gzip>
+            <types>text/css,application/javascript,text/html,application/json</types>
+        </compression>
+
+        <!-- Cache settings for static resources -->
+        <static-cache>
+            <max-age>3600</max-age>
+        </static-cache>
+
+        <!-- MIME type mappings -->
+        <mime-types>
+            <mime-type extension=".css" type="text/css" />
+            <mime-type extension=".js" type="application/javascript" />
+            <mime-type extension=".json" type="application/json" />
+            <mime-type extension=".svg" type="image/svg+xml" />
+            <mime-type extension=".woff" type="font/woff" />
+            <mime-type extension=".woff2" type="font/woff2" />
+        </mime-types>
+    </http-server>
+>>>>>>> origin/claude/evaluate-pos-system-01
 </server>
