@@ -198,6 +198,118 @@ public:
     bool isCustomerManagementEnabled() const;
     bool isReportingEnabled() const;
     bool isLoyaltyProgramEnabled() const;
+
+    // =================================================================
+    // LLM Configuration
+    // =================================================================
+
+    /**
+     * @brief Checks if LLM integration is enabled
+     * @return True if LLM is enabled
+     */
+    bool isLLMEnabled() const;
+
+    /**
+     * @brief Sets LLM enabled state
+     * @param enabled True to enable LLM
+     */
+    void setLLMEnabled(bool enabled);
+
+    /**
+     * @brief Gets the LLM provider name
+     * @return Provider name (anthropic, openai, google, local)
+     */
+    std::string getLLMProvider() const;
+
+    /**
+     * @brief Sets the LLM provider
+     * @param provider Provider name
+     */
+    void setLLMProvider(const std::string& provider);
+
+    /**
+     * @brief Gets the LLM API key
+     * @return API key string
+     */
+    std::string getLLMApiKey() const;
+
+    /**
+     * @brief Sets the LLM API key
+     * @param apiKey API key
+     */
+    void setLLMApiKey(const std::string& apiKey);
+
+    /**
+     * @brief Gets the LLM model name
+     * @return Model name
+     */
+    std::string getLLMModel() const;
+
+    /**
+     * @brief Sets the LLM model name
+     * @param model Model name
+     */
+    void setLLMModel(const std::string& model);
+
+    /**
+     * @brief Gets the LLM base URL
+     * @return Base URL string
+     */
+    std::string getLLMBaseUrl() const;
+
+    /**
+     * @brief Sets the LLM base URL
+     * @param baseUrl Base URL
+     */
+    void setLLMBaseUrl(const std::string& baseUrl);
+
+    /**
+     * @brief Gets the LLM request timeout
+     * @return Timeout in seconds
+     */
+    int getLLMTimeout() const;
+
+    /**
+     * @brief Sets the LLM request timeout
+     * @param timeoutSeconds Timeout in seconds
+     */
+    void setLLMTimeout(int timeoutSeconds);
+
+    /**
+     * @brief Gets the LLM max tokens setting
+     * @return Max tokens per request
+     */
+    int getLLMMaxTokens() const;
+
+    /**
+     * @brief Sets the LLM max tokens
+     * @param maxTokens Max tokens per request
+     */
+    void setLLMMaxTokens(int maxTokens);
+
+    /**
+     * @brief Checks if LLM debug mode is enabled
+     * @return True if debug mode is enabled
+     */
+    bool isLLMDebugMode() const;
+
+    /**
+     * @brief Sets LLM debug mode
+     * @param enabled True to enable debug mode
+     */
+    void setLLMDebugMode(bool enabled);
+
+    /**
+     * @brief Gets the default geolocation search radius
+     * @return Radius in kilometers
+     */
+    double getLLMDefaultRadius() const;
+
+    /**
+     * @brief Gets the maximum geolocation search radius
+     * @return Max radius in kilometers
+     */
+    double getLLMMaxRadius() const;
     
     // =================================================================
     // Payment Configuration
@@ -271,6 +383,7 @@ private:
     void setDefaultFeatureFlags();
     void setDefaultPaymentConfig();
     void setDefaultAPIConfig();  // ADDED: API configuration method
+    void setDefaultLLMConfig();  // LLM configuration defaults
     
     // Type conversion helpers
     template<typename T>

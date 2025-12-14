@@ -281,6 +281,7 @@ set(SOURCES
     
     # Services
     src/services/EnhancedPOSService.cpp
+    src/services/LLMQueryService.cpp
     src/services/NotificationService.cpp
     src/services/POSService.cpp
     src/services/ThemeService.cpp
@@ -346,6 +347,7 @@ set(HEADERS
     
     # Services
     include/services/EnhancedPOSService.hpp
+    include/services/LLMQueryService.hpp
     include/services/NotificationService.hpp
     include/services/POSService.hpp
     include/services/ThemeService.hpp

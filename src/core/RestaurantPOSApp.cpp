@@ -289,8 +289,81 @@ void RestaurantPOSApp::initializeServices() {
     
     // Create theme service AFTER event manager is ready
     themeService_ = std::make_shared<ThemeService>(this);
-    
+
+    // Initialize LLM Query Service for business demographics
+    initializeLLMService();
+
     LOG_OPERATION_STATUS(logger_, "Core services initialization", true);
+}
+
+void RestaurantPOSApp::initializeLLMService() {
+    logger_.info("[RestaurantPOSApp] Initializing LLM Query Service...");
+
+    // Check if LLM is enabled in configuration
+    if (!configManager_->isLLMEnabled()) {
+        logger_.info("[RestaurantPOSApp] LLM service is disabled in configuration");
+        return;
+    }
+
+    try {
+        // Create the LLM query service
+        llmQueryService_ = std::make_shared<LLMQueryService>(eventManager_);
+
+        // Get configuration values
+        std::string provider = configManager_->getLLMProvider();
+        std::string apiKey = configManager_->getLLMApiKey();
+        std::string model = configManager_->getLLMModel();
+        std::string baseUrl = configManager_->getLLMBaseUrl();
+        int timeout = configManager_->getLLMTimeout();
+        bool debugMode = configManager_->isLLMDebugMode();
+
+        // Log configuration (mask API key for security)
+        logger_.info("[RestaurantPOSApp] LLM Configuration:");
+        logger_.info(std::string("  Provider: ") + provider);
+        logger_.info(std::string("  Model: ") + model);
+        logger_.info(std::string("  Base URL: ") + (baseUrl.empty() ? "(default)" : baseUrl));
+        logger_.info(std::string("  Timeout: ") + std::to_string(timeout) + "s");
+        logger_.info(std::string("  Debug Mode: ") + (debugMode ? "enabled" : "disabled"));
+        logger_.info(std::string("  API Key: ") + (apiKey.empty() ? "(not set)" : "********"));
+
+        // Check if API key is available
+        if (apiKey.empty()) {
+            logger_.warning("[RestaurantPOSApp] LLM API key not configured - service will not be functional");
+            logger_.warning("[RestaurantPOSApp] Set the LLM_API_KEY environment variable or configure in pos_config.xml");
+            return;
+        }
+
+        // Convert provider string to enum
+        LLMQueryService::LLMProvider llmProvider = LLMQueryService::stringToProvider(provider);
+
+        // Initialize the service
+        bool initialized = llmQueryService_->initialize(apiKey, llmProvider, baseUrl);
+
+        if (initialized) {
+            // Apply additional configuration
+            if (!model.empty()) {
+                llmQueryService_->setModel(model);
+            }
+            llmQueryService_->setTimeout(timeout);
+            llmQueryService_->setDebugMode(debugMode);
+
+            logger_.info("[RestaurantPOSApp] ✓ LLM Query Service initialized successfully");
+
+            // Log default geolocation settings
+            double defaultRadius = configManager_->getLLMDefaultRadius();
+            double maxRadius = configManager_->getLLMMaxRadius();
+            logger_.info(std::string("  Default Search Radius: ") + std::to_string(defaultRadius) + " km");
+            logger_.info(std::string("  Maximum Search Radius: ") + std::to_string(maxRadius) + " km");
+
+        } else {
+            logger_.error("[RestaurantPOSApp] Failed to initialize LLM Query Service");
+            llmQueryService_.reset();
+        }
+
+    } catch (const std::exception& e) {
+        logger_.error(std::string("[RestaurantPOSApp] Error initializing LLM service: ") + e.what());
+        llmQueryService_.reset();
+    }
 }
 
 void RestaurantPOSApp::initializeComponentFactory() {

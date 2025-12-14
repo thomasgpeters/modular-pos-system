@@ -12,6 +12,7 @@
 #include "../services/EnhancedPOSService.hpp"
 #include "../services/ThemeService.hpp"
 #include "../services/NotificationService.hpp"
+#include "../services/LLMQueryService.hpp"
 #include "../events/EventManager.hpp"
 #include "../events/POSEvents.hpp"
 #include "ConfigurationManager.hpp"
@@ -116,11 +117,19 @@ private:
     
     /**
      * @brief Initializes the theme service and applies default theme
-     * 
+     *
      * Loads theme preferences from storage and applies the current
      * theme to the application interface.
      */
     void initializeThemeService();
+
+    /**
+     * @brief Initializes the LLM Query Service for business demographics
+     *
+     * Sets up the LLM service based on configuration settings,
+     * enabling AI-powered business demographic queries based on geolocation.
+     */
+    void initializeLLMService();
     
     // =================================================================
     // CSS Loading and Theme Management - NEW METHODS
@@ -324,6 +333,7 @@ private:
     std::shared_ptr<ConfigurationManager> configManager_;     ///< Configuration management
     std::shared_ptr<POSService> posService_;                  ///< POS service (may be enhanced)
     std::shared_ptr<ThemeService> themeService_;              ///< Theme management service
+    std::shared_ptr<LLMQueryService> llmQueryService_;        ///< LLM query service for business demographics
     
     // UI Management
     std::unique_ptr<UIComponentFactory> componentFactory_;    ///< Factory for UI components

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
+#include <cstdlib>
 
 ConfigurationManager::ConfigurationManager()
     : lastLoadedFile_("") {
@@ -47,8 +48,11 @@ void ConfigurationManager::loadDefaults() {
     
     // NEW: API configuration
     setDefaultAPIConfig();
-    
-    std::cout << "[ConfigurationManager] Default configuration loaded with API settings" << std::endl;
+
+    // LLM configuration
+    setDefaultLLMConfig();
+
+    std::cout << "[ConfigurationManager] Default configuration loaded with API and LLM settings" << std::endl;
 }
 
 // NEW: Set default API configuration
@@ -437,4 +441,114 @@ std::unordered_map<std::string, int> ConfigurationManager::getKitchenPrepTimes()
 void ConfigurationManager::setKitchenPrepTime(const std::string& category, int minutes) {
     // Placeholder implementation
     std::cout << "[ConfigurationManager] Setting prep time for " << category << ": " << minutes << " minutes" << std::endl;
+}
+
+// =================================================================
+// LLM Configuration Implementation
+// =================================================================
+
+void ConfigurationManager::setDefaultLLMConfig() {
+    auto& llm = getOrCreateSection("llm");
+
+    // Basic LLM settings
+    llm["enabled"] = false;  // Disabled by default
+    llm["provider"] = std::string("anthropic");
+    llm["api_key"] = std::string("");  // Empty by default - must be set
+    llm["model"] = std::string("claude-3-sonnet-20240229");
+    llm["base_url"] = std::string("");  // Use default for provider
+    llm["timeout"] = 60;  // 60 seconds
+    llm["max_tokens"] = 4096;
+    llm["debug_mode"] = false;
+
+    // Cache settings
+    llm["cache_enabled"] = true;
+    llm["cache_ttl_minutes"] = 30;
+
+    // Geolocation settings
+    llm["default_radius_km"] = 5.0;
+    llm["max_radius_km"] = 50.0;
+
+    std::cout << "[ConfigurationManager] LLM configuration defaults set" << std::endl;
+}
+
+bool ConfigurationManager::isLLMEnabled() const {
+    return getValue<bool>("llm.enabled", false);
+}
+
+void ConfigurationManager::setLLMEnabled(bool enabled) {
+    setValue<bool>("llm.enabled", enabled);
+}
+
+std::string ConfigurationManager::getLLMProvider() const {
+    return getValue<std::string>("llm.provider", "anthropic");
+}
+
+void ConfigurationManager::setLLMProvider(const std::string& provider) {
+    setValue<std::string>("llm.provider", provider);
+}
+
+std::string ConfigurationManager::getLLMApiKey() const {
+    std::string key = getValue<std::string>("llm.api_key", "");
+
+    // Check environment variable if config value is empty or a placeholder
+    if (key.empty() || key.find("${") != std::string::npos) {
+        const char* envKey = std::getenv("LLM_API_KEY");
+        if (envKey) {
+            return std::string(envKey);
+        }
+    }
+
+    return key;
+}
+
+void ConfigurationManager::setLLMApiKey(const std::string& apiKey) {
+    setValue<std::string>("llm.api_key", apiKey);
+}
+
+std::string ConfigurationManager::getLLMModel() const {
+    return getValue<std::string>("llm.model", "claude-3-sonnet-20240229");
+}
+
+void ConfigurationManager::setLLMModel(const std::string& model) {
+    setValue<std::string>("llm.model", model);
+}
+
+std::string ConfigurationManager::getLLMBaseUrl() const {
+    return getValue<std::string>("llm.base_url", "");
+}
+
+void ConfigurationManager::setLLMBaseUrl(const std::string& baseUrl) {
+    setValue<std::string>("llm.base_url", baseUrl);
+}
+
+int ConfigurationManager::getLLMTimeout() const {
+    return getValue<int>("llm.timeout", 60);
+}
+
+void ConfigurationManager::setLLMTimeout(int timeoutSeconds) {
+    setValue<int>("llm.timeout", timeoutSeconds);
+}
+
+int ConfigurationManager::getLLMMaxTokens() const {
+    return getValue<int>("llm.max_tokens", 4096);
+}
+
+void ConfigurationManager::setLLMMaxTokens(int maxTokens) {
+    setValue<int>("llm.max_tokens", maxTokens);
+}
+
+bool ConfigurationManager::isLLMDebugMode() const {
+    return getValue<bool>("llm.debug_mode", false);
+}
+
+void ConfigurationManager::setLLMDebugMode(bool enabled) {
+    setValue<bool>("llm.debug_mode", enabled);
+}
+
+double ConfigurationManager::getLLMDefaultRadius() const {
+    return getValue<double>("llm.default_radius_km", 5.0);
+}
+
+double ConfigurationManager::getLLMMaxRadius() const {
+    return getValue<double>("llm.max_radius_km", 50.0);
 }
