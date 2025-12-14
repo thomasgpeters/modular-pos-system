@@ -222,6 +222,92 @@
         <auth-token>your_auth_token</auth-token>
         <from-number>+1234567890</from-number>
       </sms>
+
+      <!--
+        LLM (Large Language Model) / AI Integration
+        Used for intelligent features like menu recommendations,
+        order suggestions, and natural language processing.
+
+        Environment Variable Override: LLM_API_KEY
+        (If set, overrides the api-key value below)
+      -->
+      <llm>
+        <enabled>false</enabled>
+
+        <!--
+          Provider Options:
+          - openai      : OpenAI GPT models (gpt-4, gpt-3.5-turbo)
+          - anthropic   : Anthropic Claude models (claude-3-opus, claude-3-sonnet)
+          - google      : Google AI (gemini-pro, palm-2)
+          - azure       : Azure OpenAI Service
+          - ollama      : Local Ollama instance (llama2, mistral, etc.)
+          - huggingface : Hugging Face Inference API
+        -->
+        <provider>openai</provider>
+
+        <!--
+          Model Selection (varies by provider):
+          OpenAI:    gpt-4, gpt-4-turbo, gpt-3.5-turbo
+          Anthropic: claude-3-opus-20240229, claude-3-sonnet-20240229, claude-3-haiku-20240307
+          Google:    gemini-pro, gemini-pro-vision
+          Ollama:    llama2, mistral, codellama, phi
+        -->
+        <model>gpt-3.5-turbo</model>
+
+        <!-- API endpoint (leave empty for default provider endpoint) -->
+        <api-endpoint></api-endpoint>
+
+        <!--
+          API Key - SECURITY WARNING:
+          For production, use environment variable LLM_API_KEY instead.
+          Never commit real API keys to version control.
+        -->
+        <api-key>your_api_key_here</api-key>
+
+        <!-- Optional: Organization ID (for OpenAI) -->
+        <organization-id></organization-id>
+
+        <!-- Request settings -->
+        <settings>
+          <!-- Maximum tokens in response (controls response length) -->
+          <max-tokens>1000</max-tokens>
+
+          <!--
+            Temperature (0.0 - 2.0):
+            - 0.0-0.3: More focused, deterministic responses
+            - 0.4-0.7: Balanced creativity and consistency
+            - 0.8-2.0: More creative, varied responses
+          -->
+          <temperature>0.7</temperature>
+
+          <!-- Request timeout in seconds -->
+          <timeout>30</timeout>
+
+          <!-- Enable response caching to reduce API calls -->
+          <cache-responses>true</cache-responses>
+
+          <!-- Cache TTL in seconds (default: 1 hour) -->
+          <cache-ttl>3600</cache-ttl>
+        </settings>
+
+        <!-- Feature-specific LLM usage -->
+        <features>
+          <!-- AI-powered menu recommendations -->
+          <menu-recommendations>false</menu-recommendations>
+
+          <!-- Natural language order input ("I'd like a burger with fries") -->
+          <natural-language-orders>false</natural-language-orders>
+
+          <!-- Intelligent upselling suggestions -->
+          <upsell-suggestions>false</upsell-suggestions>
+
+          <!-- Customer sentiment analysis from feedback -->
+          <sentiment-analysis>false</sentiment-analysis>
+
+          <!-- Automated report summaries -->
+          <report-summaries>false</report-summaries>
+        </features>
+      </llm>
     </integrations>
     
   </application>
