@@ -331,8 +331,8 @@ void RestaurantPOSApp::initializeLLMService() {
 
         // Check if API key is available
         if (apiKey.empty()) {
-            logger_.warning("[RestaurantPOSApp] LLM API key not configured - service will not be functional");
-            logger_.warning("[RestaurantPOSApp] Set the LLM_API_KEY environment variable or configure in pos_config.xml");
+            logger_.info("[RestaurantPOSApp] LLM API key not configured - service will not be functional");
+            logger_.info("[RestaurantPOSApp] Set the LLM_API_KEY environment variable or configure in pos_config.xml");
             return;
         }
 

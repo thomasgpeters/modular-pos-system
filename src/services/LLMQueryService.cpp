@@ -356,17 +356,17 @@ LLMQueryService::LLMQueryService(std::shared_ptr<EventManager> eventManager)
     , totalTokensUsed_(0)
     , totalCost_(0.0)
 {
-    logger_.info("LLMQueryService", "Creating LLM Query Service instance");
+    logger_.info("LLMQueryService: Creating LLM Query Service instance");
 }
 
 LLMQueryService::~LLMQueryService() {
-    logger_.info("LLMQueryService", "Destroying LLM Query Service instance");
+    logger_.info("LLMQueryService: Destroying LLM Query Service instance");
 }
 
 bool LLMQueryService::initialize(const std::string& apiKey,
                                   LLMProvider provider,
                                   const std::string& baseUrl) {
-    logger_.info("LLMQueryService", "Initializing with provider: " + providerToString(provider));
+    logger_.info("LLMQueryService: Initializing with provider: " + providerToString(provider));
 
     apiKey_ = apiKey;
     provider_ = provider;
@@ -374,7 +374,7 @@ bool LLMQueryService::initialize(const std::string& apiKey,
     model_ = getDefaultModel();
 
     if (apiKey_.empty()) {
-        logger_.warning("LLMQueryService", "API key is empty - service will not be functional");
+        logger_.info("LLMQueryService: API key is empty - service will not be functional");
         initialized_ = false;
         return false;
     }
@@ -386,7 +386,7 @@ bool LLMQueryService::initialize(const std::string& apiKey,
     apiClient_->setDebugMode(debugMode_);
 
     initialized_ = true;
-    logger_.info("LLMQueryService", "Initialized successfully with model: " + model_);
+    logger_.info("LLMQueryService: Initialized successfully with model: " + model_);
 
     return true;
 }
@@ -395,7 +395,7 @@ void LLMQueryService::setProvider(LLMProvider provider) {
     provider_ = provider;
     baseUrl_ = getDefaultBaseUrl();
     model_ = getDefaultModel();
-    logger_.info("LLMQueryService", "Provider changed to: " + providerToString(provider));
+    logger_.info("LLMQueryService: Provider changed to: " + providerToString(provider));
 }
 
 LLMQueryService::LLMProvider LLMQueryService::getProvider() const {
@@ -404,7 +404,7 @@ LLMQueryService::LLMProvider LLMQueryService::getProvider() const {
 
 void LLMQueryService::setModel(const std::string& model) {
     model_ = model;
-    logger_.info("LLMQueryService", "Model set to: " + model);
+    logger_.info("LLMQueryService: Model set to: " + model);
 }
 
 std::string LLMQueryService::getModel() const {
@@ -451,7 +451,7 @@ void LLMQueryService::queryBusinessDemographics(const GeoLocation& location,
         return;
     }
 
-    logger_.info("LLMQueryService", "Querying business demographics for: " + location.toString());
+    logger_.info("LLMQueryService: Querying business demographics for: " + location.toString());
 
     std::string prompt = buildDemographicsPrompt(location);
     sendQuery(prompt, callback);
@@ -468,7 +468,7 @@ void LLMQueryService::queryLocalCompetitors(const GeoLocation& location,
         return;
     }
 
-    logger_.info("LLMQueryService", "Querying local competitors for: " + businessType);
+    logger_.info("LLMQueryService: Querying local competitors for: " + businessType);
 
     std::string prompt = buildCompetitorPrompt(location, businessType);
     sendQuery(prompt, callback);
@@ -484,7 +484,7 @@ void LLMQueryService::queryMarketOpportunities(const GeoLocation& location,
         return;
     }
 
-    logger_.info("LLMQueryService", "Querying market opportunities for: " + location.toString());
+    logger_.info("LLMQueryService: Querying market opportunities for: " + location.toString());
 
     std::string prompt = buildOpportunitiesPrompt(location);
     sendQuery(prompt, callback);
@@ -527,7 +527,7 @@ LLMQueryResult LLMQueryService::queryBusinessDemographicsSync(const GeoLocation&
         return result;
     }
 
-    logger_.info("LLMQueryService", "Sync query for business demographics: " + location.toString());
+    logger_.info("LLMQueryService: Sync query for business demographics: " + location.toString());
 
     std::string prompt = buildDemographicsPrompt(location);
     return sendQuerySync(prompt);
@@ -585,7 +585,7 @@ Wt::Json::Object LLMQueryService::getUsageStats() const {
 
 void LLMQueryService::clearCache() {
     queryCache_.clear();
-    logger_.info("LLMQueryService", "Cache cleared");
+    logger_.info("LLMQueryService: Cache cleared");
 }
 
 std::string LLMQueryService::providerToString(LLMProvider provider) {
@@ -823,18 +823,18 @@ void LLMQueryService::sendQuery(const std::string& prompt, QueryCallback callbac
                 totalQueries_++;
                 totalTokensUsed_ += result.tokensUsed;
 
-                logger_.info("LLMQueryService", "Query successful, tokens: " +
+                logger_.info("LLMQueryService: Query successful, tokens: " +
                             std::to_string(result.tokensUsed));
 
             } catch (const std::exception& e) {
                 result.success = false;
-                result.errorMessage = std::string("Failed to parse response: ") + e.what();
-                logger_.error("LLMQueryService", result.errorMessage);
+                result.errorMessage = std::string("LLMQueryService: Failed to parse response: ") + e.what();
+                logger_.error(result.errorMessage);
             }
         } else {
             result.success = false;
             result.errorMessage = response.errorMessage;
-            logger_.error("LLMQueryService", "Query failed: " + response.errorMessage);
+            logger_.error("LLMQueryService: Query failed: " + response.errorMessage);
         }
 
         if (callback) {
@@ -917,7 +917,7 @@ BusinessDemographics LLMQueryService::parseResponse(const std::string& response)
             Wt::Json::parse(jsonStr, json);
             demo = BusinessDemographics::fromJson(json);
         } catch (const std::exception& e) {
-            logger_.warning("LLMQueryService", "Failed to parse JSON response: " + std::string(e.what()));
+            logger_.info("LLMQueryService: Failed to parse JSON response: " + std::string(e.what()));
             // Set raw summary if JSON parsing fails
             demo.summary = response;
         }
@@ -1035,12 +1035,12 @@ Wt::Json::Object LLMQueryService::buildRequestBody(const std::string& prompt) co
 
 void LLMQueryService::logDebug(const std::string& message) {
     if (debugMode_) {
-        logger_.debug("LLMQueryService", message);
+        logger_.debug("LLMQueryService" + message);
     }
 }
 
 void LLMQueryService::logError(const std::string& message) {
-    logger_.error("LLMQueryService", message);
+    logger_.error("LLMQueryService" + message);
 }
 
 void LLMQueryService::publishEvent(const std::string& eventType, const Wt::Json::Object& data) {
