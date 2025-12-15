@@ -1,7 +1,26 @@
 /* ============================================================================
    Clean POS Layout CSS - Minimal Borders and Streamlined Design
-   Replace your existing base.css and pos-layout.css with this cleaner version
    ============================================================================ */
+
+/* CRITICAL: Hide all script and style elements that may render as text */
+script, style, noscript {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+body > script,
+body > style,
+body > noscript,
+.Wt-domRoot script,
+.Wt-domRoot style {
+    display: none !important;
+    visibility: hidden !important;
+}
 
 /* CSS Custom Properties */
 :root {

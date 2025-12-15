@@ -7,10 +7,24 @@
         <session-timeout>600</session-timeout>
         <max-request-size>128</max-request-size>
 
-        <!-- CRITICAL: Disable progressive bootstrap to fix rendering -->
+        <!-- Disable progressive bootstrap -->
         <progressive-bootstrap>false</progressive-bootstrap>
+
+        <!-- CRITICAL: These settings affect HTML output -->
+        <split-script>false</split-script>
+        <send-xhtml-mime-type>false</send-xhtml-mime-type>
+        <ua-compatible>IE8=IE7</ua-compatible>
 
         <!-- Use Bootstrap 5 theme -->
         <theme>bootstrap5</theme>
+
+        <!-- Inline CSS to hide any script elements that become visible -->
+        <head-matter><![CDATA[
+<style type="text/css">
+script, noscript { display: none !important; visibility: hidden !important; }
+body > script, body > style { display: none !important; }
+</style>
+]]></head-matter>
+
     </application-settings>
 </server>
