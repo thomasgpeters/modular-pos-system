@@ -5,15 +5,13 @@
 
 int main(int argc, char** argv) {
     try {
-        Wt::WServer server(argc, argv, WTHTTP_CONFIGURATION);
-        
-        // Configure server
-        server.setServerConfiguration(argc, argv, WTHTTP_CONFIGURATION);
-        
+        // Initialize server with command line args only
+        Wt::WServer server(argc, argv);
+
         // Add entry point - this creates our application factory
-        server.addEntryPoint(Wt::EntryPointType::Application, 
+        server.addEntryPoint(Wt::EntryPointType::Application,
                            createApplication,
-                           "/pos", 
+                           "/pos",
                            "/favicon.ico");
         
         std::cout << "===========================================================" << std::endl;
