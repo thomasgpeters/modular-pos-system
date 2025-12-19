@@ -19,7 +19,7 @@
 .menu-display,
 .pos-left-panel {
     flex: 0 0 30% !important;
-    background: #f8f9fa !important;
+    background: transparent !important;
     border-radius: 4px !important;
     padding: 0.5rem !important;
     margin: 0 !important;
@@ -68,7 +68,6 @@
 
 /* Ensure all direct children have proper styling - MINIMAL */
 #pos-mode-container > *:not(.Wt-hboxlayout) {
-    background: #ffffff !important;
     border-radius: 4px !important;
     padding: 0.5rem !important;
     margin: 0 !important;
