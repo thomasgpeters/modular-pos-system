@@ -11,15 +11,16 @@ body {
     overflow: hidden;
 }
 
-/* POS Content */
+/* POS Content - Use flex to work with Wt HBoxLayout */
 #pos-mode-container {
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
     visibility: visible !important;
     height: 100% !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    padding: 2rem !important;
+    background: transparent !important;
+    padding: 1rem !important;
     color: #2d3748 !important;
-    border-radius: 8px !important;
+    gap: 1rem !important;
 }
 
 /* Kitchen Content */

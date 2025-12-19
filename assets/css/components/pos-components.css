@@ -174,27 +174,28 @@
     color: #28a745 !important;
 }
 
-/* Responsive Layout */
+/* Responsive Layout - Stack vertically on mobile */
 @media (max-width: 768px) {
     #pos-mode-container {
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto auto !important;
+        flex-direction: column !important;
         gap: 0.75rem !important;
         padding: 0.75rem !important;
     }
-    
-    #pos-mode-container > div:first-child {
-        grid-column: 1 !important;
-        grid-row: 1 !important;
+
+    #pos-mode-container > div:first-child,
+    .pos-left-panel {
+        flex: 0 0 auto !important;
         max-height: 50vh !important;
+        width: 100% !important;
     }
-    
-    #pos-mode-container > div:nth-child(2) {
-        grid-column: 1 !important;
-        grid-row: 2 !important;
+
+    #pos-mode-container > div:nth-child(2),
+    .pos-right-panel {
+        flex: 1 1 auto !important;
         max-height: 50vh !important;
+        width: 100% !important;
     }
-    
+
     .restaurant-menu h2,
     .current-order h2 {
         font-size: 1.1rem !important;
@@ -220,13 +221,4 @@
     }
 }
 
-/* Force proper layout even with dynamic content */
-body #pos-mode-container {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-}
-
-html #pos-mode-container {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-}
+/* Layout handled by flex - removed conflicting grid rules */
