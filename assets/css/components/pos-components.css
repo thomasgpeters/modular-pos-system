@@ -1,11 +1,11 @@
 /* =============================================================================
-   POS Order Layout Fix - Add to assets/css/components/pos-components.css
+   POS Order Layout Fix - Compatible with Wt HBoxLayout (flex)
    ============================================================================= */
 
-/* Main POS Container - Force Grid Layout for Order View */
+/* Main POS Container - Use flex to match C++ HBoxLayout */
 #pos-mode-container {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    display: flex !important;
+    flex-direction: row !important;
     gap: 1rem !important;
     height: 100% !important;
     padding: 1rem !important;
@@ -14,11 +14,11 @@
     overflow: hidden !important;
 }
 
-/* Restaurant Menu Container - Left Side */
+/* Left Panel - Menu Side */
 .restaurant-menu,
 .menu-display,
-[class*="menu"] {
-    grid-column: 1 !important;
+.pos-left-panel {
+    flex: 0 0 30% !important;
     background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 8px !important;
     padding: 0 !important;
@@ -29,11 +29,11 @@
     max-height: 100% !important;
 }
 
-/* Current Order Container - Right Side */
+/* Right Panel - Order Side */
 .current-order,
 .current-order-display,
-[class*="current-order"] {
-    grid-column: 2 !important;
+.pos-right-panel {
+    flex: 1 1 70% !important;
     background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 8px !important;
     padding: 0 !important;
@@ -44,17 +44,28 @@
     max-height: 100% !important;
 }
 
-/* Alternative: Target by position if classes aren't specific enough */
-#pos-mode-container > div:first-child {
-    grid-column: 1 !important;
+/* Wt's internal layout container */
+#pos-mode-container > .Wt-hboxlayout {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    height: 100% !important;
+    gap: 1rem !important;
 }
 
-#pos-mode-container > div:nth-child(2) {
-    grid-column: 2 !important;
+/* Target first and second children for flex layout */
+#pos-mode-container > div:first-child,
+#pos-mode-container > .Wt-hboxlayout > div:first-child {
+    flex: 0 0 30% !important;
 }
 
-/* Ensure all children use proper grid positioning */
-#pos-mode-container > * {
+#pos-mode-container > div:nth-child(2),
+#pos-mode-container > .Wt-hboxlayout > div:nth-child(2) {
+    flex: 1 1 70% !important;
+}
+
+/* Ensure all direct children have proper styling */
+#pos-mode-container > *:not(.Wt-hboxlayout) {
     background: rgba(255, 255, 255, 0.95) !important;
     border-radius: 8px !important;
     padding: 1rem !important;
