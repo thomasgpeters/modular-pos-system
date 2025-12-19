@@ -527,7 +527,7 @@ void POSModeContainer::showOrderEntryMode() {
 
                     // Status with badge
                     std::string statusClass = "badge ";
-                    std::string statusText = order->getStatusString();
+                    std::string statusText = Order::statusToString(order->getStatus());
                     if (statusText == "Pending") statusClass += "bg-warning text-dark";
                     else if (statusText == "In Progress") statusClass += "bg-info";
                     else if (statusText == "Ready") statusClass += "bg-success";
