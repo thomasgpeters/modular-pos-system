@@ -447,11 +447,12 @@ void POSModeContainer::showOrderEntryMode() {
 
             // Recreate layout - REQUIRED for proper widget rendering in Wt
             auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-            leftLayout->setContentsMargins(5, 5, 5, 5);
-            leftLayout->setSpacing(8);
+            leftLayout->setContentsMargins(0, 0, 0, 0);  // No margins
+            leftLayout->setSpacing(0);  // No spacing between elements
 
-            // Set transparent background (override CSS gray background)
-            leftPanel_->setAttributeValue("style", "background: transparent !important;");
+            // Light grey background with padding via style
+            leftPanel_->setAttributeValue("style",
+                "background: #e9ecef !important; padding: 10px !important; margin: 0 !important; border-radius: 4px;");
         }
 
         if (workArea_ && workArea_->children().size() > 0) {
@@ -473,7 +474,14 @@ void POSModeContainer::showOrderEntryMode() {
             auto headerContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
             headerContainer->setStyleClass("d-flex justify-content-between align-items-center p-2 mb-2 bg-white rounded");
 
-            auto headerText = headerContainer->addNew<Wt::WText>("Active Orders");
+            // Icon + text container for heading
+            auto titleContainer = headerContainer->addNew<Wt::WContainerWidget>();
+            titleContainer->setStyleClass("d-flex align-items-center gap-2");
+
+            auto headerIcon = titleContainer->addNew<Wt::WText>("&#128203;");  // Clipboard icon
+            headerIcon->setStyleClass("h5 mb-0");
+
+            auto headerText = titleContainer->addNew<Wt::WText>("Active Orders");
             headerText->setStyleClass("h5 text-primary mb-0 fw-bold");
 
             // Refresh button
@@ -560,10 +568,15 @@ void POSModeContainer::showOrderEntryMode() {
                     row++;
                 }
 
-                // Order count footer - add through layout
-                auto countText = leftLayout->addWidget(std::make_unique<Wt::WText>(
-                    std::to_string(orders.size()) + " active order(s)"));
-                countText->setStyleClass("text-muted small mt-2 d-block p-2 bg-white rounded");
+                // Order count footer - add through layout with darker background
+                auto footerContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+                footerContainer->setAttributeValue("style",
+                    "background: #495057; padding: 8px 12px; border-radius: 4px; margin-top: 8px;");
+
+                auto countText = footerContainer->addNew<Wt::WText>(
+                    std::to_string(orders.size()) + " active order(s)");
+                countText->setStyleClass("small");
+                countText->setAttributeValue("style", "color: white !important;");
             }
 
             std::cout << "[POSModeContainer] Active Orders list created with "

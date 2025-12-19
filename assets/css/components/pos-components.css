@@ -30,7 +30,7 @@
     max-height: 100% !important;
 }
 
-/* Right Panel - Order Side - CLEAN, NO BORDERS */
+/* Right Panel - Order Side - With subtle border */
 .current-order,
 .current-order-display,
 .pos-right-panel {
@@ -39,7 +39,7 @@
     border-radius: 4px !important;
     padding: 0.5rem !important;
     margin: 0 !important;
-    border: none !important;
+    border: 0.25px solid #dee2e6 !important;
     box-shadow: none !important;
     overflow-y: auto !important;
     height: 100% !important;
