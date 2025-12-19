@@ -11,16 +11,16 @@ body {
     overflow: hidden;
 }
 
-/* POS Content - Use flex to work with Wt HBoxLayout */
+/* POS Content - Use column layout for header/content/footer structure */
 #pos-mode-container {
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: column !important;
     visibility: visible !important;
     height: 100% !important;
     background: transparent !important;
-    padding: 1rem !important;
+    padding: 0 !important;
     color: #2d3748 !important;
-    gap: 1rem !important;
+    gap: 0 !important;
 }
 
 /* Kitchen Content */
