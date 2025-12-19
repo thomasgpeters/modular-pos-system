@@ -333,14 +333,11 @@ void RestaurantPOSApp::createCommonComponents() {
     modeContainer_->setStyleClass("flex-grow-1 mode-container-wrapper");
     modeContainer_->setId("main-mode-container");
     
-    // FORCE MODE CONTAINER VISIBILITY AND SIZE
+    // FORCE MODE CONTAINER VISIBILITY AND SIZE - don't override children's display
     modeContainer_->show();
     modeContainer_->setHidden(false);
     modeContainer_->setMinimumSize(Wt::WLength::Auto, Wt::WLength(400, Wt::LengthUnit::Pixel));
-    modeContainer_->setAttributeValue("style",
-        "display: block !important; visibility: visible !important; "
-        "height: calc(100vh - 100px) !important; width: 100% !important; "
-        "background-color: #f8f9fa !important; padding: 10px;");
+    // Let children control their own display mode (flex for POS)
     
     // CRITICAL: Set mode container to expand and fill remaining space
     mainLayout_->setStretchFactor(modeContainer_, 1);
@@ -393,14 +390,10 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Mode container not initialized");
         }
         
-        // FORCE MODE CONTAINER VISIBILITY
+        // FORCE MODE CONTAINER VISIBILITY (without overriding display)
         modeContainer_->show();
         modeContainer_->setHidden(false);
-        modeContainer_->setAttributeValue("style",
-            "display: block !important; visibility: visible !important; "
-            "height: calc(100vh - 120px) !important; width: 100% !important; "
-            "background-color: #f8f9fa !important; padding: 10px;");
-        
+
         logger_.info("[RestaurantPOSApp] Mode container forced visible");
         
         logger_.info("[RestaurantPOSApp] Creating POS mode container...");
@@ -411,15 +404,12 @@ void RestaurantPOSApp::createModeContainers() {
             throw std::runtime_error("Failed to create POS mode container");
         }
         
-        // FORCE POS CONTAINER VISIBILITY
+        // FORCE POS CONTAINER VISIBILITY - use FLEX not block!
         posModeContainer_->setId("pos-mode-container");
         posModeContainer_->addStyleClass("mode-container pos-mode-active");
         posModeContainer_->show();
         posModeContainer_->setHidden(false);
-        posModeContainer_->setAttributeValue("style", 
-            "display: block !important; visibility: visible !important; "
-            "height: 100% !important; width: 100% !important; "
-            "background-color: #f8f9fa !important;");
+        // Note: Don't override display style - let POSModeContainer handle its own flex layout
         
         logger_.info("[RestaurantPOSApp] Creating Kitchen mode container...");
         

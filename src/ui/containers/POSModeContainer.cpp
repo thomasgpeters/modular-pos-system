@@ -130,8 +130,8 @@ void POSModeContainer::setupLayout() {
     layout->setStretchFactor(leftPanel_, 3);   // 30%
     layout->setStretchFactor(rightPanel_, 7);  // 70%
     
-    // Apply styling with visibility enforcement
-    leftPanel_->setStyleClass("pos-left-panel border border-info"); // Temp border to see it
+    // Apply styling WITHOUT debug borders
+    leftPanel_->setStyleClass("pos-left-panel");
     rightPanel_->setStyleClass("pos-right-panel");
     
     // FORCE VISIBILITY AND LAYOUT PROPERTIES
