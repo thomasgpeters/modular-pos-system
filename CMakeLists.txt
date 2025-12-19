@@ -49,13 +49,12 @@ set(WT_DOCROOT "${CMAKE_BINARY_DIR}")
 set(FRAMEWORK_CSS_FILES
     base.css
     bootstrap-custom.css
-    main.css              # ADD THIS - matches 404 error  
-    pos-layout.css        # ADD THIS - matches 404 error
-    theme-reactive.css    # ADD THIS - matches 404 error
-    theme-framework.css   # ADD THIS - matches 404 error
+    main.css
+    theme-reactive.css
+    theme-framework.css
     typography.css
     utilities.css
-    webkit-transitions.css # ADD THIS - matches 404 error
+    webkit-transitions.css
 )
 
 # Theme CSS Files  
