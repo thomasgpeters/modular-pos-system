@@ -110,8 +110,8 @@ void POSModeContainer::setupLayout() {
     
     // Create main horizontal layout
     auto layout = setLayout(std::make_unique<Wt::WHBoxLayout>());
-    layout->setContentsMargins(10, 10, 10, 10);
-    layout->setSpacing(15);
+    layout->setContentsMargins(5, 5, 5, 5);
+    layout->setSpacing(8);
     
     // Create left panel first
     leftPanel_ = layout->addWidget(std::make_unique<Wt::WContainerWidget>());
@@ -450,9 +450,9 @@ void POSModeContainer::showOrderEntryMode() {
             leftLayout->setContentsMargins(0, 0, 0, 0);  // No margins
             leftLayout->setSpacing(0);  // No spacing between elements
 
-            // Light grey background with padding via style
+            // Light grey background with minimal padding
             leftPanel_->setAttributeValue("style",
-                "background: #e9ecef !important; padding: 10px !important; margin: 0 !important; border-radius: 4px;");
+                "background: #e9ecef !important; padding: 0 !important; margin: 0 !important; border-radius: 4px; overflow: hidden;");
         }
 
         if (workArea_ && workArea_->children().size() > 0) {
@@ -470,9 +470,9 @@ void POSModeContainer::showOrderEntryMode() {
                 return;
             }
 
-            // Header container - add through layout
+            // Header container - spans full width
             auto headerContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
-            headerContainer->setStyleClass("d-flex justify-content-between align-items-center p-2 mb-2 bg-white rounded");
+            headerContainer->setStyleClass("d-flex justify-content-between align-items-center p-2 bg-white");
 
             // Icon + text container for heading
             auto titleContainer = headerContainer->addNew<Wt::WContainerWidget>();
@@ -496,9 +496,9 @@ void POSModeContainer::showOrderEntryMode() {
             auto orders = posService_->getActiveOrders();
 
             if (orders.empty()) {
-                // No orders message - add through layout with stretch
+                // No orders message - spans full width
                 auto emptyContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
-                emptyContainer->setStyleClass("text-center py-5 bg-white rounded");
+                emptyContainer->setStyleClass("text-center py-4 bg-white");
 
                 auto emptyIcon = emptyContainer->addNew<Wt::WText>("No Orders");
                 emptyIcon->setStyleClass("d-block h4 text-muted mb-3");
@@ -508,10 +508,19 @@ void POSModeContainer::showOrderEntryMode() {
 
                 auto hintText = emptyContainer->addNew<Wt::WText>("Create a new order using the panel on the right");
                 hintText->setStyleClass("d-block small text-info");
+
+                // Footer for empty state
+                auto footerContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+                footerContainer->setAttributeValue("style",
+                    "background: #495057; padding: 8px 12px; margin: 0;");
+
+                auto countText = footerContainer->addNew<Wt::WText>("0 active order(s)");
+                countText->setStyleClass("small");
+                countText->setAttributeValue("style", "color: white !important;");
             } else {
-                // Orders table container - add through layout with stretch
+                // Orders table container - spans full width
                 auto tableContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
-                tableContainer->setStyleClass("bg-white rounded p-2");
+                tableContainer->setStyleClass("bg-white p-2");
 
                 auto ordersTable = tableContainer->addNew<Wt::WTable>();
                 ordersTable->setStyleClass("table table-hover table-sm mb-0");
@@ -568,10 +577,10 @@ void POSModeContainer::showOrderEntryMode() {
                     row++;
                 }
 
-                // Order count footer - add through layout with darker background
+                // Order count footer - spans full width with darker background
                 auto footerContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
                 footerContainer->setAttributeValue("style",
-                    "background: #495057; padding: 8px 12px; border-radius: 4px; margin-top: 8px;");
+                    "background: #495057; padding: 8px 12px; margin: 0;");
 
                 auto countText = footerContainer->addNew<Wt::WText>(
                     std::to_string(orders.size()) + " active order(s)");
