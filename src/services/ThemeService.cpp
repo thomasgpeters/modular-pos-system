@@ -10,6 +10,40 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
+#include <sstream>
+
+// Helper function to escape CSS for use in JavaScript template literals
+static std::string escapeForJSTemplateLiteral(const std::string& input) {
+    std::ostringstream escaped;
+    for (char c : input) {
+        switch (c) {
+            case '\\': escaped << "\\\\"; break;
+            case '`':  escaped << "\\`"; break;
+            case '$':  escaped << "\\$"; break;
+            case '\n': escaped << "\\n"; break;
+            case '\r': escaped << "\\r"; break;
+            case '\t': escaped << "\\t"; break;
+            default:   escaped << c; break;
+        }
+    }
+    return escaped.str();
+}
+
+// Helper function to escape CSS for use in JavaScript single-quoted strings
+static std::string escapeForJSSingleQuote(const std::string& input) {
+    std::ostringstream escaped;
+    for (char c : input) {
+        switch (c) {
+            case '\\': escaped << "\\\\"; break;
+            case '\'': escaped << "\\'"; break;
+            case '\n': escaped << "\\n"; break;
+            case '\r': escaped << "\\r"; break;
+            case '\t': escaped << "\\t"; break;
+            default:   escaped << c; break;
+        }
+    }
+    return escaped.str();
+}
 
 ThemeService::ThemeService(Wt::WApplication* app)
     : app_(app)
@@ -138,21 +172,24 @@ void ThemeService::setTheme(Theme theme, bool savePreference) {
 // FIXED: New method to apply immediate inline CSS for instant theme changes
 void ThemeService::applyInlineThemeCSS(Theme theme) {
     if (!app_) return;
-    
+
     std::string css = generateThemeCSS(theme);
-    
+
+    // FIXED: Properly escape CSS for JavaScript template literal
+    std::string escapedCSS = escapeForJSTemplateLiteral(css);
+
     // Inject CSS immediately via JavaScript
-    std::string script = 
+    std::string script =
         "if (window.currentThemeStyle) {"
         "  document.head.removeChild(window.currentThemeStyle);"
         "}"
         "window.currentThemeStyle = document.createElement('style');"
-        "window.currentThemeStyle.textContent = `" + css + "`;"
+        "window.currentThemeStyle.textContent = `" + escapedCSS + "`;"
         "window.currentThemeStyle.id = 'pos-theme-override';"
         "document.head.appendChild(window.currentThemeStyle);";
-    
+
     app_->doJavaScript(script);
-    
+
     std::cout << "[ThemeService] Applied inline CSS for theme: " << getThemeName(theme) << std::endl;
 }
 
@@ -381,23 +418,26 @@ void ThemeService::applyBaseThemeVariables() {
             --pos-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             --pos-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-        
+
         .pos-theme-transition {
             transition: all var(--pos-transition-speed) ease;
         }
-        
+
         .pos-app-container {
             transition: background-color var(--pos-transition-speed) ease,
                        color var(--pos-transition-speed) ease;
         }
     )";
-    
-    std::string script = 
+
+    // FIXED: Properly escape CSS for JavaScript template literal
+    std::string escapedCSS = escapeForJSTemplateLiteral(baseCSS);
+
+    std::string script =
         "var baseStyle = document.createElement('style');"
-        "baseStyle.textContent = `" + baseCSS + "`;"
+        "baseStyle.textContent = `" + escapedCSS + "`;"
         "baseStyle.id = 'pos-base-theme';"
         "document.head.appendChild(baseStyle);";
-    
+
     app_->doJavaScript(script);
 }
 
@@ -735,23 +775,26 @@ std::map<std::string, std::string> ThemeService::getThemeCSSVariables() const {
 
 void ThemeService::injectThemeCSS() {
     if (!app_) return;
-    
+
     auto variables = getThemeCSSVariables();
     std::string cssVariables = ":root { ";
-    
+
     for (const auto& pair : variables) {
         cssVariables += pair.first + ": " + pair.second + "; ";
     }
     cssVariables += "}";
-    
+
+    // FIXED: Properly escape CSS for JavaScript single-quoted string
+    std::string escapedCSS = escapeForJSSingleQuote(cssVariables);
+
     // Inject CSS variables via JavaScript
-    std::string script = 
+    std::string script =
         "var style = document.createElement('style');"
-        "style.textContent = '" + cssVariables + "';"
+        "style.textContent = '" + escapedCSS + "';"
         "document.head.appendChild(style);";
-    
+
     app_->doJavaScript(script);
-    
+
     std::cout << "[ThemeService] Injected CSS variables for theme: " << getThemeName(currentTheme_) << std::endl;
 }
 
