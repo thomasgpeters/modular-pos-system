@@ -14,31 +14,33 @@
     overflow: hidden !important;
 }
 
-/* Left Panel - Menu Side */
+/* Left Panel - Menu Side - CLEAN, NO BORDERS */
 .restaurant-menu,
 .menu-display,
 .pos-left-panel {
     flex: 0 0 30% !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-radius: 8px !important;
-    padding: 0 !important;
+    background: #f8f9fa !important;
+    border-radius: 4px !important;
+    padding: 0.5rem !important;
     margin: 0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    box-shadow: none !important;
     overflow-y: auto !important;
     height: 100% !important;
     max-height: 100% !important;
 }
 
-/* Right Panel - Order Side */
+/* Right Panel - Order Side - CLEAN, NO BORDERS */
 .current-order,
 .current-order-display,
 .pos-right-panel {
     flex: 1 1 70% !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-radius: 8px !important;
-    padding: 0 !important;
+    background: #ffffff !important;
+    border-radius: 4px !important;
+    padding: 0.5rem !important;
     margin: 0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    box-shadow: none !important;
     overflow-y: auto !important;
     height: 100% !important;
     max-height: 100% !important;
@@ -64,13 +66,14 @@
     flex: 1 1 70% !important;
 }
 
-/* Ensure all direct children have proper styling */
+/* Ensure all direct children have proper styling - MINIMAL */
 #pos-mode-container > *:not(.Wt-hboxlayout) {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-radius: 8px !important;
-    padding: 1rem !important;
+    background: #ffffff !important;
+    border-radius: 4px !important;
+    padding: 0.5rem !important;
     margin: 0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+    box-shadow: none !important;
     overflow-y: auto !important;
     height: 100% !important;
     max-height: 100% !important;

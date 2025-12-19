@@ -107,16 +107,26 @@ body {
     color: var(--dark-color);
 }
 
-/* Header - Clean, no borders */
-.common-header {
+/* Header - Clean, no borders, FULL WIDTH */
+.common-header,
+.pos-header,
+.header-container {
+    width: 100% !important;
     height: 60px !important;
     min-height: 60px !important;
     max-height: 60px !important;
     flex: 0 0 60px !important;
     flex-shrink: 0 !important;
-    background: var(--white);
+    background: linear-gradient(135deg, #5c6bc0, #3949ab) !important;
     /* No borders, just a subtle shadow */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 1rem !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
 }
 
 /* Main Content Area - No borders or excessive padding */
@@ -636,7 +646,7 @@ body {
     gap: 15px !important;
 }
 
-/* Force left panel to be visible */
+/* Force left panel to be visible - NO BORDERS */
 .pos-left-panel {
     display: block !important;
     visibility: visible !important;
@@ -644,24 +654,26 @@ body {
     min-width: 300px !important;
     max-width: 400px !important;
     height: 100% !important;
-    background-color: #f0f0f0 !important;
-    border: 1px solid #ccc !important;
-    border-radius: 8px !important;
+    background-color: #f8f9fa !important;
+    border: none !important;
+    border-radius: 4px !important;
     padding: 10px !important;
     overflow-y: auto !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 
-/* Force right panel to be visible */
+/* Force right panel to be visible - NO BORDERS */
 .pos-right-panel {
     display: block !important;
     visibility: visible !important;
     flex: 1 1 70% !important;
     height: 100% !important;
     background-color: #ffffff !important;
-    border: 1px solid #ccc !important;
-    border-radius: 8px !important;
+    border: none !important;
+    border-radius: 4px !important;
     padding: 10px !important;
     overflow-y: auto !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 
 /* Make sure the layout works - but DO NOT force all children visible */
