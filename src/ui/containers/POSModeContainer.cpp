@@ -431,93 +431,165 @@ void POSModeContainer::showOrderEditMode() {
 
 void POSModeContainer::showOrderEntryMode() {
     if (isDestroying_) return;
-    
-    std::cout << "[POSModeContainer] ==> SIMPLE TEST VERSION - ORDER_ENTRY MODE" << std::endl;
-    
+
+    std::cout << "[POSModeContainer] ==> Showing ORDER_ENTRY MODE with Active Orders" << std::endl;
+
     // Clear component pointers
     orderEntryPanel_ = nullptr;
     menuDisplay_ = nullptr;
     currentOrderDisplay_ = nullptr;
     activeOrdersDisplay_ = nullptr;
-    
+
     try {
-        // Clear panels
-        if (leftPanel_ && leftPanel_->children().size() > 0) {
+        // ALWAYS clear and recreate left panel layout
+        if (leftPanel_) {
             leftPanel_->clear();
             auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
             leftLayout->setContentsMargins(10, 10, 10, 10);
             leftLayout->setSpacing(10);
+
+            // Remove any background styling that creates the gray box
+            leftPanel_->setAttributeValue("style", "background: transparent;");
         }
-        
+
         if (workArea_ && workArea_->children().size() > 0) {
             workArea_->clear();
         }
-        
-        // LEFT PANEL: Simple test content first
-        std::cout << "[POSModeContainer] Creating simple test content for left panel..." << std::endl;
-        
+
+        // LEFT PANEL: Active Orders List
+        std::cout << "[POSModeContainer] Creating Active Orders list..." << std::endl;
+
         if (leftPanel_) {
             // Header
-            auto headerText = leftPanel_->addNew<Wt::WText>("📋 Active Orders");
-            headerText->setStyleClass("h4 text-primary mb-3");
-            
-            // Status text
-            auto statusText = leftPanel_->addNew<Wt::WText>("Status: No active orders");
-            statusText->setStyleClass("text-muted mb-3");
-            
-            // Sample table
-            auto testTable = leftPanel_->addNew<Wt::WTable>();
-            testTable->setStyleClass("table table-striped");
-            
-            // Table headers
-            testTable->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Order #"));
-            testTable->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
-            testTable->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
-            
-            // Sample row
-            testTable->elementAt(1, 0)->addWidget(std::make_unique<Wt::WText>("No orders"));
-            testTable->elementAt(1, 1)->addWidget(std::make_unique<Wt::WText>("--"));
-            testTable->elementAt(1, 2)->addWidget(std::make_unique<Wt::WText>("Ready"));
-            
-            // Instructions
-            auto instructionText = leftPanel_->addNew<Wt::WText>("💡 Orders will appear here when created");
-            instructionText->setStyleClass("text-info small mt-3");
-            
-            std::cout << "[POSModeContainer] ✓ Simple test content created for left panel" << std::endl;
+            auto headerContainer = leftPanel_->addNew<Wt::WContainerWidget>();
+            headerContainer->setStyleClass("d-flex justify-content-between align-items-center mb-3");
+
+            auto headerText = headerContainer->addNew<Wt::WText>("📋 Active Orders");
+            headerText->setStyleClass("h5 text-primary mb-0 fw-bold");
+
+            // Refresh button
+            auto refreshBtn = headerContainer->addNew<Wt::WPushButton>("🔄");
+            refreshBtn->setStyleClass("btn btn-outline-secondary btn-sm");
+            refreshBtn->setToolTip("Refresh orders");
+            refreshBtn->clicked().connect([this]() {
+                showOrderEntryMode(); // Refresh the view
+            });
+
+            // Get orders from service
+            auto orders = posService_->getActiveOrders();
+
+            if (orders.empty()) {
+                // No orders message
+                auto emptyContainer = leftPanel_->addNew<Wt::WContainerWidget>();
+                emptyContainer->setStyleClass("text-center py-5");
+
+                auto emptyIcon = emptyContainer->addNew<Wt::WText>("📭");
+                emptyIcon->setStyleClass("d-block display-4 text-muted mb-3");
+
+                auto emptyText = emptyContainer->addNew<Wt::WText>("No active orders");
+                emptyText->setStyleClass("d-block text-muted mb-2");
+
+                auto hintText = emptyContainer->addNew<Wt::WText>("Create a new order using the panel on the right");
+                hintText->setStyleClass("d-block small text-info");
+            } else {
+                // Orders table
+                auto ordersTable = leftPanel_->addNew<Wt::WTable>();
+                ordersTable->setStyleClass("table table-hover table-sm");
+                ordersTable->setHeaderCount(1);
+
+                // Table headers
+                ordersTable->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("#"));
+                ordersTable->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Table"));
+                ordersTable->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Status"));
+                ordersTable->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
+
+                ordersTable->rowAt(0)->setStyleClass("table-primary");
+
+                int row = 1;
+                for (const auto& order : orders) {
+                    // Order number - clickable
+                    auto orderNumBtn = ordersTable->elementAt(row, 0)->addWidget(
+                        std::make_unique<Wt::WPushButton>("#" + std::to_string(order->getOrderId())));
+                    orderNumBtn->setStyleClass("btn btn-link btn-sm p-0 text-decoration-none");
+
+                    // Capture order ID for click handler
+                    int orderId = order->getOrderId();
+                    orderNumBtn->clicked().connect([this, orderId]() {
+                        std::cout << "[POSModeContainer] Opening order #" << orderId << std::endl;
+                        openOrderForEditing(orderId);
+                    });
+
+                    // Table/Location
+                    std::string tableInfo = order->getTableIdentifier();
+                    if (tableInfo.empty()) tableInfo = "Takeout";
+                    ordersTable->elementAt(row, 1)->addWidget(
+                        std::make_unique<Wt::WText>(tableInfo));
+
+                    // Status with badge
+                    std::string statusClass = "badge ";
+                    std::string statusText = order->getStatusString();
+                    if (statusText == "Pending") statusClass += "bg-warning text-dark";
+                    else if (statusText == "In Progress") statusClass += "bg-info";
+                    else if (statusText == "Ready") statusClass += "bg-success";
+                    else if (statusText == "Completed") statusClass += "bg-secondary";
+                    else statusClass += "bg-primary";
+
+                    auto statusBadge = ordersTable->elementAt(row, 2)->addWidget(
+                        std::make_unique<Wt::WText>(statusText));
+                    statusBadge->setStyleClass(statusClass);
+
+                    // Total
+                    std::ostringstream totalStr;
+                    totalStr << "$" << std::fixed << std::setprecision(2) << order->getTotal();
+                    ordersTable->elementAt(row, 3)->addWidget(
+                        std::make_unique<Wt::WText>(totalStr.str()));
+                    ordersTable->elementAt(row, 3)->setStyleClass("fw-bold");
+
+                    row++;
+                }
+
+                // Order count footer
+                auto countText = leftPanel_->addNew<Wt::WText>(
+                    "📊 " + std::to_string(orders.size()) + " active order(s)");
+                countText->setStyleClass("text-muted small mt-2");
+            }
+
+            std::cout << "[POSModeContainer] ✓ Active Orders list created with "
+                      << orders.size() << " orders" << std::endl;
         }
-        
-        // RIGHT PANEL: Order Entry Panel (unchanged)
+
+        // RIGHT PANEL: Order Entry Panel
         std::cout << "[POSModeContainer] Creating OrderEntryPanel..." << std::endl;
         if (workArea_) {
             orderEntryPanel_ = workArea_->addWidget(
                 std::make_unique<OrderEntryPanel>(posService_, eventManager_));
-            
+
             if (orderEntryPanel_) {
                 std::cout << "[POSModeContainer] ✓ OrderEntryPanel created" << std::endl;
             }
         }
-        
+
         // Update UI state
         currentUIMode_ = UI_MODE_ORDER_ENTRY;
-        
+
         // Update title and buttons
         if (workAreaTitle_) {
             workAreaTitle_->setText("🍽️ Order Management");
             workAreaTitle_->setStyleClass("h4 text-primary mb-0");
         }
-        
+
         if (toggleOrdersButton_) {
             toggleOrdersButton_->hide();
         }
-        
+
         if (sendToKitchenButton_) {
             sendToKitchenButton_->hide();
         }
-        
-        std::cout << "[POSModeContainer] ✅ SIMPLE TEST VERSION - Both panels should now be visible" << std::endl;
-        
+
+        std::cout << "[POSModeContainer] ✅ ORDER_ENTRY MODE - Both panels ready" << std::endl;
+
     } catch (const std::exception& e) {
-        std::cerr << "[POSModeContainer] ERROR in simple test version: " << e.what() << std::endl;
+        std::cerr << "[POSModeContainer] ERROR in showOrderEntryMode: " << e.what() << std::endl;
     }
 }
 
@@ -737,8 +809,24 @@ void POSModeContainer::createNewOrder(const std::string& tableIdentifier) {
 void POSModeContainer::openOrderForEditing(std::shared_ptr<Order> order) {
     if (order && posService_) {
         posService_->setCurrentOrder(order);
+        showOrderEditMode();
         std::cout << "[POSModeContainer] Order #" << order->getOrderId() << " opened for editing" << std::endl;
     }
+}
+
+void POSModeContainer::openOrderForEditing(int orderId) {
+    if (!posService_) return;
+
+    // Find the order by ID
+    auto orders = posService_->getActiveOrders();
+    for (const auto& order : orders) {
+        if (order->getOrderId() == orderId) {
+            openOrderForEditing(order);
+            return;
+        }
+    }
+
+    std::cerr << "[POSModeContainer] Order #" << orderId << " not found" << std::endl;
 }
 
 // ============================================================================

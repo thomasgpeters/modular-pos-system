@@ -72,7 +72,13 @@ public:
      * @param order Order to open for editing
      */
     void openOrderForEditing(std::shared_ptr<Order> order);
-    
+
+    /**
+     * @brief Opens an existing order for editing by ID
+     * @param orderId ID of the order to open
+     */
+    void openOrderForEditing(int orderId);
+
     /**
      * @brief Checks if an order is currently being edited
      * @return True if an order is being edited
