@@ -167,6 +167,9 @@ private:
     std::shared_ptr<EventManager> eventManager_;
     
     // Layout containers
+    Wt::WContainerWidget* pageHeader_;  // Page-wide header (blue)
+    Wt::WContainerWidget* pageFooter_;  // Page-wide footer (dark)
+    Wt::WContainerWidget* middleContainer_;  // Contains left and right panels
     Wt::WContainerWidget* leftPanel_;   // Holds Active Orders OR Menu Display
     Wt::WContainerWidget* rightPanel_;  // Holds Order Entry OR Current Order
     Wt::WContainerWidget* workArea_;    // Dynamic content area within right panel
