@@ -64,6 +64,10 @@ body > noscript,
     /* Subtle transitions */
     --transition-base: all 0.2s ease;
     --transition-fast: all 0.15s ease;
+
+    /* Order table row heights */
+    --order-row-height: 36px;
+    --order-header-height: 32px;
 }
 
 /* ============================================================================
@@ -340,49 +344,36 @@ body {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
+    /* Use block layout, not flex - prevents row compression */
+    display: block !important;
 }
 
 /* Order summary footer - pinned at bottom */
 .order-summary-footer {
     flex-shrink: 0 !important;
-    margin-top: auto !important;
 }
 
-/* Fixed height for order table rows */
+/* Fixed height for order table rows - prevent shrinking */
+.pos-current-order-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+
 .pos-current-order-table tr {
-    height: 36px !important;
-    min-height: 36px !important;
-    max-height: 36px !important;
+    height: var(--order-row-height, 36px) !important;
 }
 
 .pos-current-order-table td {
-    height: 36px !important;
-    min-height: 36px !important;
-    max-height: 36px !important;
+    height: var(--order-row-height, 36px) !important;
     padding: 4px 8px !important;
     vertical-align: middle !important;
-    white-space: nowrap !important;
     overflow: hidden !important;
-    text-overflow: ellipsis !important;
 }
 
 .pos-current-order-table th {
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
+    height: var(--order-header-height, 32px) !important;
     padding: 4px 8px !important;
     vertical-align: middle !important;
-}
-
-/* Ensure table doesn't shrink - use natural height */
-.pos-current-order-table {
-    flex-shrink: 0 !important;
-    table-layout: fixed !important;
-    width: 100% !important;
 }
 
 /* ============================================================================
