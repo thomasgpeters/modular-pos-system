@@ -50,52 +50,19 @@ CommonHeader::CommonHeader(std::shared_ptr<ThemeService> themeService,
 void CommonHeader::initializeUI() {
     std::cout << "[CommonHeader] Setting up UI layout..." << std::endl;
 
-    // Main header uses vertical flex to stack two rows
+    // Single row header - horizontal flex layout
     setAttributeValue("style",
-        "display: flex; flex-direction: column; width: 100%; padding: 0; margin: 0;");
+        "display: flex; justify-content: space-between; align-items: center; "
+        "width: 100%; padding: 10px 15px; margin: 0; background: #2c3e50;");
     addStyleClass("pos-header");
 
-    // TOP ROW: Main header content (branding, mode, theme, user)
-    auto topRow = addNew<Wt::WContainerWidget>();
-    topRow->setAttributeValue("style",
-        "display: flex; justify-content: space-between; align-items: center; "
-        "padding: 8px 15px; background: #2c3e50;");
+    // Create sections directly in this container
+    createBrandingSection(this);
+    createModeSection(this);
+    createThemeSection(this);
+    createUserSection(this);
 
-    // Create sections in top row
-    createBrandingSection(topRow);
-    createModeSection(topRow);
-    createThemeSection(topRow);
-    createUserSection(topRow);
-
-    // BOTTOM ROW: Blue "Active Orders" bar (full width)
-    auto activeOrdersBar = addNew<Wt::WContainerWidget>();
-    activeOrdersBar->setAttributeValue("style",
-        "display: flex; justify-content: space-between; align-items: center; "
-        "padding: 8px 15px; background: #0d6efd; width: 100%; box-sizing: border-box;");
-
-    // Left side: icon + text
-    auto leftSide = activeOrdersBar->addNew<Wt::WContainerWidget>();
-    leftSide->setAttributeValue("style", "display: flex; align-items: center; gap: 8px;");
-
-    auto icon = leftSide->addNew<Wt::WText>("📋");
-    icon->setAttributeValue("style", "font-size: 1.1rem;");
-
-    auto title = leftSide->addNew<Wt::WText>("Active Orders");
-    title->setAttributeValue("style", "color: white; font-size: 1rem; font-weight: 600;");
-
-    // Right side: refresh button
-    auto refreshBtn = activeOrdersBar->addNew<Wt::WPushButton>("↻ Refresh");
-    refreshBtn->setAttributeValue("style",
-        "background: rgba(255,255,255,0.2); border: none; color: white; "
-        "padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem;");
-    refreshBtn->clicked().connect([this]() {
-        // Publish refresh event
-        if (eventManager_) {
-            eventManager_->publish("REFRESH_ACTIVE_ORDERS", std::any(), "CommonHeader");
-        }
-    });
-
-    std::cout << "[CommonHeader] UI layout complete with Active Orders bar" << std::endl;
+    std::cout << "[CommonHeader] UI layout complete" << std::endl;
 }
 
 void CommonHeader::createBrandingSection(Wt::WContainerWidget* parent) {
