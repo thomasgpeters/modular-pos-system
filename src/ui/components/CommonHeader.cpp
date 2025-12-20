@@ -89,9 +89,9 @@ void CommonHeader::initializeUI() {
         "background: rgba(255,255,255,0.2); border: none; color: white; "
         "padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem;");
     refreshBtn->clicked().connect([this]() {
-        // Emit refresh event
+        // Publish refresh event
         if (eventManager_) {
-            eventManager_->emit("REFRESH_ACTIVE_ORDERS", std::any());
+            eventManager_->publish("REFRESH_ACTIVE_ORDERS", std::any(), "CommonHeader");
         }
     });
 
