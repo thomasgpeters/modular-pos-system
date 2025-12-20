@@ -70,54 +70,65 @@ CurrentOrderDisplay::~CurrentOrderDisplay() {
 }
 
 void CurrentOrderDisplay::initializeUI() {
-    // CLEAN: Single main container without excessive wrappers
-    auto mainContainer = addNew<Wt::WContainerWidget>();
-    mainContainer->addStyleClass("pos-current-order-main h-100");
-    
-    // Create header
+    // Main container with flex column layout - full height
+    setAttributeValue("style",
+        "display: flex; flex-direction: column; height: 100%; overflow: hidden;");
+
+    // HEADER - fixed at top
     auto header = createOrderHeader();
-    mainContainer->addWidget(std::move(header));
-    
-    // CLEAN: Direct table creation without wrapper containers
-    itemsTable_ = mainContainer->addNew<Wt::WTable>();
-    itemsTable_->addStyleClass("table pos-current-order-table w-100");
-    itemsTable_->setWidth(Wt::WLength("100%"));
-    
+    addWidget(std::move(header));
+
+    // SCROLLABLE TABLE CONTAINER - takes remaining space, scrolls when needed
+    auto tableContainer = addNew<Wt::WContainerWidget>();
+    tableContainer->setAttributeValue("style",
+        "flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0;");
+
+    itemsTable_ = tableContainer->addNew<Wt::WTable>();
+    itemsTable_->addStyleClass("table table-sm pos-current-order-table w-100 mb-0");
+    itemsTable_->setAttributeValue("style", "font-size: 0.85rem;");
+
     // Initialize table headers
-    initializeTableHeaders(); 
-    
-    // CLEAN: Create summary container directly
-    summaryContainer_ = mainContainer->addNew<Wt::WContainerWidget>();
-    summaryContainer_->addStyleClass("pos-order-summary");
-    
+    initializeTableHeaders();
+
+    // SUMMARY FOOTER - pinned at bottom, always visible
+    summaryContainer_ = addNew<Wt::WContainerWidget>();
+    summaryContainer_->addStyleClass("order-summary-footer");
+    // Styling is applied in createOrderSummaryContent()
+
     // Create summary content directly in the container
     createOrderSummaryContent();
-    
-    std::cout << "✓ CurrentOrderDisplay UI initialized with clean layout" << std::endl;
+
+    std::cout << "✓ CurrentOrderDisplay UI initialized with scrollable layout" << std::endl;
 }
 
 std::unique_ptr<Wt::WWidget> CurrentOrderDisplay::createOrderHeader() {
     auto header = std::make_unique<Wt::WContainerWidget>();
-    
-    // CLEAN: Simple header without excessive border classes
+
+    // COMPACT: Single-line header with reduced padding
     header->addStyleClass("pos-section-header d-flex justify-content-between align-items-center");
-    
-    // Title with clean styling
+    header->setAttributeValue("style",
+        "padding: 8px 12px !important; flex-shrink: 0; "
+        "background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); "
+        "border-radius: 6px 6px 0 0;");
+
+    // Title with compact styling
     auto titleText = header->addNew<Wt::WText>("📋 Current Order");
-    titleText->addStyleClass("h4 mb-0 fw-bold");
-    
-    // Order info container
+    titleText->addStyleClass("mb-0 fw-bold");
+    titleText->setAttributeValue("style", "font-size: 1rem; color: white;");
+
+    // Order info container - horizontal layout for compact display
     auto orderInfoContainer = header->addNew<Wt::WContainerWidget>();
-    orderInfoContainer->addStyleClass("d-flex flex-column align-items-end");
-    
-    // Table identifier badge
-    tableNumberText_ = orderInfoContainer->addNew<Wt::WText>("No table selected");
-    tableNumberText_->addStyleClass("badge bg-info px-3 py-1 rounded-pill mb-1");
-    
+    orderInfoContainer->addStyleClass("d-flex align-items-center gap-2");
+
     // Order ID text
     orderIdText_ = orderInfoContainer->addNew<Wt::WText>("No active order");
-    orderIdText_->addStyleClass("text-white-50 small");
-    
+    orderIdText_->setAttributeValue("style", "color: rgba(255,255,255,0.8); font-size: 0.75rem;");
+
+    // Table identifier badge
+    tableNumberText_ = orderInfoContainer->addNew<Wt::WText>("No table");
+    tableNumberText_->addStyleClass("badge bg-light text-dark px-2 py-1 rounded-pill");
+    tableNumberText_->setAttributeValue("style", "font-size: 0.7rem;");
+
     return std::move(header);
 }
 
@@ -125,74 +136,83 @@ void CurrentOrderDisplay::initializeTableHeaders() {
     if (!itemsTable_) {
         return;
     }
-    
+
     // Create table headers
     itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
     itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Price"));
     itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Qty"));
     itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
     itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
-    
-    // CLEAN: Simple header styling without excessive border classes
+
+    // COMPACT: Header styling with reduced padding
     for (int col = 0; col < itemsTable_->columnCount(); ++col) {
         auto headerCell = itemsTable_->elementAt(0, col);
         headerCell->addStyleClass("pos-table-header");
-        
+        headerCell->setAttributeValue("style",
+            "padding: 6px 8px !important; background: #f0f0f0; "
+            "border-bottom: 2px solid #dee2e6; font-size: 0.8rem;");
+
         auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
         if (headerText) {
-            headerText->addStyleClass("fw-bold");
+            headerText->addStyleClass("fw-bold text-secondary");
+        }
+
+        // Center align all columns except first (Item)
+        if (col >= 1) {
+            headerCell->addStyleClass("text-center");
         }
     }
-    
-    std::cout << "✓ Table headers styled with clean design" << std::endl;
+
+    std::cout << "✓ Table headers styled with compact design" << std::endl;
 }
 
 void CurrentOrderDisplay::createOrderSummaryContent() {
     if (!summaryContainer_) return;
-    
-    // Title
-    auto titleText = summaryContainer_->addNew<Wt::WText>("💰 Order Summary");
-    titleText->addStyleClass("h5 text-success mb-3 fw-bold");
-    
-    // CLEAN: Simple summary grid without excessive containers
-    auto summaryGrid = summaryContainer_->addNew<Wt::WContainerWidget>();
-    summaryGrid->addStyleClass("d-flex flex-column gap-2");
-    
-    // Item count row
-    auto itemCountRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    itemCountRow->addStyleClass("d-flex justify-content-between align-items-center");
-    auto itemLabel = itemCountRow->addNew<Wt::WText>("Items:");
-    itemLabel->addStyleClass("fw-medium text-muted");
-    itemCountText_ = itemCountRow->addNew<Wt::WText>("0");
+
+    // COMPACT: Two-column layout for summary - left side info, right side total
+    summaryContainer_->setAttributeValue("style",
+        "display: flex; justify-content: space-between; align-items: center; "
+        "padding: 8px 12px !important; background: #f8f9fa; "
+        "border-top: 2px solid #dee2e6;");
+
+    // Left side - items, subtotal, tax in a compact row
+    auto leftInfo = summaryContainer_->addNew<Wt::WContainerWidget>();
+    leftInfo->setAttributeValue("style",
+        "display: flex; gap: 16px; font-size: 0.8rem;");
+
+    // Item count
+    auto itemCountContainer = leftInfo->addNew<Wt::WContainerWidget>();
+    auto itemLabel = itemCountContainer->addNew<Wt::WText>("Items: ");
+    itemLabel->addStyleClass("text-muted");
+    itemCountText_ = itemCountContainer->addNew<Wt::WText>("0");
     itemCountText_->addStyleClass("fw-bold");
-    
-    // Subtotal row
-    auto subtotalRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    subtotalRow->addStyleClass("d-flex justify-content-between align-items-center");
-    auto subtotalLabel = subtotalRow->addNew<Wt::WText>("Subtotal:");
-    subtotalLabel->addStyleClass("fw-medium text-muted");
-    subtotalText_ = subtotalRow->addNew<Wt::WText>("$0.00");
+
+    // Subtotal
+    auto subtotalContainer = leftInfo->addNew<Wt::WContainerWidget>();
+    auto subtotalLabel = subtotalContainer->addNew<Wt::WText>("Subtotal: ");
+    subtotalLabel->addStyleClass("text-muted");
+    subtotalText_ = subtotalContainer->addNew<Wt::WText>("$0.00");
     subtotalText_->addStyleClass("fw-bold");
-    
-    // Tax row
-    auto taxRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    taxRow->addStyleClass("d-flex justify-content-between align-items-center");
-    auto taxLabel = taxRow->addNew<Wt::WText>("Tax:");
-    taxLabel->addStyleClass("fw-medium text-muted");
-    taxText_ = taxRow->addNew<Wt::WText>("$0.00");
+
+    // Tax
+    auto taxContainer = leftInfo->addNew<Wt::WContainerWidget>();
+    auto taxLabel = taxContainer->addNew<Wt::WText>("Tax: ");
+    taxLabel->addStyleClass("text-muted");
+    taxText_ = taxContainer->addNew<Wt::WText>("$0.00");
     taxText_->addStyleClass("fw-bold");
-    
-    // CLEAN: Simple separator without excessive borders
-    auto separator = summaryGrid->addNew<Wt::WContainerWidget>();
-    separator->addStyleClass("border-top my-2");
-    
-    // Total row with emphasis
-    auto totalRow = summaryGrid->addNew<Wt::WContainerWidget>();
-    totalRow->addStyleClass("d-flex justify-content-between align-items-center");
-    auto totalLabel = totalRow->addNew<Wt::WText>("TOTAL:");
-    totalLabel->addStyleClass("h5 fw-bold text-success mb-0");
-    totalText_ = totalRow->addNew<Wt::WText>("$0.00");
-    totalText_->addStyleClass("h5 fw-bold text-success mb-0");
+
+    // Right side - total with emphasis
+    auto totalContainer = summaryContainer_->addNew<Wt::WContainerWidget>();
+    totalContainer->setAttributeValue("style",
+        "display: flex; align-items: center; gap: 8px;");
+
+    auto totalLabel = totalContainer->addNew<Wt::WText>("TOTAL:");
+    totalLabel->setAttributeValue("style",
+        "font-size: 1rem; font-weight: bold; color: #198754;");
+
+    totalText_ = totalContainer->addNew<Wt::WText>("$0.00");
+    totalText_->setAttributeValue("style",
+        "font-size: 1.2rem; font-weight: bold; color: #198754;");
 }
 
 void CurrentOrderDisplay::updateOrderItemsTable() {
@@ -230,47 +250,55 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
     int row = static_cast<int>(index + 1); // +1 for header row
     
     try {
-        // Item name with special instructions
+        // Item name with special instructions - COMPACT
         auto nameContainer = std::make_unique<Wt::WContainerWidget>();
         auto nameText = nameContainer->addNew<Wt::WText>(item.getMenuItem().getName());
         nameText->addStyleClass("fw-bold text-primary");
-        
-        // Show special instructions if any
+        nameText->setAttributeValue("style", "font-size: 0.85rem;");
+
+        // Show special instructions if any - inline for compactness
         if (!item.getSpecialInstructions().empty()) {
-            nameContainer->addNew<Wt::WBreak>();
-            auto instructionsText = nameContainer->addNew<Wt::WText>("📝 " + item.getSpecialInstructions());
-            instructionsText->addStyleClass("small text-muted fst-italic");
+            auto instructionsText = nameContainer->addNew<Wt::WText>(" - " + item.getSpecialInstructions());
+            instructionsText->setAttributeValue("style",
+                "font-size: 0.7rem; color: #6c757d; font-style: italic;");
         }
-        
+
         itemsTable_->elementAt(row, 0)->addWidget(std::move(nameContainer));
-        
-        // Unit price
+
+        // Unit price - COMPACT
         auto priceText = std::make_unique<Wt::WText>(formatCurrency(item.getMenuItem().getPrice()));
         priceText->addStyleClass("fw-medium text-success");
+        priceText->setAttributeValue("style", "font-size: 0.8rem;");
         itemsTable_->elementAt(row, 1)->addWidget(std::move(priceText));
         
-        // Quantity controls (editable spinner + buttons)
+        // Quantity controls (editable spinner + buttons) - COMPACT
         auto qtyContainer = std::make_unique<Wt::WContainerWidget>();
         qtyContainer->setStyleClass("d-flex align-items-center justify-content-center gap-1");
-        
+
         if (editable_) {
-            // Decrease button with clean styling
+            // Decrease button - compact size
             auto decreaseBtn = qtyContainer->addNew<Wt::WPushButton>("-");
             UIStyleHelper::styleButton(decreaseBtn, "outline-secondary", "sm");
-            decreaseBtn->setWidth(30);
-            
-            // Quantity display/spinner
+            decreaseBtn->setAttributeValue("style",
+                "width: 24px !important; height: 24px !important; padding: 0 !important; "
+                "font-size: 0.9rem; line-height: 1;");
+
+            // Quantity display/spinner - compact
             auto qtySpinner = qtyContainer->addNew<Wt::WSpinBox>();
             qtySpinner->setRange(1, 99);
             qtySpinner->setValue(item.getQuantity());
-            qtySpinner->setWidth(60);
             UIStyleHelper::styleFormControl(qtySpinner, "sm");
             qtySpinner->addStyleClass("text-center");
+            qtySpinner->setAttributeValue("style",
+                "width: 45px !important; height: 24px !important; padding: 2px 4px !important; "
+                "font-size: 0.8rem;");
             
-            // Increase button with clean styling
+            // Increase button - compact size
             auto increaseBtn = qtyContainer->addNew<Wt::WPushButton>("+");
             UIStyleHelper::styleButton(increaseBtn, "outline-secondary", "sm");
-            increaseBtn->setWidth(30);
+            increaseBtn->setAttributeValue("style",
+                "width: 24px !important; height: 24px !important; padding: 0 !important; "
+                "font-size: 0.9rem; line-height: 1;");
             
             // Connect quantity change handlers
             decreaseBtn->clicked().connect([this, index, qtySpinner]() {
@@ -301,27 +329,33 @@ void CurrentOrderDisplay::addOrderItemRow(const OrderItem& item, size_t index) {
         
         itemsTable_->elementAt(row, 2)->addWidget(std::move(qtyContainer));
         
-        // Total price for this item
+        // Total price for this item - COMPACT
         auto totalText = std::make_unique<Wt::WText>(formatCurrency(item.getTotalPrice()));
         totalText->setStyleClass("fw-bold text-success");
+        totalText->setAttributeValue("style", "font-size: 0.8rem;");
         itemsTable_->elementAt(row, 3)->addWidget(std::move(totalText));
         
-        // Actions (remove button)
+        // Actions (remove button) - COMPACT
         auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
         actionsContainer->setStyleClass("d-flex justify-content-center gap-1");
-        
+
         if (editable_) {
-            // Remove item button with clean styling
-            auto removeBtn = actionsContainer->addNew<Wt::WPushButton>("🗑️ Remove");
+            // Remove item button - compact with icon only
+            auto removeBtn = actionsContainer->addNew<Wt::WPushButton>("🗑️");
             UIStyleHelper::styleButton(removeBtn, "outline-danger", "sm");
+            removeBtn->setToolTip("Remove item");
+            removeBtn->setAttributeValue("style",
+                "padding: 2px 6px !important; font-size: 0.75rem;");
             removeBtn->clicked().connect([this, index]() {
                 onRemoveItemClicked(index);
             });
-            
-            // Quick duplicate button with clean styling
-            auto duplicateBtn = actionsContainer->addNew<Wt::WPushButton>("📋 +1");
+
+            // Quick duplicate button - compact
+            auto duplicateBtn = actionsContainer->addNew<Wt::WPushButton>("+1");
             UIStyleHelper::styleButton(duplicateBtn, "outline-info", "sm");
             duplicateBtn->setToolTip("Add another of this item");
+            duplicateBtn->setAttributeValue("style",
+                "padding: 2px 6px !important; font-size: 0.75rem;");
             duplicateBtn->clicked().connect([this, index]() {
                 auto currentOrder = getCurrentOrder();
                 if (currentOrder && index < currentOrder->getItems().size()) {
@@ -345,20 +379,22 @@ void CurrentOrderDisplay::applyRowStyling(int row, bool isEven) {
     if (!itemsTable_ || row == 0) { // Don't style header row
         return;
     }
-    
+
     for (int col = 0; col < itemsTable_->columnCount(); ++col) {
         auto cell = itemsTable_->elementAt(row, col);
-        
-        // CLEAN: Simple cell styling without excessive borders
+
+        // COMPACT: Reduced padding for shorter row heights
         cell->addStyleClass("pos-table-cell");
-        
+        cell->setAttributeValue("style",
+            "padding: 4px 6px !important; vertical-align: middle;");
+
         // CLEAN: Very subtle alternating row colors
         if (isEven) {
             cell->addStyleClass("bg-white");
         } else {
             cell->addStyleClass("bg-light");
         }
-        
+
         // Column-specific alignment
         if (col >= 1) { // Price, Qty, Total, Actions - center aligned
             cell->addStyleClass("text-center");
