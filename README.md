@@ -1,6 +1,39 @@
-# Restaurant POS System - Modular Architecture v2.0.0
+# Restaurant POS System - Modular Architecture v3.0.0
 
-A modern, extensible Point of Sale system built with C++ and the Wt web framework. This system demonstrates enterprise-level software architecture with clean separation of concerns, event-driven communication, and responsive web UI.
+A modern, extensible Point of Sale system built with C++ and the Wt web framework. This system demonstrates enterprise-level software architecture with clean separation of concerns, event-driven communication, and a responsive web UI.
+
+## Recent Updates (v3.0.0)
+
+### UI Layout Improvements
+- **Restructured Header/Footer**: Full-width CommonHeader and CommonFooter spanning the entire page
+- **Improved Panel Layout**: Clean 30/70 split between Active Orders panel and Order Entry panel
+- **Active Orders Widget**: Blue sub-header with refresh button integrated into the left panel
+- **Dark Footer**: Professional dark theme footer (#1a1a2e) with status indicators
+- **Removed Duplicate Elements**: Eliminated redundant header/footer structures for cleaner DOM
+
+### Layout Structure
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CommonHeader (dark blue #2c3e50)                           │
+│  [Restaurant POS] [POS|Kitchen] [Theme] [Operator] [Time]   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────┐  ┌──────────────────────────────────────┐ │
+│  │ Active Orders│  │                                      │ │
+│  │ (blue header)│  │         Order Entry Panel            │ │
+│  │ ─────────────│  │                                      │ │
+│  │              │  │   - Select Table/Location            │ │
+│  │ Orders List  │  │   - Start New Order                  │ │
+│  │ (scrollable) │  │   - Menu Categories                  │ │
+│  │              │  │   - Current Order Items              │ │
+│  │   30%        │  │              70%                     │ │
+│  └──────────────┘  └──────────────────────────────────────┘ │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  CommonFooter (dark #1a1a2e)                                │
+│  [Active Orders: 0] [Kitchen Queue: 0] [System: Online] [v3]│
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Project Structure
 
@@ -42,13 +75,13 @@ modular-pos-system/
 │   │   │   ├── CurrentOrderDisplay.cpp
 │   │   │   ├── ActiveOrdersDisplay.cpp
 │   │   │   ├── KitchenStatusDisplay.cpp
-│   │   │   ├── CommonHeader.cpp      # App header
-│   │   │   ├── CommonFooter.cpp      # App footer
+│   │   │   ├── CommonHeader.cpp      # App header (full-width)
+│   │   │   ├── CommonFooter.cpp      # App footer (full-width, dark)
 │   │   │   ├── ModeSelector.cpp      # POS/Kitchen toggle
 │   │   │   └── ThemeSelector.cpp     # Theme picker
 │   │   │
 │   │   ├── containers/               # Mode containers
-│   │   │   ├── POSModeContainer.cpp  # POS interface
+│   │   │   ├── POSModeContainer.cpp  # POS interface (left/right panels)
 │   │   │   └── KitchenModeContainer.cpp
 │   │   │
 │   │   ├── dialogs/                  # Modal dialogs
@@ -121,10 +154,32 @@ modular-pos-system/
 - **Event-Driven Architecture**: Loose coupling via publish-subscribe pattern (40+ event types)
 - **Dual Operating Modes**: POS Mode and Kitchen Display Mode
 - **Theme System**: Multiple themes (Light, Dark, Warm, Cool, Restaurant)
-- **Responsive Web UI**: Bootstrap 5 based design
+- **Responsive Web UI**: Bootstrap 5 based design with Wt framework
 - **Real-time Updates**: Automatic refresh of order status
 - **Comprehensive Logging**: File rotation, multiple log levels
 - **API Ready**: RESTful API integration layer
+- **Clean Layout**: Full-width header/footer with organized panel structure
+
+## UI Components
+
+### CommonHeader
+- Single-row dark header spanning full page width
+- Restaurant POS branding
+- POS/Kitchen mode selector
+- Theme dropdown with toggle button
+- Operator info and real-time clock
+
+### POSModeContainer
+- **Left Panel (30%)**: Active Orders widget with blue sub-header
+- **Right Panel (70%)**: Order Entry panel or Current Order display
+- Automatic mode switching between Order Entry and Order Edit
+
+### CommonFooter
+- Dark footer (#1a1a2e) spanning full page width
+- Active orders count
+- Kitchen queue count
+- System status indicator (Online/Busy/Moderate/Error)
+- Version information
 
 ## Prerequisites
 
@@ -157,10 +212,15 @@ mkdir build && cd build
 cmake ..
 
 # Build
-make
+cmake --build .
 
 # Run
-./restaurant_pos --config ../wt_config.xml --docroot .. --http-port 8080
+./RestaurantPOSSystem --http-listen 0.0.0.0:8080 --docroot ../assets
+```
+
+### Using the Build Script
+```bash
+./build_and_run.sh
 ```
 
 ### Using Makefile
@@ -179,18 +239,19 @@ make run
 
 1. **Start the server:**
    ```bash
-   ./restaurant_pos --config ./wt_config.xml --docroot . --http-port 8080
+   ./RestaurantPOSSystem --http-listen 0.0.0.0:8080 --docroot ../assets
    ```
 
 2. **Open your browser:**
    ```
-   http://localhost:8080/pos
+   http://localhost:8080
    ```
 
 3. **Interface Overview:**
-   - **Header**: Mode toggle (POS/Kitchen), theme selector
-   - **Left Panel**: Active orders or menu display
-   - **Right Panel**: Order entry or current order
+   - **Header**: Mode toggle (POS/Kitchen), theme selector, operator info
+   - **Left Panel**: Active orders list with blue sub-header
+   - **Right Panel**: Order entry or current order editing
+   - **Footer**: System status and order counts
 
 ## Usage
 
@@ -223,13 +284,12 @@ make run
 
 ### Command Line Options
 ```bash
-./restaurant_pos --help
+./RestaurantPOSSystem --help
 
 Common options:
-  --http-port 8080        # HTTP port (default: 8080)
-  --docroot .             # Document root for assets
-  --http-address 0.0.0.0  # Bind address
-  --config wt_config.xml  # Configuration file
+  --http-listen 0.0.0.0:8080  # Address and port
+  --docroot ../assets         # Document root for assets
+  --config wt_config.xml      # Configuration file
 ```
 
 ### wt_config.xml
@@ -256,10 +316,10 @@ Common options:
 
 The system uses 40+ event types for component communication:
 
-- **Order Events**: ORDER_CREATED, ORDER_MODIFIED, ORDER_COMPLETED
+- **Order Events**: ORDER_CREATED, ORDER_MODIFIED, ORDER_COMPLETED, CURRENT_ORDER_CHANGED
 - **Kitchen Events**: ORDER_SENT_TO_KITCHEN, KITCHEN_STATUS_CHANGED
 - **Payment Events**: PAYMENT_INITIATED, PAYMENT_COMPLETED
-- **UI Events**: THEME_CHANGED, MODE_CHANGED, NOTIFICATION_REQUESTED
+- **UI Events**: THEME_CHANGED, MODE_CHANGED, NOTIFICATION_REQUESTED, REFRESH_ACTIVE_ORDERS
 
 ## Extending the System
 
@@ -294,36 +354,61 @@ class CustomKitchenInterface : public KitchenInterface {
 ## Troubleshooting
 
 ### Build Issues
-- Ensure Wt development packages are installed
+- Ensure Wt development packages are installed (libwt-dev, libwthttp-dev)
 - Verify C++17 compiler support
-- Check pkg-config can find Wt libraries
+- Check pkg-config can find Wt libraries: `pkg-config --exists wt && echo "Found"`
 
 ### Runtime Issues
-- Check port availability
+- Check port availability: `lsof -i :8080`
 - Ensure docroot directory contains assets/css/
 - Verify wt_config.xml is accessible
 
 ### Common Errors
 ```bash
 # Config file not found
-./restaurant_pos --config ./wt_config.xml
+./RestaurantPOSSystem --config ./wt_config.xml
 
 # CSS not loading - check docroot
-./restaurant_pos --docroot /path/to/project
+./RestaurantPOSSystem --docroot /path/to/assets
 
 # Port in use
-./restaurant_pos --http-port 8081
+./RestaurantPOSSystem --http-listen 0.0.0.0:8081
+
+# Address/port format
+# Use --http-listen instead of separate --address and --port
+./RestaurantPOSSystem --http-listen 0.0.0.0:8080
 ```
 
 ## Project Statistics
 
 | Metric | Count |
 |--------|-------|
-| C++ Source Files | 82 |
-| Lines of Code | ~8,000+ |
+| C++ Source Files | 82+ |
+| Lines of Code | ~10,000+ |
 | CSS Stylesheets | 39 |
 | Documentation Files | 51 |
 | Event Types | 40+ |
+
+## Version History
+
+### v3.0.0 (Current)
+- Restructured UI layout with proper header/footer hierarchy
+- Fixed CSS selector issues (ID vs class)
+- Removed duplicate header/footer elements
+- Added Active Orders sub-header to left panel widget
+- Improved CommonFooter with dark theme
+- Fixed EventManager method calls (publish vs emit)
+
+### v2.0.0
+- Modular architecture implementation
+- Event-driven communication system
+- Theme service integration
+- Kitchen mode support
+
+### v1.0.0
+- Initial POS functionality
+- Basic order management
+- Menu display
 
 ## Future Enhancements
 
@@ -349,3 +434,15 @@ See the `docs/` directory for detailed documentation:
 - `logging_documentation.md` - Logging system guide
 - `styling_integration_guide.md` - CSS and theming
 - `api_integration_guide.md` - API usage
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## Support
+
+For issues and feature requests, please use the project's issue tracker.
