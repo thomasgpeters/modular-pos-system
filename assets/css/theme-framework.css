@@ -50,7 +50,7 @@
     padding: 1rem !important;
 }
 
-/* Footer */
+/* Footer - Dark background */
 .common-footer {
     height: 40px !important;
     min-height: 40px !important;
@@ -59,8 +59,9 @@
     overflow: hidden !important;
     padding: 0.5rem 1rem !important;
     font-size: 0.8rem !important;
-    background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
+    background: #212529 !important;
+    border-top: none;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* Theme Classes */

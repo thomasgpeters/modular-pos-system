@@ -395,10 +395,10 @@
    ============================================================================= */
 
 .theme-light .common-footer {
-    background: linear-gradient(135deg, var(--theme-bg-secondary) 0%, var(--theme-bg-tertiary) 100%);
-    border-top: 1px solid var(--theme-border-color);
-    color: var(--theme-text-secondary);
-    box-shadow: 0 -2px 4px var(--theme-shadow);
+    background: #212529 !important;
+    border-top: none;
+    color: rgba(255, 255, 255, 0.9);
+    box-shadow: none;
 }
 
 .theme-light .footer-status {
