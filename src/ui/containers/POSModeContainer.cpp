@@ -42,12 +42,13 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
 
     setStyleClass("pos-mode-container h-100");
 
-    // Force container visibility
+    // Force container visibility with column layout
     show();
     setHidden(false);
     setAttributeValue("style",
-        "display: flex !important; height: calc(100vh - 120px) !important; "
-        "width: 100% !important; background-color: #fafafa;");
+        "display: flex !important; flex-direction: column !important; "
+        "height: calc(100vh - 60px) !important; width: 100% !important; "
+        "padding: 0 !important; margin: 0 !important; background-color: #fafafa;");
 
     // Initialize UI components
     initializeUI();
@@ -116,13 +117,14 @@ void POSModeContainer::setupLayout() {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // PAGE-WIDE HEADER (blue background) - FIXED HEIGHT
+    // PAGE-WIDE HEADER (blue background) - FIXED HEIGHT, FULL WIDTH
     pageHeader_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
     pageHeader_->setHeight(Wt::WLength(45, Wt::LengthUnit::Pixel));
     pageHeader_->setAttributeValue("style",
-        "background: #0d6efd; padding: 10px 15px; margin: 0; width: 100%; "
+        "background: #0d6efd !important; padding: 10px 15px; margin: 0 !important; "
+        "width: 100% !important; box-sizing: border-box !important; "
         "height: 45px !important; max-height: 45px !important; min-height: 45px !important; "
-        "flex: 0 0 45px !important;");
+        "flex: 0 0 45px !important; flex-shrink: 0 !important;");
 
     // Header content - icon and title
     auto headerContent = pageHeader_->addNew<Wt::WContainerWidget>();
@@ -166,13 +168,14 @@ void POSModeContainer::setupLayout() {
         "width: 70% !important; flex: 1; "
         "border: 1px solid #dee2e6; border-radius: 4px;");
 
-    // PAGE-WIDE FOOTER (dark background) - FIXED HEIGHT
+    // PAGE-WIDE FOOTER (dark background) - FIXED HEIGHT, FULL WIDTH
     pageFooter_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
     pageFooter_->setHeight(Wt::WLength(40, Wt::LengthUnit::Pixel));
     pageFooter_->setAttributeValue("style",
-        "background: #343a40; padding: 8px 15px; margin: 0; width: 100%; "
+        "background: #343a40 !important; padding: 8px 15px; margin: 0 !important; "
+        "width: 100% !important; box-sizing: border-box !important; "
         "height: 40px !important; max-height: 40px !important; min-height: 40px !important; "
-        "flex: 0 0 40px !important;");
+        "flex: 0 0 40px !important; flex-shrink: 0 !important;");
 
     auto footerText = pageFooter_->addNew<Wt::WText>("0 active order(s)");
     footerText->setAttributeValue("style", "color: white; font-size: 0.9rem;");
