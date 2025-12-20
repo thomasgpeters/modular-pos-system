@@ -20,10 +20,8 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     : Wt::WContainerWidget()
     , posService_(posService)
     , eventManager_(eventManager)
-    , pageHeader_(nullptr)
-    , pageFooter_(nullptr)
-    , middleContainer_(nullptr)
     , leftPanel_(nullptr)
+    , middleContainer_(nullptr)
     , rightPanel_(nullptr)
     , workArea_(nullptr)
     , activeOrdersDisplay_(nullptr)
@@ -109,79 +107,67 @@ void POSModeContainer::initializeUI() {
 // STARTUP LAYOUT FIX - Replace these methods in POSModeContainer.cpp
 // ============================================================================
 
-// 1. REPLACE your setupLayout method with this fixed version:
+// FIXED: POSModeContainer is now just a horizontal left/right panel split
+// The app-level CommonHeader and CommonFooter handle the full-width header/footer
 void POSModeContainer::setupLayout() {
-    std::cout << "[POSModeContainer] Setting up layout with page-wide header/footer..." << std::endl;
+    std::cout << "[POSModeContainer] Setting up left/right panel layout..." << std::endl;
 
-    // Create main VERTICAL layout for header/content/footer structure
-    auto mainLayout = setLayout(std::make_unique<Wt::WVBoxLayout>());
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->setSpacing(0);
+    // Simple horizontal flex layout - no header/footer here (app level handles that)
+    setAttributeValue("style",
+        "display: flex !important; flex-direction: row !important; "
+        "width: 100% !important; height: 100% !important; "
+        "padding: 8px !important; gap: 8px !important; box-sizing: border-box !important; "
+        "background: #fafafa;");
 
-    // PAGE-WIDE HEADER (blue background) - FIXED HEIGHT, FULL WIDTH
-    pageHeader_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
-    pageHeader_->setHeight(Wt::WLength(45, Wt::LengthUnit::Pixel));
-    pageHeader_->setAttributeValue("style",
-        "background: #0d6efd !important; padding: 10px 15px; margin: 0 !important; "
-        "width: 100% !important; box-sizing: border-box !important; "
-        "height: 45px !important; max-height: 45px !important; min-height: 45px !important; "
-        "flex: 0 0 45px !important; flex-shrink: 0 !important;");
+    // LEFT PANEL - 30% width with Active Orders heading
+    leftPanel_ = addNew<Wt::WContainerWidget>();
+    leftPanel_->setStyleClass("pos-left-panel");
+    leftPanel_->setAttributeValue("style",
+        "background: #e9ecef; padding: 0; margin: 0; "
+        "width: 30% !important; min-width: 280px; max-width: 400px; "
+        "display: flex; flex-direction: column; "
+        "border-radius: 6px; overflow: hidden;");
 
-    // Header content - icon and title
-    auto headerContent = pageHeader_->addNew<Wt::WContainerWidget>();
-    headerContent->setStyleClass("d-flex justify-content-between align-items-center");
+    // Left panel header (blue bar with "Active Orders" title)
+    auto leftHeader = leftPanel_->addNew<Wt::WContainerWidget>();
+    leftHeader->setAttributeValue("style",
+        "background: #0d6efd; padding: 10px 12px; "
+        "display: flex; justify-content: space-between; align-items: center;");
 
-    auto titleContainer = headerContent->addNew<Wt::WContainerWidget>();
-    titleContainer->setStyleClass("d-flex align-items-center gap-2");
+    auto titleContainer = leftHeader->addNew<Wt::WContainerWidget>();
+    titleContainer->setAttributeValue("style", "display: flex; align-items: center; gap: 8px;");
 
-    auto headerIcon = titleContainer->addNew<Wt::WText>("&#128203;");
-    headerIcon->setAttributeValue("style", "color: white; font-size: 1.2rem;");
+    auto headerIcon = titleContainer->addNew<Wt::WText>("📋");
+    headerIcon->setAttributeValue("style", "font-size: 1.1rem;");
 
     auto headerText = titleContainer->addNew<Wt::WText>("Active Orders");
-    headerText->setAttributeValue("style", "color: white; font-size: 1.1rem; font-weight: bold;");
+    headerText->setAttributeValue("style", "color: white; font-size: 1rem; font-weight: 600;");
 
-    // Refresh button in header
-    auto refreshBtn = headerContent->addNew<Wt::WPushButton>("Refresh");
-    refreshBtn->setStyleClass("btn btn-light btn-sm");
+    auto refreshBtn = leftHeader->addNew<Wt::WPushButton>("↻");
+    refreshBtn->setAttributeValue("style",
+        "background: rgba(255,255,255,0.2); border: none; color: white; "
+        "padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 1rem;");
     refreshBtn->clicked().connect([this]() {
         showOrderEntryMode();
     });
 
-    // MIDDLE CONTAINER (holds left and right panels) - takes all remaining space
-    middleContainer_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
-    middleContainer_->setAttributeValue("style",
-        "flex: 1 1 auto !important; min-height: 100px; overflow: hidden; "
-        "display: flex !important; flex-direction: row !important; padding: 8px; gap: 8px;");
+    // Left panel content area (where ActiveOrdersDisplay goes)
+    auto leftContent = leftPanel_->addNew<Wt::WContainerWidget>();
+    leftContent->setAttributeValue("style",
+        "flex: 1; padding: 10px; overflow-y: auto;");
+    // Store reference for later - we'll add ActiveOrdersDisplay here
+    middleContainer_ = leftContent;
 
-    // Left panel - 30% width, vertical content
-    leftPanel_ = middleContainer_->addNew<Wt::WContainerWidget>();
-    leftPanel_->setStyleClass("pos-left-panel");
-    leftPanel_->setAttributeValue("style",
-        "background: #e9ecef; margin: 0; padding: 10px; "
-        "width: 30% !important; min-width: 250px; "
-        "display: flex; flex-direction: column;");
-
-    // Right panel - 70% width
-    rightPanel_ = middleContainer_->addNew<Wt::WContainerWidget>();
+    // RIGHT PANEL - fills remaining space (70%)
+    rightPanel_ = addNew<Wt::WContainerWidget>();
     rightPanel_->setStyleClass("pos-right-panel");
     rightPanel_->setAttributeValue("style",
-        "background: #ffffff; margin: 0; padding: 10px; "
-        "width: 70% !important; flex: 1; "
-        "border: 1px solid #dee2e6; border-radius: 4px;");
+        "background: #ffffff; margin: 0; padding: 12px; "
+        "flex: 1; min-width: 0; "
+        "border: 1px solid #dee2e6; border-radius: 6px; "
+        "display: flex; flex-direction: column; overflow: hidden;");
 
-    // PAGE-WIDE FOOTER (dark background) - FIXED HEIGHT, FULL WIDTH
-    pageFooter_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
-    pageFooter_->setHeight(Wt::WLength(40, Wt::LengthUnit::Pixel));
-    pageFooter_->setAttributeValue("style",
-        "background: #343a40 !important; padding: 8px 15px; margin: 0 !important; "
-        "width: 100% !important; box-sizing: border-box !important; "
-        "height: 40px !important; max-height: 40px !important; min-height: 40px !important; "
-        "flex: 0 0 40px !important; flex-shrink: 0 !important;");
-
-    auto footerText = pageFooter_->addNew<Wt::WText>("0 active order(s)");
-    footerText->setAttributeValue("style", "color: white; font-size: 0.9rem;");
-
-    std::cout << "[POSModeContainer] Layout setup complete with page-wide header/footer" << std::endl;
+    std::cout << "[POSModeContainer] Layout setup complete - left/right panels ready" << std::endl;
 }
 
 // 2. REPLACE your createLeftPanel method:
@@ -248,44 +234,23 @@ void POSModeContainer::createRightPanel() {
 // FIXED UI MODE SWITCHING METHODS
 // ============================================================================
 
-// 4. ENHANCE your clearLeftPanel method to preserve layout:
+// 4. FIXED clearLeftPanel - only clears content area, preserves header
 void POSModeContainer::clearLeftPanel() {
-    if (!leftPanel_) {
-        std::cout << "[POSModeContainer] leftPanel_ is null - cannot clear" << std::endl;
-        return;
-    }
-    
-    std::cout << "[POSModeContainer] Clearing left panel (preserving visibility)..." << std::endl;
-    
+    std::cout << "[POSModeContainer] Clearing left panel content area..." << std::endl;
+
     // Clear component pointers
     activeOrdersDisplay_ = nullptr;
     menuDisplay_ = nullptr;
-    
-    // Clear children if any exist
-    if (leftPanel_->children().size() > 0) {
+
+    // Only clear the content area (middleContainer_), not the whole leftPanel_
+    // leftPanel_ contains the blue header which should be preserved
+    if (middleContainer_) {
         try {
-            leftPanel_->clear();
+            middleContainer_->clear();
+            std::cout << "[POSModeContainer] ✓ Left panel content cleared" << std::endl;
         } catch (const std::exception& e) {
-            std::cerr << "[POSModeContainer] Error clearing left panel: " << e.what() << std::endl;
+            std::cerr << "[POSModeContainer] Error clearing left panel content: " << e.what() << std::endl;
         }
-    }
-    
-    // ALWAYS recreate layout and preserve visibility
-    try {
-        auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-        leftLayout->setContentsMargins(0, 0, 0, 0);
-        leftLayout->setSpacing(0);
-        
-        // CRITICAL: Restore visibility and size
-        leftPanel_->show();
-        leftPanel_->setHidden(false);
-        leftPanel_->setWidth(Wt::WLength(30, Wt::LengthUnit::Percentage));
-        leftPanel_->setMinimumSize(Wt::WLength(280, Wt::LengthUnit::Pixel), Wt::WLength::Auto);
-        
-        std::cout << "[POSModeContainer] ✓ Left panel cleared and visibility restored" << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "[POSModeContainer] Error recreating left panel layout: " << e.what() << std::endl;
     }
 }
 
@@ -383,78 +348,56 @@ void POSModeContainer::handleCurrentOrderChanged(const std::any& eventData) {
     }
 }
 
-// 2. ADD this new method (showOrderEditMode):
+// 2. FIXED showOrderEditMode - uses middleContainer_ for left content, rightPanel_ for right content
 void POSModeContainer::showOrderEditMode() {
     if (isDestroying_) return;
-    
+
     std::cout << "[POSModeContainer] ==> SWITCHING TO ORDER_EDIT MODE" << std::endl;
-    
+
     // Clear component pointers to prevent refresh calls during destruction
     orderEntryPanel_ = nullptr;
     menuDisplay_ = nullptr;
     currentOrderDisplay_ = nullptr;
-    
+    activeOrdersDisplay_ = nullptr;
+
     try {
-        // Clear left panel (remove Active Orders)
-        if (leftPanel_ && leftPanel_->children().size() > 0) {
-            std::cout << "[POSModeContainer] Clearing left panel for MenuDisplay" << std::endl;
-            leftPanel_->clear();
-            
-            // Recreate layout
-            auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-            leftLayout->setContentsMargins(0, 0, 0, 0);
-            leftLayout->setSpacing(0);
+        // Clear left panel content area (middleContainer_), NOT leftPanel_ which has the header
+        if (middleContainer_) {
+            std::cout << "[POSModeContainer] Clearing left panel content for MenuDisplay" << std::endl;
+            middleContainer_->clear();
+
+            // LEFT PANEL: Create MenuDisplay
+            std::cout << "[POSModeContainer] Creating MenuDisplay in left panel content" << std::endl;
+            menuDisplay_ = middleContainer_->addWidget(
+                std::make_unique<MenuDisplay>(posService_, eventManager_));
         }
-        
-        // Clear work area (remove Order Entry Panel)
-        if (workArea_ && workArea_->children().size() > 0) {
-            std::cout << "[POSModeContainer] Clearing work area for CurrentOrderDisplay" << std::endl;
-            workArea_->clear();
+
+        // Clear right panel and add CurrentOrderDisplay
+        if (rightPanel_) {
+            std::cout << "[POSModeContainer] Clearing right panel for CurrentOrderDisplay" << std::endl;
+            rightPanel_->clear();
+
+            // RIGHT PANEL: Create CurrentOrderDisplay
+            std::cout << "[POSModeContainer] Creating CurrentOrderDisplay in right panel" << std::endl;
+            currentOrderDisplay_ = rightPanel_->addWidget(
+                std::make_unique<CurrentOrderDisplay>(posService_, eventManager_));
         }
-        
-        // LEFT PANEL: Create MenuDisplay
-        std::cout << "[POSModeContainer] Creating MenuDisplay in left panel" << std::endl;
-        menuDisplay_ = leftPanel_->addWidget(
-            std::make_unique<MenuDisplay>(posService_, eventManager_));
-        
-        // RIGHT PANEL: Create CurrentOrderDisplay  
-        std::cout << "[POSModeContainer] Creating CurrentOrderDisplay in work area" << std::endl;
-        currentOrderDisplay_ = workArea_->addWidget(
-            std::make_unique<CurrentOrderDisplay>(posService_, eventManager_));
-        
+
         // Update UI state
         currentUIMode_ = UI_MODE_ORDER_EDIT;
-        
-        // Update title
-        if (workAreaTitle_) {
-            auto order = posService_->getCurrentOrder();
-            if (order) {
-                workAreaTitle_->setText("🍽️ Editing Order #" + std::to_string(order->getOrderId()) + 
-                                       " - " + order->getTableIdentifier());
-                workAreaTitle_->setStyleClass("h4 text-success mb-0");
-            }
-        }
-        
-        // Show toggle button to go back to orders view
-        if (toggleOrdersButton_) {
-            toggleOrdersButton_->show();
-        }
-        
-        // Update send to kitchen button
-        updateSendToKitchenButton();
-        
+
         std::cout << "[POSModeContainer] ✅ ORDER_EDIT mode activated successfully" << std::endl;
-        
+
     } catch (const std::exception& e) {
         std::cerr << "[POSModeContainer] ERROR in showOrderEditMode: " << e.what() << std::endl;
-        
+
         // Fallback to order entry mode
         currentUIMode_ = UI_MODE_NONE;
         showOrderEntryMode();
     }
 }
 
-// 3. REPLACE your showOrderEntryMode method with this definitive fix:
+// 3. FIXED showOrderEntryMode - uses middleContainer_ for left panel content
 void POSModeContainer::showOrderEntryMode() {
     if (isDestroying_) return;
 
@@ -467,42 +410,27 @@ void POSModeContainer::showOrderEntryMode() {
     activeOrdersDisplay_ = nullptr;
 
     try {
-        // Clear and recreate left panel content
-        if (leftPanel_) {
-            leftPanel_->clear();
-
-            // Ensure left panel stays vertical and on the left
-            leftPanel_->setAttributeValue("style",
-                "background: #e9ecef; margin: 0; padding: 10px; "
-                "width: 30% !important; min-width: 250px; "
-                "display: flex; flex-direction: column;");
-        }
-
         // Get orders from service
         auto orders = posService_->getActiveOrders();
 
-        // Update page-wide footer with order count
-        if (pageFooter_) {
-            pageFooter_->clear();
-            auto footerText = pageFooter_->addNew<Wt::WText>(
-                std::to_string(orders.size()) + " active order(s)");
-            footerText->setAttributeValue("style", "color: white; font-size: 0.9rem;");
-        }
+        // Clear only the content area (middleContainer_), NOT leftPanel_ which has the header
+        if (middleContainer_) {
+            middleContainer_->clear();
 
-        // LEFT PANEL: Active Orders List
-        if (leftPanel_) {
             if (orders.empty()) {
                 // Simple concise empty message
-                auto emptyContainer = leftPanel_->addNew<Wt::WContainerWidget>();
-                emptyContainer->setStyleClass("d-flex align-items-center justify-content-center");
-                emptyContainer->setAttributeValue("style", "background: #f8f9fa; flex: 1;");
+                auto emptyContainer = middleContainer_->addNew<Wt::WContainerWidget>();
+                emptyContainer->setAttributeValue("style",
+                    "display: flex; align-items: center; justify-content: center; "
+                    "background: #f8f9fa; height: 100%; border-radius: 4px;");
 
                 auto emptyText = emptyContainer->addNew<Wt::WText>("No active orders");
-                emptyText->setStyleClass("text-muted");
+                emptyText->setAttributeValue("style", "color: #6c757d; font-style: italic;");
             } else {
                 // Orders table
-                auto tableContainer = leftPanel_->addNew<Wt::WContainerWidget>();
-                tableContainer->setAttributeValue("style", "background: white; padding: 8px; flex: 1; overflow-y: auto;");
+                auto tableContainer = middleContainer_->addNew<Wt::WContainerWidget>();
+                tableContainer->setAttributeValue("style",
+                    "background: white; padding: 8px; border-radius: 4px; overflow-y: auto;");
 
                 auto ordersTable = tableContainer->addNew<Wt::WTable>();
                 ordersTable->setStyleClass("table table-hover table-sm mb-0");

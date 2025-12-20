@@ -166,13 +166,11 @@ private:
     std::shared_ptr<POSService> posService_;
     std::shared_ptr<EventManager> eventManager_;
     
-    // Layout containers
-    Wt::WContainerWidget* pageHeader_;  // Page-wide header (blue)
-    Wt::WContainerWidget* pageFooter_;  // Page-wide footer (dark)
-    Wt::WContainerWidget* middleContainer_;  // Contains left and right panels
-    Wt::WContainerWidget* leftPanel_;   // Holds Active Orders OR Menu Display
-    Wt::WContainerWidget* rightPanel_;  // Holds Order Entry OR Current Order
-    Wt::WContainerWidget* workArea_;    // Dynamic content area within right panel
+    // Layout containers (no page-wide header/footer - app level handles those)
+    Wt::WContainerWidget* leftPanel_;        // Left panel with header and content area
+    Wt::WContainerWidget* middleContainer_;  // Content area inside left panel (for orders/menu)
+    Wt::WContainerWidget* rightPanel_;       // Right panel for order entry/current order
+    Wt::WContainerWidget* workArea_;         // Legacy - kept for compatibility
     
     // Components (only one set active at a time)
     ActiveOrdersDisplay* activeOrdersDisplay_;      // In Order Entry mode (left panel)
