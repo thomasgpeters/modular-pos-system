@@ -99,8 +99,8 @@ POSModeContainer::~POSModeContainer() {
 
 void POSModeContainer::initializeUI() {
     setupLayout();
-    createLeftPanel();
-    createRightPanel();
+    // Note: createLeftPanel() and createRightPanel() are no longer called here
+    // Panel content is now managed directly in showOrderEntryMode() and showOrderEditMode()
 }
 
 // ============================================================================
@@ -474,10 +474,6 @@ void POSModeContainer::showOrderEntryMode() {
                 "display: flex; flex-direction: column;");
         }
 
-        if (workArea_ && workArea_->children().size() > 0) {
-            workArea_->clear();
-        }
-
         // Get orders from service
         auto orders = posService_->getActiveOrders();
 
@@ -577,21 +573,7 @@ void POSModeContainer::showOrderEntryMode() {
         // Update UI state
         currentUIMode_ = UI_MODE_ORDER_ENTRY;
 
-        // Update title and buttons
-        if (workAreaTitle_) {
-            workAreaTitle_->setText("🍽️ Order Management");
-            workAreaTitle_->setStyleClass("h4 text-primary mb-0");
-        }
-
-        if (toggleOrdersButton_) {
-            toggleOrdersButton_->hide();
-        }
-
-        if (sendToKitchenButton_) {
-            sendToKitchenButton_->hide();
-        }
-
-        std::cout << "[POSModeContainer] ✅ ORDER_ENTRY MODE - Both panels ready" << std::endl;
+        std::cout << "[POSModeContainer] ORDER_ENTRY MODE - Both panels ready" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[POSModeContainer] ERROR in showOrderEntryMode: " << e.what() << std::endl;
