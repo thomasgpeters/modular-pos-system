@@ -22,11 +22,15 @@ CommonFooter::CommonFooter(std::shared_ptr<POSService> posService,
 }
 
 void CommonFooter::initializeUI() {
-    addStyleClass("common-footer p-2");
-    
+    // Dark footer spanning full width
+    setAttributeValue("style",
+        "background: #1a1a2e !important; width: 100% !important; "
+        "padding: 8px 15px; margin: 0; box-sizing: border-box;");
+    addStyleClass("common-footer");
+
     auto layout = setLayout(std::make_unique<Wt::WHBoxLayout>());
-    layout->setContentsMargins(15, 5, 15, 5);
-    
+    layout->setContentsMargins(0, 0, 0, 0);
+
     createStatusSection();
     createSystemSection();
 }
@@ -36,26 +40,26 @@ void CommonFooter::createStatusSection() {
     auto statusWidget = std::make_unique<Wt::WContainerWidget>();
     auto statusContainer = statusWidget.get();
     layout()->addWidget(std::move(statusWidget));
-    
-    statusContainer->addStyleClass("d-flex gap-4");
-    
+
+    statusContainer->setAttributeValue("style", "display: flex; gap: 20px;");
+
     // Active orders count
     activeOrdersText_ = statusContainer->addWidget(
         std::make_unique<Wt::WText>("📋 Active Orders: 0")
     );
-    activeOrdersText_->addStyleClass("text-muted small");
-    
+    activeOrdersText_->setAttributeValue("style", "color: rgba(255,255,255,0.9); font-size: 0.85rem;");
+
     // Kitchen queue count
     kitchenQueueText_ = statusContainer->addWidget(
         std::make_unique<Wt::WText>("👨‍🍳 Kitchen Queue: 0")
     );
-    kitchenQueueText_->addStyleClass("text-muted small");
-    
+    kitchenQueueText_->setAttributeValue("style", "color: rgba(255,255,255,0.9); font-size: 0.85rem;");
+
     // System status
     systemStatusText_ = statusContainer->addWidget(
         std::make_unique<Wt::WText>("✅ System: Online")
     );
-    systemStatusText_->addStyleClass("text-success small");
+    systemStatusText_->setAttributeValue("style", "color: #4ade80; font-size: 0.85rem;");
 }
 
 void CommonFooter::createSystemSection() {
@@ -63,14 +67,14 @@ void CommonFooter::createSystemSection() {
     auto systemWidget = std::make_unique<Wt::WContainerWidget>();
     auto systemContainer = systemWidget.get();
     layout()->addWidget(std::move(systemWidget));
-    
-    systemContainer->addStyleClass("ms-auto");
-    
+
+    systemContainer->setAttributeValue("style", "margin-left: auto;");
+
     // Version info
     versionText_ = systemContainer->addWidget(
         std::make_unique<Wt::WText>("POS v3.0.0 Enhanced")
     );
-    versionText_->addStyleClass("text-muted small");
+    versionText_->setAttributeValue("style", "color: rgba(255,255,255,0.6); font-size: 0.8rem;");
 }
 
 void CommonFooter::setupEventListeners() {
@@ -99,38 +103,38 @@ void CommonFooter::setupEventListeners() {
 
 void CommonFooter::updateStatus() {
     if (!posService_) return;
-    
+
     try {
         // Update active orders count
         auto activeOrders = posService_->getActiveOrders();
         if (activeOrdersText_) {
             activeOrdersText_->setText("📋 Active Orders: " + std::to_string(activeOrders.size()));
         }
-        
+
         // Update kitchen queue count
         auto kitchenTickets = posService_->getKitchenTickets();
         if (kitchenQueueText_) {
             kitchenQueueText_->setText("👨‍🍳 Kitchen Queue: " + std::to_string(kitchenTickets.size()));
         }
-        
-        // Update system status based on current load
+
+        // Update system status based on current load (colors for dark background)
         if (systemStatusText_) {
             if (activeOrders.size() > 10) {
                 systemStatusText_->setText("⚠️ System: Busy");
-                systemStatusText_->setStyleClass("text-warning small");
+                systemStatusText_->setAttributeValue("style", "color: #fbbf24; font-size: 0.85rem;");
             } else if (activeOrders.size() > 5) {
                 systemStatusText_->setText("🟡 System: Moderate");
-                systemStatusText_->setStyleClass("text-info small");
+                systemStatusText_->setAttributeValue("style", "color: #60a5fa; font-size: 0.85rem;");
             } else {
                 systemStatusText_->setText("✅ System: Online");
-                systemStatusText_->setStyleClass("text-success small");
+                systemStatusText_->setAttributeValue("style", "color: #4ade80; font-size: 0.85rem;");
             }
         }
     } catch (const std::exception& e) {
         // Handle any service errors gracefully
         if (systemStatusText_) {
             systemStatusText_->setText("❌ System: Error");
-            systemStatusText_->setStyleClass("text-danger small");
+            systemStatusText_->setAttributeValue("style", "color: #f87171; font-size: 0.85rem;");
         }
     }
 }

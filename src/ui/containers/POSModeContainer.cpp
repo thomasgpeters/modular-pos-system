@@ -108,7 +108,8 @@ void POSModeContainer::initializeUI() {
 // ============================================================================
 
 // FIXED: POSModeContainer is now just a horizontal left/right panel split
-// The app-level CommonHeader and CommonFooter handle the full-width header/footer
+// The app-level CommonHeader has the blue "Active Orders" bar
+// The app-level CommonFooter has the dark footer bar
 void POSModeContainer::setupLayout() {
     std::cout << "[POSModeContainer] Setting up left/right panel layout..." << std::endl;
 
@@ -116,47 +117,20 @@ void POSModeContainer::setupLayout() {
     setAttributeValue("style",
         "display: flex !important; flex-direction: row !important; "
         "width: 100% !important; height: 100% !important; "
-        "padding: 8px !important; gap: 8px !important; box-sizing: border-box !important; "
-        "background: #fafafa;");
+        "padding: 10px !important; gap: 10px !important; box-sizing: border-box !important; "
+        "background: #f5f5f5;");
 
-    // LEFT PANEL - 30% width with Active Orders heading
+    // LEFT PANEL - 30% width (orders list area, no header - it's in CommonHeader now)
     leftPanel_ = addNew<Wt::WContainerWidget>();
     leftPanel_->setStyleClass("pos-left-panel");
     leftPanel_->setAttributeValue("style",
-        "background: #e9ecef; padding: 0; margin: 0; "
+        "background: #ffffff; padding: 12px; margin: 0; "
         "width: 30% !important; min-width: 280px; max-width: 400px; "
         "display: flex; flex-direction: column; "
-        "border-radius: 6px; overflow: hidden;");
+        "border: 1px solid #e0e0e0; border-radius: 6px; overflow-y: auto;");
 
-    // Left panel header (blue bar with "Active Orders" title)
-    auto leftHeader = leftPanel_->addNew<Wt::WContainerWidget>();
-    leftHeader->setAttributeValue("style",
-        "background: #0d6efd; padding: 10px 12px; "
-        "display: flex; justify-content: space-between; align-items: center;");
-
-    auto titleContainer = leftHeader->addNew<Wt::WContainerWidget>();
-    titleContainer->setAttributeValue("style", "display: flex; align-items: center; gap: 8px;");
-
-    auto headerIcon = titleContainer->addNew<Wt::WText>("📋");
-    headerIcon->setAttributeValue("style", "font-size: 1.1rem;");
-
-    auto headerText = titleContainer->addNew<Wt::WText>("Active Orders");
-    headerText->setAttributeValue("style", "color: white; font-size: 1rem; font-weight: 600;");
-
-    auto refreshBtn = leftHeader->addNew<Wt::WPushButton>("↻");
-    refreshBtn->setAttributeValue("style",
-        "background: rgba(255,255,255,0.2); border: none; color: white; "
-        "padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 1rem;");
-    refreshBtn->clicked().connect([this]() {
-        showOrderEntryMode();
-    });
-
-    // Left panel content area (where ActiveOrdersDisplay goes)
-    auto leftContent = leftPanel_->addNew<Wt::WContainerWidget>();
-    leftContent->setAttributeValue("style",
-        "flex: 1; padding: 10px; overflow-y: auto;");
-    // Store reference for later - we'll add ActiveOrdersDisplay here
-    middleContainer_ = leftContent;
+    // Left panel IS the content area now (header moved to CommonHeader)
+    middleContainer_ = leftPanel_;
 
     // RIGHT PANEL - fills remaining space (70%)
     rightPanel_ = addNew<Wt::WContainerWidget>();
@@ -164,7 +138,7 @@ void POSModeContainer::setupLayout() {
     rightPanel_->setAttributeValue("style",
         "background: #ffffff; margin: 0; padding: 12px; "
         "flex: 1; min-width: 0; "
-        "border: 1px solid #dee2e6; border-radius: 6px; "
+        "border: 1px solid #e0e0e0; border-radius: 6px; "
         "display: flex; flex-direction: column; overflow: hidden;");
 
     std::cout << "[POSModeContainer] Layout setup complete - left/right panels ready" << std::endl;

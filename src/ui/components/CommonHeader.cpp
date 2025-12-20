@@ -49,56 +49,90 @@ CommonHeader::CommonHeader(std::shared_ptr<ThemeService> themeService,
 
 void CommonHeader::initializeUI() {
     std::cout << "[CommonHeader] Setting up UI layout..." << std::endl;
-    
-    // Use horizontal flex layout
-    UIStyleHelper::styleFlexRow(this, "between", "center");
-    addStyleClass("pos-header p-3");
-    
-    // Create sections
-    createBrandingSection();
-    createModeSection();
-    createThemeSection();
-    createUserSection();
-    
-    std::cout << "[CommonHeader] UI layout complete" << std::endl;
+
+    // Main header uses vertical flex to stack two rows
+    setAttributeValue("style",
+        "display: flex; flex-direction: column; width: 100%; padding: 0; margin: 0;");
+    addStyleClass("pos-header");
+
+    // TOP ROW: Main header content (branding, mode, theme, user)
+    auto topRow = addNew<Wt::WContainerWidget>();
+    topRow->setAttributeValue("style",
+        "display: flex; justify-content: space-between; align-items: center; "
+        "padding: 8px 15px; background: #2c3e50;");
+
+    // Create sections in top row
+    createBrandingSection(topRow);
+    createModeSection(topRow);
+    createThemeSection(topRow);
+    createUserSection(topRow);
+
+    // BOTTOM ROW: Blue "Active Orders" bar (full width)
+    auto activeOrdersBar = addNew<Wt::WContainerWidget>();
+    activeOrdersBar->setAttributeValue("style",
+        "display: flex; justify-content: space-between; align-items: center; "
+        "padding: 8px 15px; background: #0d6efd; width: 100%; box-sizing: border-box;");
+
+    // Left side: icon + text
+    auto leftSide = activeOrdersBar->addNew<Wt::WContainerWidget>();
+    leftSide->setAttributeValue("style", "display: flex; align-items: center; gap: 8px;");
+
+    auto icon = leftSide->addNew<Wt::WText>("📋");
+    icon->setAttributeValue("style", "font-size: 1.1rem;");
+
+    auto title = leftSide->addNew<Wt::WText>("Active Orders");
+    title->setAttributeValue("style", "color: white; font-size: 1rem; font-weight: 600;");
+
+    // Right side: refresh button
+    auto refreshBtn = activeOrdersBar->addNew<Wt::WPushButton>("↻ Refresh");
+    refreshBtn->setAttributeValue("style",
+        "background: rgba(255,255,255,0.2); border: none; color: white; "
+        "padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem;");
+    refreshBtn->clicked().connect([this]() {
+        // Emit refresh event
+        if (eventManager_) {
+            eventManager_->emit("REFRESH_ACTIVE_ORDERS", std::any());
+        }
+    });
+
+    std::cout << "[CommonHeader] UI layout complete with Active Orders bar" << std::endl;
 }
 
-void CommonHeader::createBrandingSection() {
-    brandingContainer_ = addNew<Wt::WContainerWidget>();
+void CommonHeader::createBrandingSection(Wt::WContainerWidget* parent) {
+    brandingContainer_ = parent->addNew<Wt::WContainerWidget>();
     UIStyleHelper::styleFlexRow(brandingContainer_, "start", "center");
     brandingContainer_->addStyleClass("branding-section");
-    
-    brandingText_ = brandingContainer_->addNew<Wt::WText>("🍽️ Restaurant POS System");
-    UIStyleHelper::styleHeading(brandingText_, 4, "white");
-    brandingText_->addStyleClass("mb-0 fw-bold");
-    
+
+    brandingText_ = brandingContainer_->addNew<Wt::WText>("🍽️ Restaurant POS");
+    brandingText_->setAttributeValue("style", "color: white; font-size: 1.1rem; font-weight: bold;");
+
     std::cout << "[CommonHeader] Branding section created" << std::endl;
 }
 
-void CommonHeader::createModeSection() {
-    auto modeContainer = addNew<Wt::WContainerWidget>();
+void CommonHeader::createModeSection(Wt::WContainerWidget* parent) {
+    auto modeContainer = parent->addNew<Wt::WContainerWidget>();
     modeContainer->addStyleClass("mode-section mx-3");
-    
+
     // Create mode selector with callback
     modeSelector_ = modeContainer->addNew<ModeSelector>(
-        eventManager_, 
+        eventManager_,
         [this](ModeSelector::Mode mode) {
-            std::cout << "[CommonHeader] Mode changed via selector: " 
+            std::cout << "[CommonHeader] Mode changed via selector: "
                       << (mode == ModeSelector::POS_MODE ? "POS" : "Kitchen") << std::endl;
-            
+
             if (modeChangeCallback_) {
                 modeChangeCallback_(mode);
             }
         }
     );
-    
+
     std::cout << "[CommonHeader] Mode section created" << std::endl;
 }
 
-void CommonHeader::createThemeSection() {
+void CommonHeader::createThemeSection(Wt::WContainerWidget* parent) {
     std::cout << "[CommonHeader] Creating theme section..." << std::endl;
-    
-    themeContainer_ = addNew<Wt::WContainerWidget>();
+
+    themeContainer_ = parent->addNew<Wt::WContainerWidget>();
     UIStyleHelper::styleFlexRow(themeContainer_, "center", "center");
     themeContainer_->addStyleClass("theme-section mx-3");
     
@@ -164,25 +198,25 @@ void CommonHeader::createThemeSection() {
     std::cout << "[CommonHeader] Theme section complete" << std::endl;
 }
 
-void CommonHeader::createUserSection() {
-    userContainer_ = addNew<Wt::WContainerWidget>();
+void CommonHeader::createUserSection(Wt::WContainerWidget* parent) {
+    userContainer_ = parent->addNew<Wt::WContainerWidget>();
     UIStyleHelper::styleFlexRow(userContainer_, "end", "center");
     userContainer_->addStyleClass("user-section");
-    
+
     // User info
     userInfo_ = userContainer_->addNew<Wt::WText>("👤 Operator");
-    userInfo_->addStyleClass("text-light me-3 small");
-    
+    userInfo_->setAttributeValue("style", "color: rgba(255,255,255,0.8); margin-right: 12px; font-size: 0.85rem;");
+
     // Time display
     timeDisplay_ = userContainer_->addNew<Wt::WText>();
-    timeDisplay_->addStyleClass("text-light small font-monospace");
-    
+    timeDisplay_->setAttributeValue("style", "color: rgba(255,255,255,0.8); font-size: 0.85rem; font-family: monospace;");
+
     // Set up timer for time updates
     auto timer = addChild(std::make_unique<Wt::WTimer>());
     timer->setInterval(std::chrono::seconds(1));
     timer->timeout().connect(this, &CommonHeader::updateTimeDisplay);
     timer->start();
-    
+
     std::cout << "[CommonHeader] User section created" << std::endl;
 }
 

@@ -51,10 +51,10 @@ public:
 
 protected:
     void initializeUI();
-    void createBrandingSection();
-    void createModeSection();
-    void createThemeSection();
-    void createUserSection();
+    void createBrandingSection(Wt::WContainerWidget* parent);
+    void createModeSection(Wt::WContainerWidget* parent);
+    void createThemeSection(Wt::WContainerWidget* parent);
+    void createUserSection(Wt::WContainerWidget* parent);
     void setupEventHandlers();
 
 private:
