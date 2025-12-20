@@ -64,88 +64,103 @@ MenuDisplay::~MenuDisplay() {
 }
 
 void MenuDisplay::initializeUI() {
-    // FIXED: Remove WGroupBox to eliminate inner border, use simple container structure
-    // Add heading without border (like OrderEntryPanel and KitchenStatusDisplay)
+    // Container with proper width constraints for left panel
+    addStyleClass("menu-display-container");
+    setAttributeValue("style",
+        "width: 100% !important; max-width: 100% !important; "
+        "overflow: hidden !important; box-sizing: border-box !important;");
+
+    // Add heading
     auto headingText = addNew<Wt::WText>("🍽️ Restaurant Menu");
-    headingText->addStyleClass("h4 text-primary mb-3");
-    
-    // Create header with category filter (no border)
+    headingText->addStyleClass("h5 text-primary mb-2");
+    headingText->setAttributeValue("style", "font-size: 1rem;");
+
+    // Create header with category filter
     auto header = createMenuHeader();
     addWidget(std::move(header));
-    
-    // Create table container (no additional border)
+
+    // Create scrollable table container
     auto tableContainer = addNew<Wt::WContainerWidget>();
-    tableContainer->setStyleClass("mt-3");
-    
-    // Create menu items table
+    tableContainer->addStyleClass("menu-table-container");
+    tableContainer->setAttributeValue("style",
+        "width: 100% !important; overflow-x: hidden !important; "
+        "overflow-y: auto !important; margin-top: 8px;");
+
+    // Create menu items table with fixed layout
     itemsTable_ = tableContainer->addNew<Wt::WTable>();
-    UIStyleHelper::styleTable(itemsTable_, "menu");
-    
+    itemsTable_->addStyleClass("menu-items-table");
+    itemsTable_->setAttributeValue("style",
+        "width: 100% !important; table-layout: fixed !important; "
+        "border-collapse: collapse !important;");
+
     initializeTableHeaders();
-    
-    std::cout << "[MenuDisplay] UI initialized without inner border" << std::endl;
+
+    std::cout << "[MenuDisplay] UI initialized with constrained width" << std::endl;
 }
 
 void MenuDisplay::initializeTableHeaders() {
     if (!itemsTable_) return;
-    
-    // Create table headers - simplified columns
+
+    // Create table headers - compact layout for left panel
     itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
     itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Price"));
-    itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Category"));
-    itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Add to Order"));
-    
+    itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Add"));
+
+    // Set column widths - Item gets most space, Price and Add are compact
+    itemsTable_->elementAt(0, 0)->setAttributeValue("style",
+        "width: 50% !important; padding: 6px 4px !important;");
+    itemsTable_->elementAt(0, 1)->setAttributeValue("style",
+        "width: 25% !important; padding: 6px 4px !important;");
+    itemsTable_->elementAt(0, 2)->setAttributeValue("style",
+        "width: 25% !important; padding: 6px 4px !important;");
+
     // Style headers
-    for (int col = 0; col < 4; ++col) {
+    for (int col = 0; col < 3; ++col) {
         auto headerCell = itemsTable_->elementAt(0, col);
-        headerCell->setStyleClass("bg-primary text-white fw-bold text-center p-2");
+        headerCell->addStyleClass("text-center");
+        headerCell->setAttributeValue("style",
+            headerCell->attributeValue("style").toUTF8() +
+            "background: #e9ecef !important; color: #495057 !important; "
+            "font-weight: 600 !important; font-size: 0.75rem !important; "
+            "border-bottom: 2px solid #dee2e6 !important;");
     }
 }
 
 std::unique_ptr<Wt::WWidget> MenuDisplay::createMenuHeader() {
-    // Create header container
+    // Create compact header container
     auto headerContainer = std::make_unique<Wt::WContainerWidget>();
-    UIStyleHelper::styleFlexRow(headerContainer.get(), "between", "center");
-    
+    headerContainer->setAttributeValue("style",
+        "display: flex; flex-wrap: wrap; gap: 8px; align-items: center; "
+        "width: 100%; padding: 4px 0;");
+
     // Store raw pointer for later reference
     headerContainer_ = headerContainer.get();
-    
-    // Left side: Category filter
-    auto leftSide = headerContainer->addNew<Wt::WContainerWidget>();
-    UIStyleHelper::styleFlexRow(leftSide, "start", "center");
-    
-    auto categoryLabel = leftSide->addNew<Wt::WLabel>("Category: ");
-    categoryLabel->setStyleClass("form-label fw-bold me-2");
-    
-    categoryCombo_ = leftSide->addNew<Wt::WComboBox>();
-    UIStyleHelper::styleComboBox(categoryCombo_);
-    categoryCombo_->setWidth(200);
+
+    // Category filter - compact
+    auto filterContainer = headerContainer->addNew<Wt::WContainerWidget>();
+    filterContainer->setAttributeValue("style",
+        "display: flex; align-items: center; gap: 4px;");
+
+    auto categoryLabel = filterContainer->addNew<Wt::WText>("Filter:");
+    categoryLabel->setAttributeValue("style",
+        "font-size: 0.75rem; font-weight: 600; color: #666;");
+
+    categoryCombo_ = filterContainer->addNew<Wt::WComboBox>();
+    categoryCombo_->setAttributeValue("style",
+        "height: 26px; font-size: 0.75rem; padding: 2px 6px; "
+        "border: 1px solid #ccc; border-radius: 4px; max-width: 120px;");
     populateCategoryCombo();
-    
-    // Connect category change handler
+
     categoryCombo_->changed().connect([this]() {
         onCategoryChanged();
     });
-    
-    // Right side: Item count and current order status
-    auto rightSide = headerContainer->addNew<Wt::WContainerWidget>();
-    UIStyleHelper::styleFlexRow(rightSide, "end", "center");
-    
-    itemCountText_ = rightSide->addNew<Wt::WText>("0 items");
-    UIStyleHelper::styleBadge(itemCountText_, "info");
-    
-    // Current order indicator
-    auto orderStatusText = rightSide->addNew<Wt::WText>();
-    auto currentOrder = posService_->getCurrentOrder();
-    if (currentOrder) {
-        int itemCount = currentOrder->getItems().size();
-        orderStatusText->setText("Current Order: " + std::to_string(itemCount) + " items");
-        orderStatusText->setStyleClass("badge bg-success ms-2");
-    } else {
-        orderStatusText->setText("No Active Order");
-        orderStatusText->setStyleClass("badge bg-secondary ms-2");
-    }
-    
+
+    // Item count badge - compact
+    itemCountText_ = headerContainer->addNew<Wt::WText>("0 items");
+    itemCountText_->setAttributeValue("style",
+        "font-size: 0.7rem; padding: 2px 8px; background: #e9ecef; "
+        "border-radius: 10px; color: #666;");
+
     return std::move(headerContainer);
 }
 
@@ -205,9 +220,10 @@ void MenuDisplay::updateMenuItemsTable() {
     if (filteredItems.empty()) {
         // Show empty message
         auto emptyRow = itemsTable_->elementAt(1, 0);
-        emptyRow->setColumnSpan(4);
+        emptyRow->setColumnSpan(3);
         emptyRow->addWidget(std::make_unique<Wt::WText>("No items in this category"));
-        emptyRow->setStyleClass("text-center text-muted p-4");
+        emptyRow->setAttributeValue("style",
+            "text-align: center; color: #999; padding: 16px; font-size: 0.8rem;");
         return;
     }
     
@@ -223,93 +239,70 @@ void MenuDisplay::updateMenuItemsTable() {
 
 void MenuDisplay::addMenuItemRow(const std::shared_ptr<MenuItem>& item, size_t index) {
     if (!item || !itemsTable_) return;
-    
+
     int row = static_cast<int>(index + 1); // +1 for header row
-    
+
     try {
-        // Item name and description
-        auto nameContainer = std::make_unique<Wt::WContainerWidget>();
-        auto itemName = nameContainer->addNew<Wt::WText>(item->getName());
-        itemName->setStyleClass("fw-bold text-dark");
-        
-        // Add a subtle description if available
-        std::string description = formatItemDescription(item);
-        if (!description.empty()) {
-            nameContainer->addNew<Wt::WBreak>();
-            auto descText = nameContainer->addNew<Wt::WText>(description);
-            descText->setStyleClass("small text-muted");
-        }
-        
-        itemsTable_->elementAt(row, 0)->addWidget(std::move(nameContainer));
-        
-        // Price
+        // Item name - compact, no description to save space
+        auto nameText = std::make_unique<Wt::WText>(item->getName());
+        nameText->setAttributeValue("style",
+            "font-size: 0.8rem; font-weight: 600; color: #333; "
+            "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;");
+        itemsTable_->elementAt(row, 0)->addWidget(std::move(nameText));
+
+        // Price - compact
         auto priceText = std::make_unique<Wt::WText>(formatCurrency(item->getPrice()));
-        priceText->setStyleClass("fw-bold text-success");
+        priceText->setAttributeValue("style",
+            "font-size: 0.8rem; font-weight: 600; color: #198754;");
         itemsTable_->elementAt(row, 1)->addWidget(std::move(priceText));
-        
-        // Category
-        auto categoryText = std::make_unique<Wt::WText>(MenuItem::categoryToString(item->getCategory()));
-        UIStyleHelper::styleBadge(categoryText.get(), "secondary");
-        itemsTable_->elementAt(row, 2)->addWidget(std::move(categoryText));
-        
-        // Add to Order Controls - SIMPLIFIED NO DIALOG
+
+        // Add to Order Controls - compact layout
         auto actionsContainer = std::make_unique<Wt::WContainerWidget>();
-        UIStyleHelper::styleFlexRow(actionsContainer.get(), "center", "center");
-        
+        actionsContainer->setAttributeValue("style",
+            "display: flex; align-items: center; justify-content: center; gap: 2px;");
+
         if (selectionEnabled_ && item->isAvailable() && canAddToOrder()) {
-            // Quantity spinner (small)
+            // Quantity spinner - very compact
             auto qtySpinner = actionsContainer->addNew<Wt::WSpinBox>();
             qtySpinner->setRange(1, 10);
             qtySpinner->setValue(1);
-            qtySpinner->setWidth(60);
-            qtySpinner->setStyleClass("form-control form-control-sm me-2");
-            
-            // Direct Add button - no dialog!
-            auto addBtn = actionsContainer->addNew<Wt::WPushButton>("+ Add");
-            UIStyleHelper::styleButton(addBtn, "success", "sm");
-            
-            // DIRECT ADD - no dialog popup
+            qtySpinner->setAttributeValue("style",
+                "width: 40px !important; height: 24px !important; "
+                "padding: 2px !important; font-size: 0.75rem; text-align: center;");
+
+            // Direct Add button - compact
+            auto addBtn = actionsContainer->addNew<Wt::WPushButton>("+");
+            addBtn->setAttributeValue("style",
+                "width: 28px !important; height: 24px !important; "
+                "padding: 0 !important; font-size: 0.9rem; font-weight: bold; "
+                "background: #198754; color: white; border: none; border-radius: 4px;");
+            addBtn->setToolTip("Add to order");
+
             addBtn->clicked().connect([this, item, qtySpinner]() {
                 int quantity = qtySpinner->value();
-                std::cout << "[MenuDisplay] Adding " << quantity << "x " << item->getName() 
-                          << " directly to order" << std::endl;
-                
-                // Add directly to current order
                 addItemToCurrentOrder(*item, quantity, "");
-                
-                // Note: Don't reset spinner here as the table refresh will recreate everything
             });
-            
+
         } else {
-            auto statusBtn = actionsContainer->addNew<Wt::WPushButton>();
-            
-            if (!item->isAvailable()) {
-                statusBtn->setText("Unavailable");
-                UIStyleHelper::styleButton(statusBtn, "outline-secondary", "sm");
-                statusBtn->setEnabled(false);
-            } else if (!canAddToOrder()) {
-                statusBtn->setText("No Order");
-                UIStyleHelper::styleButton(statusBtn, "outline-warning", "sm");
-                statusBtn->setEnabled(false);
-                statusBtn->setToolTip("Create a new order first");
-            }
+            auto statusText = actionsContainer->addNew<Wt::WText>(
+                item->isAvailable() ? "—" : "N/A");
+            statusText->setAttributeValue("style",
+                "font-size: 0.7rem; color: #999;");
         }
-        
-        itemsTable_->elementAt(row, 3)->addWidget(std::move(actionsContainer));
-        
-        // Apply row styling
+
+        itemsTable_->elementAt(row, 2)->addWidget(std::move(actionsContainer));
+
+        // Apply compact row styling
         bool isEven = (row % 2 == 0);
-        for (int col = 0; col < 4; ++col) {
+        for (int col = 0; col < 3; ++col) {
             auto cell = itemsTable_->elementAt(row, col);
-            cell->setStyleClass("p-3 align-middle");
-            if (col == 1 || col == 2 || col == 3) { // Price, Category, Actions
-                cell->addStyleClass("text-center");
-            }
-            if (isEven) {
-                cell->addStyleClass("bg-light");
-            }
+            cell->setAttributeValue("style",
+                std::string("padding: 4px !important; vertical-align: middle; ") +
+                "border-bottom: 1px solid #eee; " +
+                (col > 0 ? "text-align: center; " : "") +
+                (isEven ? "background: #fafafa;" : "background: white;"));
         }
-        
+
     } catch (const std::exception& e) {
         std::cerr << "[MenuDisplay] Error adding menu item row: " << e.what() << std::endl;
     }

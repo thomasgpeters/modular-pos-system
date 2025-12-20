@@ -405,6 +405,36 @@ body {
 }
 
 /* ============================================================================
+   Menu Display - Constrained Width for Left Panel
+   ============================================================================ */
+
+.menu-display-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+.menu-table-container {
+    width: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+.menu-items-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+}
+
+.menu-items-table td,
+.menu-items-table th {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* ============================================================================
    Table and Content Wrappers - Remove Excessive Padding/Borders
    ============================================================================ */
 
