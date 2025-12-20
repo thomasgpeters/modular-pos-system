@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
                            "/favicon.ico");
         
         std::cout << "===========================================================" << std::endl;
-        std::cout << "  Restaurant POS System - Modular Architecture v2.0.0" << std::endl;
+        std::cout << "  Restaurant POS System - Modular Architecture v3.0.0-beta.1" << std::endl;
         std::cout << "===========================================================" << std::endl;
         std::cout << "Starting server on http://localhost:8080/pos" << std::endl;
         std::cout << "Press Ctrl+C to stop the server" << std::endl;

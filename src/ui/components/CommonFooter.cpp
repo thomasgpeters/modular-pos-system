@@ -72,7 +72,7 @@ void CommonFooter::createSystemSection() {
 
     // Version info
     versionText_ = systemContainer->addWidget(
-        std::make_unique<Wt::WText>("POS v3.0.0 Enhanced")
+        std::make_unique<Wt::WText>("POS v3.0.0-beta.1")
     );
     versionText_->setAttributeValue("style", "color: rgba(255,255,255,0.6); font-size: 0.8rem;");
 }

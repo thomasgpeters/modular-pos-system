@@ -1,8 +1,8 @@
-# Restaurant POS System - Modular Architecture v3.0.0
+# Restaurant POS System - Modular Architecture v3.0.0-beta.1
 
 A modern, extensible Point of Sale system built with C++ and the Wt web framework. This system demonstrates enterprise-level software architecture with clean separation of concerns, event-driven communication, and a responsive web UI.
 
-## Recent Updates (v3.0.0)
+## Recent Updates (v3.0.0-beta.1)
 
 ### UI Layout Improvements
 - **Restructured Header/Footer**: Full-width CommonHeader and CommonFooter spanning the entire page
@@ -391,21 +391,22 @@ class CustomKitchenInterface : public KitchenInterface {
 
 ## Version History
 
-### v3.0.0 (Current)
+### v3.0.0-beta.1 (Current - Prerelease)
 - Restructured UI layout with proper header/footer hierarchy
 - Fixed CSS selector issues (ID vs class)
 - Removed duplicate header/footer elements
 - Added Active Orders sub-header to left panel widget
 - Improved CommonFooter with dark theme
 - Fixed EventManager method calls (publish vs emit)
+- Beta testing phase for v3.0.0 stable release
 
-### v2.0.0
+### v2.0.0 (Stable)
 - Modular architecture implementation
 - Event-driven communication system
 - Theme service integration
 - Kitchen mode support
 
-### v1.0.0
+### v1.0.0 (Legacy)
 - Initial POS functionality
 - Basic order management
 - Menu display

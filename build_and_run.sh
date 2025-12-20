@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 echo "=============================================================="
-echo "  Restaurant POS System - Modular Architecture v2.0.0"
+echo "  Restaurant POS System - Modular Architecture v3.0.0-beta.1"
 echo "=============================================================="
 
 # Colors for output
