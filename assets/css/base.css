@@ -358,10 +358,10 @@ body {
     table-layout: fixed !important;
 }
 
-/* Table header row - fixed height, grey background */
+/* Table header row - fixed height, light grey background */
 .pos-current-order-table tr:first-child {
     height: var(--order-header-height) !important;
-    background-color: #6c757d !important;
+    background-color: #e9ecef !important;
 }
 
 .pos-current-order-table tr:first-child td,
@@ -371,11 +371,11 @@ body {
     max-height: var(--order-header-height) !important;
     padding: 6px 8px !important;
     vertical-align: middle !important;
-    background-color: #6c757d !important;
-    color: white !important;
+    background-color: #e9ecef !important;
+    color: #495057 !important;
     font-weight: 600 !important;
     font-size: 0.8rem !important;
-    border-bottom: 2px solid #495057 !important;
+    border-bottom: 2px solid #dee2e6 !important;
 }
 
 /* Data rows - fixed height */
