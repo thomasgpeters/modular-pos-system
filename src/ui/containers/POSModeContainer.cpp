@@ -145,24 +145,27 @@ void POSModeContainer::setupLayout() {
     // MIDDLE CONTAINER (holds left and right panels) - takes all remaining space
     middleContainer_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     middleContainer_->setAttributeValue("style",
-        "flex: 1 1 auto !important; min-height: 0; overflow: hidden;");
+        "flex: 1 1 auto !important; min-height: 0; overflow: hidden; "
+        "display: flex !important; flex-direction: row !important;");
 
     auto middleLayout = middleContainer_->setLayout(std::make_unique<Wt::WHBoxLayout>());
     middleLayout->setContentsMargins(8, 8, 8, 8);
     middleLayout->setSpacing(8);
 
-    // Left panel
+    // Left panel - 30% width, vertical content
     leftPanel_ = middleLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
     leftPanel_->setStyleClass("pos-left-panel");
     leftPanel_->setAttributeValue("style",
-        "background: #e9ecef; margin: 0; padding: 0; height: 100%;");
+        "background: #e9ecef; margin: 0; padding: 0; height: 100%; "
+        "flex: 0 0 30% !important; display: flex; flex-direction: column;");
 
-    // Right panel
+    // Right panel - 70% width
     rightPanel_ = middleLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
     rightPanel_->setStyleClass("pos-right-panel");
     rightPanel_->setAttributeValue("style",
         "background: #ffffff; margin: 0; padding: 10px; height: 100%; "
-        "border: 1px solid #dee2e6; border-radius: 4px;");
+        "border: 1px solid #dee2e6; border-radius: 4px; "
+        "flex: 1 1 70% !important;");
 
     // Set stretch factors
     middleLayout->setStretchFactor(leftPanel_, 3);   // 30%
@@ -471,8 +474,10 @@ void POSModeContainer::showOrderEntryMode() {
             leftLayout->setContentsMargins(0, 0, 0, 0);
             leftLayout->setSpacing(0);
 
+            // Ensure left panel stays vertical and on the left
             leftPanel_->setAttributeValue("style",
-                "background: #e9ecef; padding: 0; margin: 0;");
+                "background: #e9ecef; padding: 0; margin: 0; height: 100%; "
+                "flex: 0 0 30% !important; display: flex; flex-direction: column;");
         }
 
         if (workArea_ && workArea_->children().size() > 0) {
