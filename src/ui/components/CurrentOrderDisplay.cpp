@@ -144,17 +144,14 @@ void CurrentOrderDisplay::initializeTableHeaders() {
     itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
     itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
 
-    // COMPACT: Header styling with reduced padding
+    // Header styling - uses CSS for fixed height (defined in base.css)
     for (int col = 0; col < itemsTable_->columnCount(); ++col) {
         auto headerCell = itemsTable_->elementAt(0, col);
         headerCell->addStyleClass("pos-table-header");
-        headerCell->setAttributeValue("style",
-            "padding: 6px 8px !important; background: #f0f0f0; "
-            "border-bottom: 2px solid #dee2e6; font-size: 0.8rem;");
 
         auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
         if (headerText) {
-            headerText->addStyleClass("fw-bold text-secondary");
+            headerText->addStyleClass("fw-bold text-secondary small");
         }
 
         // Center align all columns except first (Item)
@@ -383,12 +380,10 @@ void CurrentOrderDisplay::applyRowStyling(int row, bool isEven) {
     for (int col = 0; col < itemsTable_->columnCount(); ++col) {
         auto cell = itemsTable_->elementAt(row, col);
 
-        // COMPACT: Reduced padding for shorter row heights
+        // Use CSS class for fixed row height styling (defined in base.css)
         cell->addStyleClass("pos-table-cell");
-        cell->setAttributeValue("style",
-            "padding: 4px 6px !important; vertical-align: middle;");
 
-        // CLEAN: Very subtle alternating row colors
+        // Alternating row colors
         if (isEven) {
             cell->addStyleClass("bg-white");
         } else {
