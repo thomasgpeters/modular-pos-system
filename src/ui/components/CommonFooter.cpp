@@ -22,9 +22,9 @@ CommonFooter::CommonFooter(std::shared_ptr<POSService> posService,
 }
 
 void CommonFooter::initializeUI() {
-    // Dark grey footer spanning full width
+    // Dark grey footer spanning full width (darker for better text contrast)
     setAttributeValue("style",
-        "background: #343a40 !important; width: 100% !important; "
+        "background: #212529 !important; width: 100% !important; "
         "padding: 8px 15px; margin: 0; box-sizing: border-box;");
     addStyleClass("common-footer");
 
