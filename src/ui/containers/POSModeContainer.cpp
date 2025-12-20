@@ -116,10 +116,11 @@ void POSModeContainer::setupLayout() {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // PAGE-WIDE HEADER (blue background)
-    pageHeader_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    // PAGE-WIDE HEADER (blue background) - fixed height, no grow
+    pageHeader_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
     pageHeader_->setAttributeValue("style",
-        "background: #0d6efd; padding: 10px 15px; margin: 0; width: 100%;");
+        "background: #0d6efd; padding: 10px 15px; margin: 0; width: 100%; "
+        "flex-shrink: 0 !important; flex-grow: 0 !important;");
 
     // Header content - icon and title
     auto headerContent = pageHeader_->addNew<Wt::WContainerWidget>();
@@ -141,30 +142,37 @@ void POSModeContainer::setupLayout() {
         showOrderEntryMode();
     });
 
-    // MIDDLE CONTAINER (holds left and right panels)
+    // MIDDLE CONTAINER (holds left and right panels) - takes all remaining space
     middleContainer_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
+    middleContainer_->setAttributeValue("style",
+        "flex: 1 1 auto !important; min-height: 0; overflow: hidden;");
+
     auto middleLayout = middleContainer_->setLayout(std::make_unique<Wt::WHBoxLayout>());
-    middleLayout->setContentsMargins(0, 0, 0, 0);
+    middleLayout->setContentsMargins(8, 8, 8, 8);
     middleLayout->setSpacing(8);
 
     // Left panel
     leftPanel_ = middleLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
     leftPanel_->setStyleClass("pos-left-panel");
     leftPanel_->setAttributeValue("style",
-        "background: #e9ecef; margin: 0; padding: 0; border-radius: 0;");
+        "background: #e9ecef; margin: 0; padding: 0; height: 100%;");
 
     // Right panel
     rightPanel_ = middleLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
     rightPanel_->setStyleClass("pos-right-panel");
+    rightPanel_->setAttributeValue("style",
+        "background: #ffffff; margin: 0; padding: 10px; height: 100%; "
+        "border: 1px solid #dee2e6; border-radius: 4px;");
 
     // Set stretch factors
     middleLayout->setStretchFactor(leftPanel_, 3);   // 30%
     middleLayout->setStretchFactor(rightPanel_, 7);  // 70%
 
-    // PAGE-WIDE FOOTER (dark background)
-    pageFooter_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    // PAGE-WIDE FOOTER (dark background) - fixed height, no grow
+    pageFooter_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
     pageFooter_->setAttributeValue("style",
-        "background: #343a40; padding: 8px 15px; margin: 0; width: 100%;");
+        "background: #343a40; padding: 8px 15px; margin: 0; width: 100%; "
+        "flex-shrink: 0 !important; flex-grow: 0 !important;");
 
     auto footerText = pageFooter_->addNew<Wt::WText>("0 active order(s)");
     footerText->setAttributeValue("style", "color: white; font-size: 0.9rem;");
