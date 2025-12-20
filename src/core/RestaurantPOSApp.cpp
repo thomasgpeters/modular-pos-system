@@ -332,7 +332,11 @@ void RestaurantPOSApp::createCommonComponents() {
     modeContainer_ = mainLayout_->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     modeContainer_->setStyleClass("flex-grow-1 mode-container-wrapper");
     modeContainer_->setId("main-mode-container");
-    
+
+    // CRITICAL: No padding/margin so children can span full width
+    modeContainer_->setAttributeValue("style",
+        "padding: 0 !important; margin: 0 !important; overflow: hidden;");
+
     // FORCE MODE CONTAINER VISIBILITY AND SIZE - don't override children's display
     modeContainer_->show();
     modeContainer_->setHidden(false);
@@ -875,10 +879,11 @@ void RestaurantPOSApp::enforceLayoutConstraints() {
     if (modeContainer_) {
         // Ensure content area expands
         modeContainer_->addStyleClass("pos-content-flex");
-        
-        // Calculate available height (viewport - header - footer)
-        modeContainer_->setAttributeValue("style", 
-            "flex: 1 1 auto !important; height: calc(100vh - 100px) !important; overflow: auto !important;");
+
+        // Calculate available height (viewport - header - footer) with no padding
+        modeContainer_->setAttributeValue("style",
+            "flex: 1 1 auto !important; height: calc(100vh - 100px) !important; "
+            "overflow: hidden !important; padding: 0 !important; margin: 0 !important;");
     }
     
     if (commonFooter_) {
