@@ -116,11 +116,13 @@ void POSModeContainer::setupLayout() {
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // PAGE-WIDE HEADER (blue background) - fixed height, no grow
+    // PAGE-WIDE HEADER (blue background) - FIXED HEIGHT
     pageHeader_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
+    pageHeader_->setHeight(Wt::WLength(45, Wt::LengthUnit::Pixel));
     pageHeader_->setAttributeValue("style",
         "background: #0d6efd; padding: 10px 15px; margin: 0; width: 100%; "
-        "flex-shrink: 0 !important; flex-grow: 0 !important;");
+        "height: 45px !important; max-height: 45px !important; min-height: 45px !important; "
+        "flex: 0 0 45px !important;");
 
     // Header content - icon and title
     auto headerContent = pageHeader_->addNew<Wt::WContainerWidget>();
@@ -145,37 +147,32 @@ void POSModeContainer::setupLayout() {
     // MIDDLE CONTAINER (holds left and right panels) - takes all remaining space
     middleContainer_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
     middleContainer_->setAttributeValue("style",
-        "flex: 1 1 auto !important; min-height: 0; overflow: hidden; "
-        "display: flex !important; flex-direction: row !important;");
-
-    auto middleLayout = middleContainer_->setLayout(std::make_unique<Wt::WHBoxLayout>());
-    middleLayout->setContentsMargins(8, 8, 8, 8);
-    middleLayout->setSpacing(8);
+        "flex: 1 1 auto !important; min-height: 100px; overflow: hidden; "
+        "display: flex !important; flex-direction: row !important; padding: 8px; gap: 8px;");
 
     // Left panel - 30% width, vertical content
-    leftPanel_ = middleLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    leftPanel_ = middleContainer_->addNew<Wt::WContainerWidget>();
     leftPanel_->setStyleClass("pos-left-panel");
     leftPanel_->setAttributeValue("style",
-        "background: #e9ecef; margin: 0; padding: 0; height: 100%; "
-        "flex: 0 0 30% !important; display: flex; flex-direction: column;");
+        "background: #e9ecef; margin: 0; padding: 10px; "
+        "width: 30% !important; min-width: 250px; "
+        "display: flex; flex-direction: column;");
 
     // Right panel - 70% width
-    rightPanel_ = middleLayout->addWidget(std::make_unique<Wt::WContainerWidget>());
+    rightPanel_ = middleContainer_->addNew<Wt::WContainerWidget>();
     rightPanel_->setStyleClass("pos-right-panel");
     rightPanel_->setAttributeValue("style",
-        "background: #ffffff; margin: 0; padding: 10px; height: 100%; "
-        "border: 1px solid #dee2e6; border-radius: 4px; "
-        "flex: 1 1 70% !important;");
+        "background: #ffffff; margin: 0; padding: 10px; "
+        "width: 70% !important; flex: 1; "
+        "border: 1px solid #dee2e6; border-radius: 4px;");
 
-    // Set stretch factors
-    middleLayout->setStretchFactor(leftPanel_, 3);   // 30%
-    middleLayout->setStretchFactor(rightPanel_, 7);  // 70%
-
-    // PAGE-WIDE FOOTER (dark background) - fixed height, no grow
+    // PAGE-WIDE FOOTER (dark background) - FIXED HEIGHT
     pageFooter_ = mainLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 0);
+    pageFooter_->setHeight(Wt::WLength(40, Wt::LengthUnit::Pixel));
     pageFooter_->setAttributeValue("style",
         "background: #343a40; padding: 8px 15px; margin: 0; width: 100%; "
-        "flex-shrink: 0 !important; flex-grow: 0 !important;");
+        "height: 40px !important; max-height: 40px !important; min-height: 40px !important; "
+        "flex: 0 0 40px !important;");
 
     auto footerText = pageFooter_->addNew<Wt::WText>("0 active order(s)");
     footerText->setAttributeValue("style", "color: white; font-size: 0.9rem;");
@@ -470,14 +467,11 @@ void POSModeContainer::showOrderEntryMode() {
         if (leftPanel_) {
             leftPanel_->clear();
 
-            auto leftLayout = leftPanel_->setLayout(std::make_unique<Wt::WVBoxLayout>());
-            leftLayout->setContentsMargins(0, 0, 0, 0);
-            leftLayout->setSpacing(0);
-
             // Ensure left panel stays vertical and on the left
             leftPanel_->setAttributeValue("style",
-                "background: #e9ecef; padding: 0; margin: 0; height: 100%; "
-                "flex: 0 0 30% !important; display: flex; flex-direction: column;");
+                "background: #e9ecef; margin: 0; padding: 10px; "
+                "width: 30% !important; min-width: 250px; "
+                "display: flex; flex-direction: column;");
         }
 
         if (workArea_ && workArea_->children().size() > 0) {
@@ -497,24 +491,18 @@ void POSModeContainer::showOrderEntryMode() {
 
         // LEFT PANEL: Active Orders List
         if (leftPanel_) {
-            auto* leftLayout = dynamic_cast<Wt::WVBoxLayout*>(leftPanel_->layout());
-            if (!leftLayout) {
-                std::cerr << "[POSModeContainer] ERROR: leftLayout is null!" << std::endl;
-                return;
-            }
-
             if (orders.empty()) {
                 // Simple concise empty message
-                auto emptyContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
+                auto emptyContainer = leftPanel_->addNew<Wt::WContainerWidget>();
                 emptyContainer->setStyleClass("d-flex align-items-center justify-content-center");
-                emptyContainer->setAttributeValue("style", "background: #f8f9fa;");
+                emptyContainer->setAttributeValue("style", "background: #f8f9fa; flex: 1;");
 
                 auto emptyText = emptyContainer->addNew<Wt::WText>("No active orders");
                 emptyText->setStyleClass("text-muted");
             } else {
                 // Orders table
-                auto tableContainer = leftLayout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);
-                tableContainer->setAttributeValue("style", "background: white; padding: 8px;");
+                auto tableContainer = leftPanel_->addNew<Wt::WContainerWidget>();
+                tableContainer->setAttributeValue("style", "background: white; padding: 8px; flex: 1; overflow-y: auto;");
 
                 auto ordersTable = tableContainer->addNew<Wt::WTable>();
                 ordersTable->setStyleClass("table table-hover table-sm mb-0");
@@ -577,12 +565,12 @@ void POSModeContainer::showOrderEntryMode() {
 
         // RIGHT PANEL: Order Entry Panel
         std::cout << "[POSModeContainer] Creating OrderEntryPanel..." << std::endl;
-        if (workArea_) {
-            orderEntryPanel_ = workArea_->addWidget(
-                std::make_unique<OrderEntryPanel>(posService_, eventManager_));
+        if (rightPanel_) {
+            rightPanel_->clear();
+            orderEntryPanel_ = rightPanel_->addNew<OrderEntryPanel>(posService_, eventManager_);
 
             if (orderEntryPanel_) {
-                std::cout << "[POSModeContainer] ✓ OrderEntryPanel created" << std::endl;
+                std::cout << "[POSModeContainer] OrderEntryPanel created" << std::endl;
             }
         }
 
