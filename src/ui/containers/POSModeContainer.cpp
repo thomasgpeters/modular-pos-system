@@ -41,6 +41,7 @@ POSModeContainer::POSModeContainer(std::shared_ptr<POSService> posService,
     }
 
     setStyleClass("pos-mode-container h-100");
+    setId("pos-mode-container");  // CRITICAL: Set ID so CSS #pos-mode-container selectors work
 
     // Force container visibility with column layout
     show();
