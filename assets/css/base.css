@@ -338,14 +338,12 @@ body {
     overflow: hidden !important;
 }
 
-/* Scrollable table container - takes remaining space, content at top */
-.pos-current-order-container > div:nth-child(2) {
+/* Scrollable container for order items */
+.order-items-scroll-container {
     flex: 1 1 auto !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     min-height: 0 !important;
-    /* Use block layout, not flex - prevents row compression */
-    display: block !important;
 }
 
 /* Order summary footer - pinned at bottom */
@@ -353,27 +351,57 @@ body {
     flex-shrink: 0 !important;
 }
 
-/* Fixed height for order table rows - prevent shrinking */
+/* Order table - no flex behavior, natural height */
 .pos-current-order-table {
     width: 100% !important;
     border-collapse: collapse !important;
+    table-layout: fixed !important;
 }
 
-.pos-current-order-table tr {
-    height: var(--order-row-height, 36px) !important;
+/* Table header row - fixed height, grey background */
+.pos-current-order-table tr:first-child {
+    height: var(--order-header-height) !important;
+    background-color: #6c757d !important;
+}
+
+.pos-current-order-table tr:first-child td,
+.pos-current-order-table th {
+    height: var(--order-header-height) !important;
+    min-height: var(--order-header-height) !important;
+    max-height: var(--order-header-height) !important;
+    padding: 6px 8px !important;
+    vertical-align: middle !important;
+    background-color: #6c757d !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    border-bottom: 2px solid #495057 !important;
+}
+
+/* Data rows - fixed height */
+.pos-current-order-table tr:not(:first-child) {
+    height: var(--order-row-height) !important;
 }
 
 .pos-current-order-table td {
-    height: var(--order-row-height, 36px) !important;
+    height: var(--order-row-height) !important;
+    min-height: var(--order-row-height) !important;
+    max-height: var(--order-row-height) !important;
     padding: 4px 8px !important;
     vertical-align: middle !important;
     overflow: hidden !important;
+    border-bottom: 1px solid #dee2e6 !important;
 }
 
-.pos-current-order-table th {
-    height: var(--order-header-height, 32px) !important;
+/* Override any Bootstrap table styles */
+.pos-current-order-table.table,
+.pos-current-order-table.table-sm {
+    margin-bottom: 0 !important;
+}
+
+.pos-current-order-table.table td,
+.pos-current-order-table.table th {
     padding: 4px 8px !important;
-    vertical-align: middle !important;
 }
 
 /* ============================================================================

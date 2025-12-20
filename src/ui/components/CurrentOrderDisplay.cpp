@@ -71,21 +71,23 @@ CurrentOrderDisplay::~CurrentOrderDisplay() {
 
 void CurrentOrderDisplay::initializeUI() {
     // Main container with flex column layout - full height
+    addStyleClass("pos-current-order-container");
     setAttributeValue("style",
-        "display: flex; flex-direction: column; height: 100%; overflow: hidden;");
+        "display: flex !important; flex-direction: column !important; "
+        "height: 100% !important; overflow: hidden !important;");
 
     // HEADER - fixed at top
     auto header = createOrderHeader();
     addWidget(std::move(header));
 
-    // SCROLLABLE TABLE CONTAINER - takes remaining space, scrolls when needed
+    // SCROLLABLE TABLE CONTAINER - fixed behavior, scrolls when content overflows
     auto tableContainer = addNew<Wt::WContainerWidget>();
-    tableContainer->setAttributeValue("style",
-        "flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0;");
+    tableContainer->addStyleClass("order-items-scroll-container");
+    // No flex: 1 here - let CSS handle it
 
     itemsTable_ = tableContainer->addNew<Wt::WTable>();
-    itemsTable_->addStyleClass("table table-sm pos-current-order-table w-100 mb-0");
-    itemsTable_->setAttributeValue("style", "font-size: 0.85rem;");
+    itemsTable_->addStyleClass("pos-current-order-table");
+    // Remove Bootstrap table classes that may interfere
 
     // Initialize table headers
     initializeTableHeaders();
@@ -93,7 +95,6 @@ void CurrentOrderDisplay::initializeUI() {
     // SUMMARY FOOTER - pinned at bottom, always visible
     summaryContainer_ = addNew<Wt::WContainerWidget>();
     summaryContainer_->addStyleClass("order-summary-footer");
-    // Styling is applied in createOrderSummaryContent()
 
     // Create summary content directly in the container
     createOrderSummaryContent();
@@ -137,30 +138,19 @@ void CurrentOrderDisplay::initializeTableHeaders() {
         return;
     }
 
-    // Create table headers
+    // Create table headers - styling handled by CSS (.pos-current-order-table tr:first-child)
     itemsTable_->elementAt(0, 0)->addWidget(std::make_unique<Wt::WText>("Item"));
     itemsTable_->elementAt(0, 1)->addWidget(std::make_unique<Wt::WText>("Price"));
     itemsTable_->elementAt(0, 2)->addWidget(std::make_unique<Wt::WText>("Qty"));
     itemsTable_->elementAt(0, 3)->addWidget(std::make_unique<Wt::WText>("Total"));
     itemsTable_->elementAt(0, 4)->addWidget(std::make_unique<Wt::WText>("Actions"));
 
-    // Header styling - uses CSS for fixed height (defined in base.css)
-    for (int col = 0; col < itemsTable_->columnCount(); ++col) {
-        auto headerCell = itemsTable_->elementAt(0, col);
-        headerCell->addStyleClass("pos-table-header");
-
-        auto headerText = dynamic_cast<Wt::WText*>(headerCell->widget(0));
-        if (headerText) {
-            headerText->addStyleClass("fw-bold text-secondary small");
-        }
-
-        // Center align all columns except first (Item)
-        if (col >= 1) {
-            headerCell->addStyleClass("text-center");
-        }
+    // Center align columns (except Item column)
+    for (int col = 1; col < itemsTable_->columnCount(); ++col) {
+        itemsTable_->elementAt(0, col)->addStyleClass("text-center");
     }
 
-    std::cout << "✓ Table headers styled with compact design" << std::endl;
+    std::cout << "✓ Table headers initialized" << std::endl;
 }
 
 void CurrentOrderDisplay::createOrderSummaryContent() {
