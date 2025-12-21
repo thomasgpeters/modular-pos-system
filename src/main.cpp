@@ -165,6 +165,7 @@ std::vector<char*> stringVectorToCharArray(const std::vector<std::string>& args)
  */
 int main(int argc, char** argv) {
     try {
+<<<<<<< HEAD
         // Parse command line arguments
         ServerConfig config = parseArguments(argc, argv);
         
@@ -190,8 +191,15 @@ int main(int argc, char** argv) {
         
         // Add application entry point
         server.addEntryPoint(Wt::EntryPointType::Application, 
+=======
+        // Initialize server with command line args only
+        Wt::WServer server(argc, argv);
+
+        // Add entry point - this creates our application factory
+        server.addEntryPoint(Wt::EntryPointType::Application,
+>>>>>>> origin/claude/evaluate-pos-system-llm-01
                            createApplication,
-                           "/pos", 
+                           "/pos",
                            "/favicon.ico");
         
         std::cout << "🚀 Starting server..." << std::endl;

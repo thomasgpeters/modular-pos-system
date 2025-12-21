@@ -6,7 +6,24 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <sstream>
 #include <Wt/WApplication.h>
+
+// Helper function to escape strings for use in JavaScript double-quoted strings
+static std::string escapeForJSDoubleQuote(const std::string& input) {
+    std::ostringstream escaped;
+    for (char c : input) {
+        switch (c) {
+            case '\\': escaped << "\\\\"; break;
+            case '"':  escaped << "\\\""; break;
+            case '\n': escaped << "\\n"; break;
+            case '\r': escaped << "\\r"; break;
+            case '\t': escaped << "\\t"; break;
+            default:   escaped << c; break;
+        }
+    }
+    return escaped.str();
+}
 
 CSSLoader::CSSLoader(Wt::WApplication* app)
     : app_(app)
@@ -108,8 +125,10 @@ bool CSSLoader::unloadCSS(const std::string& cssPath) {
         
         // Note: Wt doesn't provide a direct way to unload stylesheets
         // We use JavaScript to remove the stylesheet link
-        std::string script = 
-            "var sheets = document.querySelectorAll('link[href*=\"" + normalizedPath + "\"]');"
+        // FIXED: Properly escape the path for JavaScript
+        std::string escapedPath = escapeForJSDoubleQuote(normalizedPath);
+        std::string script =
+            "var sheets = document.querySelectorAll('link[href*=\"" + escapedPath + "\"]');"
             "for (var i = 0; i < sheets.length; i++) {"
             "  if (sheets[i].parentNode) {"
             "    sheets[i].parentNode.removeChild(sheets[i]);"

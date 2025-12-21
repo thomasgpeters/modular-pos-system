@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Wt Configuration for Restaurant POS System
+  Compatible with Wt 4.12.1
+-->
 <server>
     <application-settings location="*">
+        <!-- Logging -->
         <log-file>wt.log</log-file>
-        <log-config>*</log-config>
+        <log-config>* -debug</log-config>
 
+        <!-- Session settings -->
         <session-timeout>600</session-timeout>
-        <max-request-size>128</max-request-size>
+        <idle-timeout>600</idle-timeout>
 
         <!-- CRITICAL: Disable progressive bootstrap to fix rendering -->
         <progressive-bootstrap>false</progressive-bootstrap>
 
-        <!-- Use Bootstrap 5 theme -->
+        <!-- WebSocket support (Wt 4.x) -->
+        <web-sockets>true</web-sockets>
+
+        <!-- Use Bootstrap 5 -->
         <theme>bootstrap5</theme>
+
+        <!-- Session management -->
+        <reload-is-new-session>true</reload-is-new-session>
+        <session-id-cookie>true</session-id-cookie>
     </application-settings>
 </server>
