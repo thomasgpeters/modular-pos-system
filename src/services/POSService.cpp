@@ -537,6 +537,61 @@ bool POSService::sendCurrentOrderToKitchen() {
     }
 }
 
+void POSService::clearCurrentOrder() {
+    logger_.info("[POSService] Clearing current order");
+
+    if (currentOrder_) {
+        int orderId = currentOrder_->getOrderId();
+        currentOrder_ = nullptr;
+
+        // Notify listeners
+        if (eventManager_) {
+            eventManager_->publish(POSEvents::CURRENT_ORDER_CHANGED,
+                std::any(), "POSService");
+        }
+
+        logger_.info("[POSService] Current order cleared (was Order #" + std::to_string(orderId) + ")");
+    }
+}
+
+bool POSService::cancelCurrentOrder() {
+    logger_.info("[POSService] Cancelling current order");
+
+    if (!currentOrder_) {
+        LOG_COMPONENT_ERROR(logger_, "POSService", "cancelCurrentOrder", "No current order to cancel");
+        return false;
+    }
+
+    try {
+        int orderId = currentOrder_->getOrderId();
+
+        // Update order status to cancelled
+        currentOrder_->setStatus(Order::CANCELLED);
+
+        // Notify listeners
+        if (eventManager_) {
+            eventManager_->publish(POSEvents::ORDER_CANCELLED,
+                std::any(orderId), "POSService");
+        }
+
+        // Clear the current order
+        currentOrder_ = nullptr;
+
+        // Publish current order changed event
+        if (eventManager_) {
+            eventManager_->publish(POSEvents::CURRENT_ORDER_CHANGED,
+                std::any(), "POSService");
+        }
+
+        logger_.info("[POSService] Order #" + std::to_string(orderId) + " cancelled successfully");
+        return true;
+
+    } catch (const std::exception& e) {
+        LOG_COMPONENT_ERROR(logger_, "POSService", "cancelCurrentOrder", e.what());
+        return false;
+    }
+}
+
 // =====================================================================
 // Kitchen Interface Methods
 // =====================================================================

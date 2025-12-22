@@ -166,7 +166,12 @@ private:
     Wt::WText* taxText_;
     Wt::WText* totalText_;
     Wt::WText* itemCountText_;
-    
+
+    // Action buttons
+    Wt::WContainerWidget* actionsContainer_;
+    Wt::WPushButton* completeOrderButton_;
+    Wt::WPushButton* cancelOrderButton_;
+
     // Event subscription handles
     std::vector<EventManager::SubscriptionHandle> eventSubscriptions_;
     
@@ -179,6 +184,9 @@ private:
     void onQuantityChanged(size_t itemIndex, int newQuantity);
     void onRemoveItemClicked(size_t itemIndex);
     void onSpecialInstructionsChanged(size_t itemIndex, const std::string& instructions);
+    void onCompleteOrderClicked();
+    void onCancelOrderClicked();
+    void updateActionButtons();
     
     // Helper methods
     std::string formatCurrency(double amount) const;

@@ -154,7 +154,18 @@ public:
      * @return True if successful
      */
     bool sendCurrentOrderToKitchen();
-    
+
+    /**
+     * @brief Clears the current order (sets to nullptr)
+     */
+    void clearCurrentOrder();
+
+    /**
+     * @brief Cancels the current order
+     * @return True if successful
+     */
+    bool cancelCurrentOrder();
+
     // =====================================================================
     // Kitchen Interface Methods
     // =====================================================================

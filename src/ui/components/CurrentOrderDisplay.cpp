@@ -34,6 +34,9 @@ CurrentOrderDisplay::CurrentOrderDisplay(std::shared_ptr<POSService> posService,
     , taxText_(nullptr)
     , totalText_(nullptr)
     , itemCountText_(nullptr)
+    , actionsContainer_(nullptr)
+    , completeOrderButton_(nullptr)
+    , cancelOrderButton_(nullptr)
 {
     if (!posService_ || !eventManager_) {
         throw std::invalid_argument("CurrentOrderDisplay requires valid POSService and EventManager");
@@ -156,14 +159,19 @@ void CurrentOrderDisplay::initializeTableHeaders() {
 void CurrentOrderDisplay::createOrderSummaryContent() {
     if (!summaryContainer_) return;
 
-    // COMPACT: Two-column layout for summary - left side info, right side total
+    // Main summary container with flex column layout
     summaryContainer_->setAttributeValue("style",
-        "display: flex; justify-content: space-between; align-items: center; "
-        "padding: 8px 12px !important; background: #f8f9fa; "
+        "display: flex; flex-direction: column; gap: 8px; "
+        "padding: 10px 12px !important; background: #f8f9fa; "
         "border-top: 2px solid #dee2e6;");
 
+    // TOP ROW: Summary info - items, subtotal, tax, total
+    auto summaryRow = summaryContainer_->addNew<Wt::WContainerWidget>();
+    summaryRow->setAttributeValue("style",
+        "display: flex; justify-content: space-between; align-items: center;");
+
     // Left side - items, subtotal, tax in a compact row
-    auto leftInfo = summaryContainer_->addNew<Wt::WContainerWidget>();
+    auto leftInfo = summaryRow->addNew<Wt::WContainerWidget>();
     leftInfo->setAttributeValue("style",
         "display: flex; gap: 16px; font-size: 0.8rem;");
 
@@ -189,7 +197,7 @@ void CurrentOrderDisplay::createOrderSummaryContent() {
     taxText_->addStyleClass("fw-bold");
 
     // Right side - total with emphasis
-    auto totalContainer = summaryContainer_->addNew<Wt::WContainerWidget>();
+    auto totalContainer = summaryRow->addNew<Wt::WContainerWidget>();
     totalContainer->setAttributeValue("style",
         "display: flex; align-items: center; gap: 8px;");
 
@@ -200,6 +208,37 @@ void CurrentOrderDisplay::createOrderSummaryContent() {
     totalText_ = totalContainer->addNew<Wt::WText>("$0.00");
     totalText_->setAttributeValue("style",
         "font-size: 1.2rem; font-weight: bold; color: #198754;");
+
+    // BOTTOM ROW: Action buttons
+    actionsContainer_ = summaryContainer_->addNew<Wt::WContainerWidget>();
+    actionsContainer_->setAttributeValue("style",
+        "display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px; "
+        "border-top: 1px solid #dee2e6;");
+
+    // Cancel Order button
+    cancelOrderButton_ = actionsContainer_->addNew<Wt::WPushButton>("Cancel Order");
+    cancelOrderButton_->setAttributeValue("style",
+        "padding: 6px 16px; font-size: 0.85rem; font-weight: 500; "
+        "background: #dc3545; color: white; border: none; border-radius: 4px; "
+        "cursor: pointer;");
+    cancelOrderButton_->setToolTip("Cancel this order");
+    cancelOrderButton_->clicked().connect([this]() {
+        onCancelOrderClicked();
+    });
+
+    // Complete Order button (Send to Kitchen)
+    completeOrderButton_ = actionsContainer_->addNew<Wt::WPushButton>("Complete Order →");
+    completeOrderButton_->setAttributeValue("style",
+        "padding: 6px 20px; font-size: 0.85rem; font-weight: 600; "
+        "background: #198754; color: white; border: none; border-radius: 4px; "
+        "cursor: pointer;");
+    completeOrderButton_->setToolTip("Send order to kitchen for preparation");
+    completeOrderButton_->clicked().connect([this]() {
+        onCompleteOrderClicked();
+    });
+
+    // Initial button state
+    updateActionButtons();
 }
 
 void CurrentOrderDisplay::updateOrderItemsTable() {
@@ -511,6 +550,119 @@ void CurrentOrderDisplay::hideEmptyOrderMessage() {
     // The empty message is automatically hidden when rows are added
 }
 
+void CurrentOrderDisplay::onCompleteOrderClicked() {
+    std::cout << "[CurrentOrderDisplay] Complete Order button clicked" << std::endl;
+
+    if (!posService_) {
+        std::cerr << "[CurrentOrderDisplay] No POS service available" << std::endl;
+        return;
+    }
+
+    auto currentOrder = getCurrentOrder();
+    if (!currentOrder) {
+        std::cout << "[CurrentOrderDisplay] No current order to complete" << std::endl;
+        return;
+    }
+
+    if (currentOrder->getItems().empty()) {
+        std::cout << "[CurrentOrderDisplay] Cannot complete empty order" << std::endl;
+        return;
+    }
+
+    try {
+        // Send to kitchen
+        bool success = posService_->sendCurrentOrderToKitchen();
+        if (success) {
+            std::cout << "[CurrentOrderDisplay] ✓ Order #" << currentOrder->getOrderId()
+                      << " sent to kitchen successfully" << std::endl;
+
+            // Publish event for UI updates
+            if (eventManager_) {
+                eventManager_->publish(POSEvents::ORDER_SENT_TO_KITCHEN,
+                    std::any(currentOrder->getOrderId()), "CurrentOrderDisplay");
+            }
+
+            // Clear current order after sending to kitchen
+            posService_->clearCurrentOrder();
+        } else {
+            std::cerr << "[CurrentOrderDisplay] ✗ Failed to send order to kitchen" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurrentOrderDisplay] Exception sending to kitchen: " << e.what() << std::endl;
+    }
+}
+
+void CurrentOrderDisplay::onCancelOrderClicked() {
+    std::cout << "[CurrentOrderDisplay] Cancel Order button clicked" << std::endl;
+
+    if (!posService_) {
+        std::cerr << "[CurrentOrderDisplay] No POS service available" << std::endl;
+        return;
+    }
+
+    auto currentOrder = getCurrentOrder();
+    if (!currentOrder) {
+        std::cout << "[CurrentOrderDisplay] No current order to cancel" << std::endl;
+        return;
+    }
+
+    try {
+        int orderId = currentOrder->getOrderId();
+
+        // Cancel the order
+        bool success = posService_->cancelCurrentOrder();
+        if (success) {
+            std::cout << "[CurrentOrderDisplay] ✓ Order #" << orderId << " cancelled" << std::endl;
+
+            // Publish event
+            if (eventManager_) {
+                eventManager_->publish(POSEvents::ORDER_CANCELLED,
+                    std::any(orderId), "CurrentOrderDisplay");
+            }
+        } else {
+            std::cerr << "[CurrentOrderDisplay] ✗ Failed to cancel order" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[CurrentOrderDisplay] Exception cancelling order: " << e.what() << std::endl;
+    }
+}
+
+void CurrentOrderDisplay::updateActionButtons() {
+    if (!completeOrderButton_ || !cancelOrderButton_) return;
+
+    auto currentOrder = getCurrentOrder();
+    bool hasOrder = currentOrder != nullptr;
+    bool hasItems = hasOrder && !currentOrder->getItems().empty();
+
+    // Complete Order button - only enabled if order has items
+    completeOrderButton_->setEnabled(hasItems);
+    if (hasItems) {
+        completeOrderButton_->setAttributeValue("style",
+            "padding: 6px 20px; font-size: 0.85rem; font-weight: 600; "
+            "background: #198754; color: white; border: none; border-radius: 4px; "
+            "cursor: pointer;");
+    } else {
+        completeOrderButton_->setAttributeValue("style",
+            "padding: 6px 20px; font-size: 0.85rem; font-weight: 600; "
+            "background: #6c757d; color: white; border: none; border-radius: 4px; "
+            "cursor: not-allowed; opacity: 0.6;");
+    }
+
+    // Cancel Order button - enabled if order exists
+    cancelOrderButton_->setEnabled(hasOrder);
+    if (hasOrder) {
+        cancelOrderButton_->setAttributeValue("style",
+            "padding: 6px 16px; font-size: 0.85rem; font-weight: 500; "
+            "background: #dc3545; color: white; border: none; border-radius: 4px; "
+            "cursor: pointer;");
+    } else {
+        cancelOrderButton_->setAttributeValue("style",
+            "padding: 6px 16px; font-size: 0.85rem; font-weight: 500; "
+            "background: #6c757d; color: white; border: none; border-radius: 4px; "
+            "cursor: not-allowed; opacity: 0.6;");
+    }
+}
+
 std::shared_ptr<Order> CurrentOrderDisplay::getCurrentOrder() const {
     return posService_ ? posService_->getCurrentOrder() : nullptr;
 }
@@ -563,12 +715,14 @@ void CurrentOrderDisplay::handleCurrentOrderChanged(const std::any& eventData) {
 // PUBLIC INTERFACE
 void CurrentOrderDisplay::refresh() {
     updateOrderItemsTable();
-    std::cout << "[CurrentOrderDisplay] Refreshed with clean styling" << std::endl;
+    updateActionButtons();
+    std::cout << "[CurrentOrderDisplay] Refreshed" << std::endl;
 }
 
 void CurrentOrderDisplay::clearOrder() {
     updateOrderItemsTable();
     updateOrderSummary();
+    updateActionButtons();
     std::cout << "[CurrentOrderDisplay] Order cleared" << std::endl;
 }
 
